@@ -1,0 +1,193 @@
+{
+  "projectType": "saas",
+  "projectName": "LibreChat",
+  "projectDescription": "Self-hosted AI chat platform that unifies all major AI providers in a single, privacy-focused interface with agents, MCP support, and enterprise features.",
+  "theme": "palm",
+  "primaryColor": "#8B5CF6",
+  "lightColor": "#A78BFA",
+  "darkColor": "#6D28D9",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/ai-models",
+              "features/agents",
+              "features/mcp",
+              "features/code-interpreter",
+              "features/artifacts",
+              "features/web-search",
+              "features/multimodal",
+              "features/image-generation"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/overview",
+              "configuration/librechat-yaml",
+              "configuration/environment-variables",
+              "configuration/ai-endpoints",
+              "configuration/authentication",
+              "configuration/file-storage"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/docker",
+              "deployment/local",
+              "deployment/railway",
+              "deployment/zeabur",
+              "deployment/kubernetes"
+            ]
+          },
+          {
+            "group": "User Guide",
+            "pages": [
+              "user-guide/conversations",
+              "user-guide/presets",
+              "user-guide/prompts",
+              "user-guide/bookmarks",
+              "user-guide/speech",
+              "user-guide/import-export"
+            ]
+          },
+          {
+            "group": "Administration",
+            "pages": [
+              "admin/user-management",
+              "admin/roles-permissions",
+              "admin/moderation",
+              "admin/token-management",
+              "admin/monitoring"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/introduction",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/conversations",
+              "api/messages",
+              "api/agents",
+              "api/files",
+              "api/presets",
+              "api/prompts",
+              "api/users",
+              "api/auth"
+            ]
+          },
+          {
+            "group": "Integration",
+            "pages": [
+              "api/custom-endpoints",
+              "api/mcp-servers",
+              "api/webhooks"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "development/setup",
+              "development/architecture",
+              "development/monorepo"
+            ]
+          },
+          {
+            "group": "Frontend",
+            "pages": [
+              "development/frontend/components",
+              "development/frontend/state-management",
+              "development/frontend/data-provider",
+              "development/frontend/localization"
+            ]
+          },
+          {
+            "group": "Backend",
+            "pages": [
+              "development/backend/routes",
+              "development/backend/controllers",
+              "development/backend/models",
+              "development/backend/services"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "development/contributing",
+              "development/code-style",
+              "development/testing",
+              "development/translation"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Multi-AI Provider Support (OpenAI, Anthropic, Google, AWS Bedrock, Azure, and more)",
+    "AI Agents with Model Context Protocol (MCP) Support",
+    "Code Interpreter with Secure Sandboxed Execution",
+    "Generative UI with Code Artifacts",
+    "Web Search Integration",
+    "Multi-User Authentication (OAuth2, LDAP, Email)",
+    "Image Generation and Editing",
+    "Conversation Management with Branching",
+    "File Upload and Analysis",
+    "Multilingual Interface (30+ languages)",
+    "Resumable Streams",
+    "Speech-to-Text and Text-to-Speech",
+    "Custom Endpoints and Actions",
+    "Presets and Prompt Management",
+    "Role-Based Access Control"
+  ],
+  "publicApiSurface": [
+    "POST /api/auth/login",
+    "POST /api/auth/register",
+    "GET /api/convos",
+    "POST /api/convos",
+    "GET /api/messages",
+    "POST /api/ask",
+    "GET /api/agents",
+    "POST /api/agents",
+    "GET /api/files",
+    "POST /api/files/upload",
+    "GET /api/presets",
+    "POST /api/presets",
+    "GET /api/prompts",
+    "POST /api/prompts",
+    "GET /api/config",
+    "GET /api/models",
+    "POST /api/mcp/connect",
+    "GET /api/user",
+    "PUT /api/user",
+    "GET /api/search/messages"
+  ]
+}
