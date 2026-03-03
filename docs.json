@@ -108,6 +108,7 @@
               "api/messages",
               "api/agents",
               "api/files",
+              "api/memories",
               "api/presets",
               "api/prompts",
               "api/users",

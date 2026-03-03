@@ -1,0 +1,340 @@
+---
+title: Memories
+description: Manage user memories for personalized AI conversations
+---
+
+## Overview
+
+The Memories API allows AI assistants to remember information about users across conversations, enabling personalized and context-aware interactions.
+
+All memory endpoints are prefixed with `/api/memories`.
+
+## Get All Memories
+
+Retrieve all memories for the authenticated user:
+
+```http
+GET /api/memories
+Authorization: Bearer <token>
+```
+
+### Response
+
+```json
+{
+  "memories": [
+    {
+      "key": "user_preferences",
+      "value": "Prefers concise technical explanations",
+      "updated_at": "2024-03-01T10:00:00Z"
+    },
+    {
+      "key": "project_context",
+      "value": "Working on a React Native mobile app",
+      "updated_at": "2024-02-28T15:30:00Z"
+    }
+  ],
+  "usage": {
+    "tokens_used": 1250,
+    "tokens_limit": 10000,
+    "percentage": 12.5
+  }
+}
+```
+
+<ResponseField name="memories" type="array">
+  Array of memory objects
+</ResponseField>
+
+<ResponseField name="memories[].key" type="string">
+  Unique identifier for the memory
+</ResponseField>
+
+<ResponseField name="memories[].value" type="string">
+  Memory content
+</ResponseField>
+
+<ResponseField name="memories[].updated_at" type="string">
+  ISO 8601 timestamp of last update
+</ResponseField>
+
+<ResponseField name="usage.tokens_used" type="number">
+  Total tokens used by all memories
+</ResponseField>
+
+<ResponseField name="usage.tokens_limit" type="number">
+  Maximum tokens allowed for memories
+</ResponseField>
+
+<ResponseField name="usage.percentage" type="number">
+  Percentage of limit used
+</ResponseField>
+
+## Create Memory
+
+Create a new memory:
+
+```http
+POST /api/memories
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+### Request Body
+
+<ParamField body="key" type="string" required>
+  Unique identifier for the memory
+</ParamField>
+
+<ParamField body="value" type="string" required>
+  Memory content (max 100KB)
+</ParamField>
+
+### Example
+
+```json
+{
+  "key": "coding_style",
+  "value": "Prefers functional programming with TypeScript"
+}
+```
+
+### Response
+
+```json
+{
+  "key": "coding_style",
+  "value": "Prefers functional programming with TypeScript",
+  "updated_at": "2024-03-03T12:00:00Z"
+}
+```
+
+## Update Memory
+
+Update an existing memory:
+
+```http
+PATCH /api/memories/:key
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+### Path Parameters
+
+<ParamField path="key" type="string" required>
+  Memory key to update
+</ParamField>
+
+### Request Body
+
+<ParamField body="value" type="string" required>
+  New memory content
+</ParamField>
+
+### Example
+
+```json
+{
+  "value": "Updated: Prefers functional programming with TypeScript and React hooks"
+}
+```
+
+## Delete Memory
+
+Delete a specific memory:
+
+```http
+DELETE /api/memories/:key
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="key" type="string" required>
+  Memory key to delete
+</ParamField>
+
+### Response
+
+```json
+{
+  "message": "Memory deleted successfully",
+  "key": "coding_style"
+}
+```
+
+## Update Memory Preferences
+
+Toggle memory functionality on/off for the user:
+
+```http
+PATCH /api/memories/preferences
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+### Request Body
+
+<ParamField body="enabled" type="boolean" required>
+  Enable or disable memory functionality
+</ParamField>
+
+### Example
+
+```json
+{
+  "enabled": false
+}
+```
+
+### Response
+
+```json
+{
+  "memories_enabled": false,
+  "message": "Memory preferences updated"
+}
+```
+
+## Memory Configuration
+
+Memory functionality can be configured in `librechat.yaml`:
+
+```yaml librechat.yaml
+memory:
+  disabled: false                     # Enable/disable memory
+  validKeys:                          # Restrict memory keys
+    - user_preferences
+    - project_context
+    - coding_style
+```
+
+## Permissions
+
+Memory operations require specific permissions:
+
+- `USE` - Use memory functionality
+- `READ` - View existing memories
+- `CREATE` - Create new memories
+- `UPDATE` - Update existing memories
+- `OPT_OUT` - Disable memory functionality
+
+Permissions can be configured per role in `librechat.yaml`.
+
+## Token Limits
+
+Memories are stored with token counting to prevent excessive usage:
+
+- Maximum payload size: **100KB** per memory
+- Total token limit: Configurable per user/role
+- Token counting includes both key and value
+
+<Warning>
+When memory usage approaches the limit, the AI may need to consolidate or remove old memories to stay within quota.
+</Warning>
+
+## Use Cases
+
+<Accordion title="Personal Preferences">
+  Remember user communication preferences, time zones, language preferences, etc.
+  
+  ```json
+  {
+    "key": "communication_style",
+    "value": "Prefers detailed explanations with code examples. Works in EST timezone."
+  }
+  ```
+</Accordion>
+
+<Accordion title="Project Context">
+  Store ongoing project information for consistent assistance.
+  
+  ```json
+  {
+    "key": "current_project",
+    "value": "Building an e-commerce platform with Next.js 14, Stripe integration, and PostgreSQL"
+  }
+  ```
+</Accordion>
+
+<Accordion title="Technical Stack">
+  Remember the user's tech stack and preferences.
+  
+  ```json
+  {
+    "key": "tech_stack",
+    "value": "Primary: TypeScript, React, Node.js. Database: PostgreSQL. Deployment: Vercel"
+  }
+  ```
+</Accordion>
+
+<Accordion title="Learning Goals">
+  Track what the user is learning or wants to focus on.
+  
+  ```json
+  {
+    "key": "learning_focus",
+    "value": "Currently learning Rust and exploring WebAssembly for performance optimization"
+  }
+  ```
+</Accordion>
+
+## Best Practices
+
+<Steps>
+  <Step title="Use Descriptive Keys">
+    Choose clear, meaningful keys like `coding_style` instead of generic ones like `pref1`.
+  </Step>
+
+  <Step title="Keep Values Concise">
+    Store only essential information to maximize token efficiency.
+  </Step>
+
+  <Step title="Update Regularly">
+    Update memories when user preferences or context changes.
+  </Step>
+
+  <Step title="Respect User Privacy">
+    Allow users to opt out of memory functionality if desired.
+  </Step>
+</Steps>
+
+## Error Responses
+
+<Accordion title="403 Forbidden">
+  ```json
+  {
+    "error": "Insufficient permissions",
+    "message": "User does not have permission to create memories"
+  }
+  ```
+  
+  User lacks required memory permissions.
+</Accordion>
+
+<Accordion title="413 Payload Too Large">
+  ```json
+  {
+    "error": "Payload too large",
+    "message": "Memory value exceeds 100KB limit"
+  }
+  ```
+  
+  Memory content exceeds the 100KB limit.
+</Accordion>
+
+<Accordion title="429 Token Limit Exceeded">
+  ```json
+  {
+    "error": "Token limit exceeded",
+    "message": "Total memory usage exceeds quota. Remove old memories or request limit increase."
+  }
+  ```
+  
+  Total memory token usage exceeds user quota.
+</Accordion>
+
+## Related Documentation
+
+- [Configuration](/configuration/librechat-yaml) - Memory configuration in librechat.yaml
+- [Roles & Permissions](/admin/roles-permissions) - Configure memory permissions
