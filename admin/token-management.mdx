@@ -1,0 +1,437 @@
+---
+title: Token Management
+description: Manage user token balances and credits in LibreChat with CLI commands and balance configuration
+---
+
+LibreChat includes a token/credit system for controlling user access to AI features. This allows you to implement usage limits, quotas, or paid tiers.
+
+## Overview
+
+The token management system enables:
+- User balance tracking
+- Usage quotas and limits
+- Credit-based access control
+- Transaction history
+- Automated balance deduction
+
+<CardGroup cols={2}>
+  <Card title="Add Balance" icon="plus" href="#add-balance">
+    Add tokens/credits to user accounts
+  </Card>
+  <Card title="Set Balance" icon="gear" href="#set-balance">
+    Set specific balance amounts
+  </Card>
+  <Card title="List Balances" icon="list" href="#list-balances">
+    View all user balances
+  </Card>
+  <Card title="Balance Configuration" icon="sliders" href="#configuration">
+    Configure the balance system
+  </Card>
+</CardGroup>
+
+## Enabling Balance System
+
+Enable the balance system in `librechat.yaml`:
+
+```yaml librechat.yaml
+balance:
+  enabled: true
+  
+  # Initial balance for new users
+  initialBalance: 1000
+  
+  # Minimum balance required
+  minimumBalance: 0
+  
+  # Allow negative balances
+  allowNegative: false
+  
+  # Token costs per model
+  tokenCosts:
+    openai:
+      gpt-4: 0.03
+      gpt-3.5-turbo: 0.002
+    anthropic:
+      claude-3-opus: 0.015
+      claude-3-sonnet: 0.003
+```
+
+<Note>
+The balance system must be enabled in `librechat.yaml` before using token management commands.
+</Note>
+
+## Add Balance
+
+Add tokens/credits to a user's account.
+
+### Usage
+
+```bash
+npm run add-balance <email> <amount>
+```
+
+### Interactive Mode
+
+```bash
+npm run add-balance
+```
+
+You'll be prompted for:
+- **Email**: User's email address
+- **Amount**: Number of tokens to add (default: 1000)
+
+### Examples
+
+<CodeGroup>
+```bash Add 1000 Tokens
+npm run add-balance user@example.com 1000
+```
+
+```bash Add 5000 Tokens
+npm run add-balance user@example.com 5000
+```
+
+```bash Interactive
+npm run add-balance
+# Enter: user@example.com
+# Enter: 2000
+```
+</CodeGroup>
+
+### Transaction Record
+
+Each balance addition creates a transaction record with:
+- User ID
+- Amount added
+- Context: "admin"
+- Timestamp
+- New balance
+
+<Info>
+Balance additions are tracked in the transaction history, which can be useful for billing, auditing, and user support.
+</Info>
+
+## Set Balance
+
+Set a user's balance to a specific amount (overwriting the current balance).
+
+### Usage
+
+```bash
+npm run set-balance <email> <amount>
+```
+
+### Interactive Mode
+
+```bash
+npm run set-balance
+```
+
+### Examples
+
+<CodeGroup>
+```bash Reset to 1000
+npm run set-balance user@example.com 1000
+```
+
+```bash Set to Zero
+npm run set-balance user@example.com 0
+```
+</CodeGroup>
+
+<Warning>
+**This overwrites the current balance!**
+
+Unlike `add-balance`, this command sets the balance to the exact amount specified, regardless of the current balance. Use `add-balance` to increment the existing balance.
+</Warning>
+
+## List Balances
+
+View token balances for all users.
+
+### Usage
+
+```bash
+npm run list-balances
+```
+
+### Output Format
+
+Displays:
+- Email address
+- Current balance
+- Last transaction date
+- Total tokens used
+
+### Example Output
+
+```
+┌──────────────────────────┬──────────┬────────────────┬──────────────┐
+│ Email                    │ Balance  │ Last Updated   │ Tokens Used  │
+├──────────────────────────┼──────────┼────────────────┼──────────────┤
+│ user1@example.com        │ 2,450    │ 2024-03-01     │ 5,550        │
+│ user2@example.com        │ 10,000   │ 2024-03-02     │ 1,200        │
+│ user3@example.com        │ 0        │ 2024-02-28     │ 1,000        │
+└──────────────────────────┴──────────┴────────────────┴──────────────┘
+```
+
+## Configuration
+
+Configure the balance system in `librechat.yaml`:
+
+### Basic Settings
+
+<ParamField path="balance.enabled" type="boolean" required>
+  Enable or disable the balance system
+</ParamField>
+
+<ParamField path="balance.initialBalance" type="number" default="1000">
+  Starting balance for new users
+</ParamField>
+
+<ParamField path="balance.minimumBalance" type="number" default="0">
+  Minimum balance required to use features
+</ParamField>
+
+<ParamField path="balance.allowNegative" type="boolean" default="false">
+  Allow users to have negative balances
+</ParamField>
+
+### Token Costs
+
+Define costs per model:
+
+```yaml librechat.yaml
+balance:
+  enabled: true
+  
+  # Cost per 1000 tokens
+  tokenCosts:
+    # OpenAI models
+    openai:
+      gpt-4: 0.03          # $0.03 per 1k tokens
+      gpt-4-32k: 0.06      # $0.06 per 1k tokens
+      gpt-3.5-turbo: 0.002 # $0.002 per 1k tokens
+    
+    # Anthropic models
+    anthropic:
+      claude-3-opus: 0.015
+      claude-3-sonnet: 0.003
+      claude-3-haiku: 0.00025
+    
+    # Google models
+    google:
+      gemini-pro: 0.0005
+      gemini-ultra: 0.01
+    
+    # Custom endpoints
+    custom:
+      default: 0.001  # Default for custom models
+```
+
+### Usage Limits
+
+Implement daily or monthly limits:
+
+```yaml librechat.yaml
+balance:
+  enabled: true
+  
+  # Usage limits
+  limits:
+    # Daily token limit per user
+    daily: 10000
+    
+    # Monthly token limit per user
+    monthly: 100000
+    
+    # Maximum tokens per request
+    perRequest: 4000
+```
+
+### Balance Tiers
+
+Create different user tiers:
+
+```yaml librechat.yaml
+balance:
+  enabled: true
+  
+  tiers:
+    free:
+      initialBalance: 1000
+      monthlyRefill: 1000
+      models:
+        - gpt-3.5-turbo
+    
+    pro:
+      initialBalance: 10000
+      monthlyRefill: 10000
+      models:
+        - gpt-3.5-turbo
+        - gpt-4
+        - claude-3-sonnet
+    
+    enterprise:
+      initialBalance: 100000
+      monthlyRefill: 100000
+      models: all
+```
+
+## Transaction History
+
+View a user's transaction history:
+
+### Using MongoDB
+
+```javascript
+db.transactions.find({ user: ObjectId("user_id") }).sort({ createdAt: -1 })
+```
+
+### Transaction Fields
+
+- `user` - User ID
+- `tokenType` - Type of tokens (credits, tokens, etc.)
+- `rawAmount` - Amount of transaction
+- `rate` - Exchange rate (if applicable)
+- `context` - Context (admin, usage, refund, etc.)
+- `model` - AI model used (for usage transactions)
+- `conversationId` - Related conversation
+- `balance` - Balance after transaction
+- `createdAt` - Transaction timestamp
+
+## Automated Balance Deduction
+
+LibreChat automatically deducts tokens based on usage:
+
+<Steps>
+  <Step title="User Sends Message">
+    User submits a message to an AI model
+  </Step>
+
+  <Step title="Token Count">
+    System counts input and output tokens
+  </Step>
+
+  <Step title="Calculate Cost">
+    Cost is calculated based on model rates
+  </Step>
+
+  <Step title="Deduct Balance">
+    Tokens are deducted from user's balance
+  </Step>
+
+  <Step title="Update Transaction Log">
+    Transaction is recorded with details
+  </Step>
+</Steps>
+
+### Insufficient Balance
+
+When a user has insufficient balance:
+
+<Tabs>
+  <Tab title="Block Request">
+    ```yaml
+    balance:
+      enabled: true
+      onInsufficientBalance: block
+    ```
+    
+    User receives an error message and the request is blocked.
+  </Tab>
+  
+  <Tab title="Allow Negative">
+    ```yaml
+    balance:
+      enabled: true
+      allowNegative: true
+    ```
+    
+    User can go into negative balance (pay later model).
+  </Tab>
+  
+  <Tab title="Use Free Model">
+    ```yaml
+    balance:
+      enabled: true
+      onInsufficientBalance: fallback
+      fallbackModel: gpt-3.5-turbo
+    ```
+    
+    Automatically switch to a free or cheaper model.
+  </Tab>
+</Tabs>
+
+## Environment Variables
+
+Optional environment variables for balance system:
+
+<ParamField path="CHECK_BALANCE" type="boolean" default="false">
+  Enable balance checking before processing requests
+</ParamField>
+
+<ParamField path="FORCE_BALANCE_CHECK" type="boolean" default="false">
+  Force balance check even for admin users
+</ParamField>
+
+## Best Practices
+
+<Steps>
+  <Step title="Set Reasonable Initial Balances">
+    Give new users enough tokens to meaningfully try the service without excessive free usage.
+  </Step>
+
+  <Step title="Monitor Usage Patterns">
+    Track which models are used most and adjust pricing accordingly.
+  </Step>
+
+  <Step title="Implement Refill Policies">
+    Consider monthly refills for subscription users or balance expiration for free tiers.
+  </Step>
+
+  <Step title="Communicate Costs Clearly">
+    Show users their balance and cost per request in the UI.
+  </Step>
+
+  <Step title="Audit Transactions Regularly">
+    Review transaction logs for unusual patterns or potential issues.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<Accordion title="Error: Balance is not enabled">
+  Enable the balance system in `librechat.yaml`:
+  ```yaml
+  balance:
+    enabled: true
+  ```
+</Accordion>
+
+<Accordion title="Balances not deducting">
+  - Verify `CHECK_BALANCE` is set to `true` in `.env`
+  - Check `librechat.yaml` has token costs defined
+  - Ensure database transactions are working
+  - Review server logs for errors
+</Accordion>
+
+<Accordion title="Transaction not created">
+  - Verify MongoDB connection
+  - Check user ID is valid
+  - Ensure balance configuration is correct
+  - Review database permissions
+</Accordion>
+
+<Accordion title="Incorrect token costs">
+  - Verify model names match exactly in `librechat.yaml`
+  - Check for typos in model names
+  - Ensure costs are per 1000 tokens (standard format)
+  - Update configuration and restart server
+</Accordion>
+
+## Related Documentation
+
+- [User Management](/admin/user-management) - Create and manage users
+- [Configuration](/configuration/librechat-yaml) - YAML configuration reference
+- [Monitoring](/admin/monitoring) - Track usage and costs

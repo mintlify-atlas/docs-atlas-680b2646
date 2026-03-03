@@ -1,0 +1,529 @@
+---
+title: Zeabur Deployment
+description: Deploy LibreChat on Zeabur with one click
+---
+
+# Zeabur Deployment
+
+Deploy LibreChat on [Zeabur](https://zeabur.com) with automatic builds, managed databases, and global edge deployment.
+
+## Quick Deploy
+
+<Card title="Deploy to Zeabur" icon="rocket" href="https://zeabur.com/templates/0X2ZY8">
+  Click to deploy LibreChat with pre-configured template
+</Card>
+
+## What Gets Deployed
+
+The Zeabur template includes:
+
+- **LibreChat Service** - Main application
+- **MongoDB** - Database service
+- **Automatic HTTPS** - SSL certificates
+- **Global CDN** - Edge deployment
+- **Environment Management** - Secure variables
+
+## Features
+
+- **One-Click Deploy** - No configuration needed
+- **Auto-Scaling** - Scales with traffic
+- **Global Edge Network** - Low latency worldwide
+- **Automatic SSL** - HTTPS out of the box
+- **Git Integration** - Deploy from GitHub
+- **Zero Downtime** - Rolling deployments
+
+## Manual Deployment
+
+<Steps>
+  <Step title="Create Zeabur Account">
+    1. Go to [zeabur.com](https://zeabur.com)
+    2. Sign up with GitHub account
+    3. Complete verification
+  </Step>
+
+  <Step title="Create New Project">
+    1. Click "Create Project"
+    2. Select region (choose closest to your users)
+    3. Name your project (e.g., "librechat-prod")
+  </Step>
+
+  <Step title="Add MongoDB Service">
+    1. Click "Add Service"
+    2. Select "Prebuilt" > "MongoDB"
+    3. Choose MongoDB version (8.0 recommended)
+    4. Click "Deploy"
+    5. Wait for MongoDB to be ready
+  </Step>
+
+  <Step title="Add LibreChat Service">
+    1. Click "Add Service" again
+    2. Select "Git" > "GitHub"
+    3. Connect GitHub account if needed
+    4. Select repository:
+       - `danny-avila/LibreChat` (original)
+       - Or your fork for custom changes
+    5. Select branch (usually `main`)
+    6. Click "Deploy"
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    In LibreChat service settings, add variables:
+
+    ```bash
+    # Port (Zeabur sets this automatically)
+    PORT=8080
+    
+    # MongoDB - Use Zeabur's connection template
+    MONGO_URI=${MONGODB_URI}
+    
+    # Domain - Update after deployment
+    DOMAIN_CLIENT=https://your-domain.zeabur.app
+    DOMAIN_SERVER=https://your-domain.zeabur.app
+    
+    # Security Keys - Generate unique values!
+    CREDS_KEY=<openssl-rand-hex-32>
+    CREDS_IV=<openssl-rand-hex-16>
+    JWT_SECRET=<openssl-rand-hex-32>
+    JWT_REFRESH_SECRET=<openssl-rand-hex-32>
+    
+    # AI Provider Keys
+    OPENAI_API_KEY=user_provided
+    ANTHROPIC_API_KEY=user_provided
+    GOOGLE_KEY=user_provided
+    
+    # Application Settings
+    ALLOW_REGISTRATION=true
+    ALLOW_EMAIL_LOGIN=true
+    ALLOW_SOCIAL_LOGIN=false
+    
+    # Optional: Search
+    SEARCH=false
+    
+    # Session Configuration
+    SESSION_EXPIRY=900000
+    REFRESH_TOKEN_EXPIRY=604800000
+    ```
+
+    <Tip>
+      Generate secrets:
+      ```bash
+      # On your local machine
+      openssl rand -hex 32  # For 32-byte keys
+      openssl rand -hex 16  # For 16-byte IV
+      ```
+    </Tip>
+  </Step>
+
+  <Step title="Get Your Domain">
+    1. Go to LibreChat service page
+    2. Click "Networking" tab
+    3. Copy the generated domain (e.g., `app-abc123.zeabur.app`)
+    4. Update `DOMAIN_CLIENT` and `DOMAIN_SERVER` with this URL
+    5. Redeploy the service
+  </Step>
+
+  <Step title="Access Your Deployment">
+    1. Wait for deployment to complete (~5-10 minutes)
+    2. Click on the domain link
+    3. Create your admin account
+    4. Start using LibreChat!
+  </Step>
+</Steps>
+
+## Configuration
+
+### Custom Domain
+
+<Steps>
+  <Step title="Add Domain in Zeabur">
+    1. Go to your LibreChat service
+    2. Click "Networking"
+    3. Click "Add Domain"
+    4. Enter your domain: `chat.yourdomain.com`
+  </Step>
+
+  <Step title="Configure DNS">
+    Add CNAME record in your DNS provider:
+    
+    ```dns
+    Type: CNAME
+    Name: chat
+    Target: your-service.zeabur.app
+    TTL: 3600
+    ```
+
+    Or use A record with Zeabur's IP:
+    ```dns
+    Type: A
+    Name: chat
+    Target: [Zeabur IP shown in dashboard]
+    TTL: 3600
+    ```
+  </Step>
+
+  <Step title="Enable SSL">
+    Zeabur automatically provisions SSL certificates:
+    - Certificates are auto-renewed
+    - HTTPS is enforced by default
+    - No additional configuration needed
+  </Step>
+
+  <Step title="Update Environment">
+    Update your environment variables:
+    
+    ```bash
+    DOMAIN_CLIENT=https://chat.yourdomain.com
+    DOMAIN_SERVER=https://chat.yourdomain.com
+    ```
+  </Step>
+</Steps>
+
+### Adding Meilisearch
+
+<Steps>
+  <Step title="Add Meilisearch Service">
+    1. Click "Add Service"
+    2. Select "Docker Image"
+    3. Enter image: `getmeili/meilisearch:v1.35.1`
+    4. Set service name: `meilisearch`
+  </Step>
+
+  <Step title="Configure Meilisearch">
+    Add environment variables to Meilisearch:
+    
+    ```bash
+    MEILI_MASTER_KEY=your_secure_master_key_min_16_chars
+    MEILI_NO_ANALYTICS=true
+    MEILI_ENV=production
+    MEILI_HTTP_ADDR=0.0.0.0:7700
+    ```
+  </Step>
+
+  <Step title="Connect to LibreChat">
+    Add to LibreChat environment variables:
+    
+    ```bash
+    SEARCH=true
+    MEILI_HOST=http://meilisearch:7700
+    MEILI_MASTER_KEY=your_secure_master_key_min_16_chars
+    MEILI_NO_ANALYTICS=true
+    ```
+  </Step>
+</Steps>
+
+### Persistent Storage
+
+Zeabur provides persistent volumes:
+
+<Steps>
+  <Step title="Add Volume">
+    1. Go to service settings
+    2. Click "Volumes"
+    3. Click "Add Volume"
+  </Step>
+
+  <Step title="Configure Paths">
+    Add volumes for:
+    
+    ```
+    /app/uploads  - User file uploads
+    /app/logs     - Application logs
+    /app/images   - User profile images
+    ```
+    
+    Size: Start with 10GB, scale as needed
+  </Step>
+</Steps>
+
+## Environment Variables Reference
+
+### Required Variables
+
+| Variable | Description | Source |
+|----------|-------------|-------|
+| `MONGO_URI` | MongoDB connection | `${MONGODB_URI}` (auto-provided) |
+| `CREDS_KEY` | Encryption key | Generate with openssl |
+| `CREDS_IV` | Encryption IV | Generate with openssl |
+| `JWT_SECRET` | JWT signing key | Generate with openssl |
+| `JWT_REFRESH_SECRET` | Refresh token key | Generate with openssl |
+| `DOMAIN_CLIENT` | Client URL | Your Zeabur domain |
+| `DOMAIN_SERVER` | Server URL | Your Zeabur domain |
+
+### AI Provider Variables
+
+```bash
+# OpenAI
+OPENAI_API_KEY=user_provided
+OPENAI_MODELS=gpt-5,gpt-4o,o1,o3-mini
+
+# Anthropic
+ANTHROPIC_API_KEY=user_provided
+ANTHROPIC_MODELS=claude-sonnet-4-6,claude-opus-4-6
+
+# Google
+GOOGLE_KEY=user_provided
+GOOGLE_MODELS=gemini-2.5-pro,gemini-2.5-flash
+```
+
+### Optional Features
+
+```bash
+# Search
+SEARCH=true
+MEILI_HOST=http://meilisearch:7700
+MEILI_MASTER_KEY=your_key
+
+# Social Login (requires setup)
+ALLOW_SOCIAL_LOGIN=true
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_secret
+GOOGLE_CALLBACK_URL=https://your-domain/oauth/google/callback
+
+# File Storage (Firebase/S3)
+FIREBASE_API_KEY=your_key
+FIREBASE_PROJECT_ID=your_project
+```
+
+## Monitoring
+
+### View Logs
+
+1. Go to your service
+2. Click "Logs" tab
+3. Filter by:
+   - Build logs
+   - Runtime logs
+   - Error logs
+
+### Metrics Dashboard
+
+Zeabur provides:
+- **CPU Usage** - Real-time CPU metrics
+- **Memory Usage** - RAM consumption
+- **Network Traffic** - Inbound/outbound
+- **Request Count** - HTTP requests
+- **Response Time** - Latency metrics
+
+### Health Checks
+
+LibreChat health endpoint:
+```bash
+curl https://your-domain.zeabur.app/health
+```
+
+Expected response:
+```json
+{"status":"ok"}
+```
+
+## Scaling
+
+### Auto-Scaling
+
+Zeabur automatically scales based on:
+- CPU usage
+- Memory usage  
+- Request volume
+
+No configuration needed!
+
+### Manual Scaling
+
+1. Go to service settings
+2. Click "Resources"
+3. Adjust:
+   - **Instances**: 1-10
+   - **CPU**: 0.25-4 cores
+   - **Memory**: 512MB-8GB
+
+### Regional Deployment
+
+Deploy to multiple regions:
+
+1. Create new project in different region
+2. Deploy same configuration
+3. Use DNS load balancing
+4. Share MongoDB across regions (with replication)
+
+## Cost Estimation
+
+### Free Tier
+
+Zeabur offers:
+- $5 free credit for new users
+- Pay-as-you-go pricing
+- No hidden fees
+
+### Pricing Examples
+
+| Configuration | Monthly Cost (Est.) |
+|--------------|--------------------|
+| **Hobby** (1 instance, 512MB) | ~$5-10 |
+| **Production** (2 instances, 2GB each) | ~$20-40 |
+| **Enterprise** (Auto-scale, 4GB+) | ~$50-100+ |
+
+### Cost Optimization
+
+1. **Right-size resources** - Start small, scale up
+2. **Use sleep mode** - For development environments
+3. **Optimize images** - Smaller Docker images
+4. **Cache effectively** - Reduce database queries
+5. **CDN for assets** - Offload static files
+
+## Troubleshooting
+
+### Build Failures
+
+**Issue**: Build timeout or memory errors
+
+**Solution**:
+```bash
+# Add to environment variables
+NODE_OPTIONS=--max-old-space-size=4096
+```
+
+Or create `zeabur.json`:
+```json
+{
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=4096"
+    }
+  }
+}
+```
+
+### Database Connection Failed
+
+**Issue**: Cannot connect to MongoDB
+
+**Solutions**:
+1. Verify `MONGO_URI` uses `${MONGODB_URI}`
+2. Check MongoDB service is running
+3. Restart both services
+4. Check service networking settings
+
+### Domain SSL Issues
+
+**Issue**: SSL certificate not provisioning
+
+**Solutions**:
+1. Verify DNS propagation (use [dnschecker.org](https://dnschecker.org))
+2. Wait 24-48 hours for DNS
+3. Check domain ownership
+4. Contact Zeabur support
+
+### High Memory Usage
+
+**Issue**: Service keeps restarting due to OOM
+
+**Solutions**:
+```bash
+# Reduce memory footprint
+NODE_ENV=production
+NODE_OPTIONS=--max-old-space-size=1536
+
+# Or increase service memory
+# In service settings > Resources > Memory > 2GB
+```
+
+### Slow Performance
+
+**Issue**: Application is slow
+
+**Solutions**:
+1. Enable Redis caching
+2. Add database indexes
+3. Increase service resources
+4. Use CDN for static assets
+5. Enable Meilisearch for search
+
+## Advanced Configuration
+
+### Using Dockerfile
+
+Create `zeabur.json`:
+```json
+{
+  "build": {
+    "dockerfile": "Dockerfile",
+    "buildArgs": {
+      "NODE_MAX_OLD_SPACE_SIZE": "6144"
+    }
+  },
+  "deploy": {
+    "env": {
+      "PORT": "8080"
+    }
+  }
+}
+```
+
+### Redis Integration
+
+1. Add Redis service in Zeabur
+2. Configure LibreChat:
+
+```bash
+USE_REDIS=true
+REDIS_URI=${REDIS_URL}
+```
+
+### Multiple Environments
+
+Create separate projects:
+- **Development** - Testing features
+- **Staging** - Pre-production
+- **Production** - Live users
+
+Use different environment variables for each.
+
+## Migration
+
+### From Docker
+
+1. Export MongoDB:
+```bash
+mongodump --uri="mongodb://localhost:27017/LibreChat" --out=./backup
+```
+
+2. Import to Zeabur:
+```bash
+mongorestore --uri="$ZEABUR_MONGO_URI" ./backup
+```
+
+### From Railway/Other Platforms
+
+1. Copy environment variables to Zeabur
+2. Migrate database using mongodump/mongorestore
+3. Update domain DNS
+4. Test before switching traffic
+
+## Best Practices
+
+<Check>
+  - [ ] Use unique secrets for all keys
+  - [ ] Enable auto-deploy from GitHub
+  - [ ] Set up custom domain with SSL
+  - [ ] Configure persistent volumes
+  - [ ] Monitor logs and metrics
+  - [ ] Set up staging environment
+  - [ ] Regular database backups
+  - [ ] Use environment variables for secrets
+  - [ ] Test before promoting to production
+  - [ ] Document your configuration
+</Check>
+
+## Support Resources
+
+- **Zeabur Docs**: [zeabur.com/docs](https://zeabur.com/docs)
+- **Zeabur Discord**: [discord.gg/zeabur](https://discord.gg/zeabur)
+- **LibreChat Discord**: [discord.librechat.ai](https://discord.librechat.ai)
+- **LibreChat Docs**: [docs.librechat.ai](https://docs.librechat.ai)
+
+## Next Steps
+
+- [Configure AI Endpoints](/configuration/ai-endpoints)
+- [Set up OAuth Authentication](/configuration/authentication)
+- [Enable File Storage](/configuration/file-storage)
+- [Custom Branding](/configuration/librechat-yaml)

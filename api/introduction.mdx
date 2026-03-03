@@ -1,0 +1,174 @@
+---
+title: API Overview
+description: Complete reference for LibreChat's REST API
+---
+
+## Introduction
+
+LibreChat provides a comprehensive REST API for managing conversations, messages, agents, files, and more. All API endpoints are prefixed with `/api` and require authentication.
+
+## Base URL
+
+All API requests should be made to:
+
+```
+http://localhost:3080/api
+```
+
+For production deployments, replace `localhost:3080` with your domain.
+
+## Authentication
+
+LibreChat supports two authentication methods:
+
+- **JWT Authentication**: Session-based authentication using JWT tokens (recommended for web applications)
+- **API Keys**: Token-based authentication for programmatic access
+
+See the [Authentication](/api/authentication) page for detailed information.
+
+## API Endpoints
+
+LibreChat's API is organized into the following categories:
+
+### Core Resources
+
+- **[Conversations](/api/conversations)** - Manage chat conversations, titles, and archives
+- **[Messages](/api/messages)** - Create, retrieve, and update messages within conversations
+- **[Users](/api/users)** - User account management and settings
+
+### AI Features
+
+- **[Agents](/api/agents)** - Create and manage AI agents with custom capabilities
+- **[Presets](/api/presets)** - Save and load conversation presets
+- **[Prompts](/api/prompts)** - Manage prompt libraries and prompt groups
+
+### Files & Media
+
+- **[Files](/api/files)** - Upload, download, and manage file attachments
+
+### Configuration
+
+- **[Custom Endpoints](/api/custom-endpoints)** - Configure custom AI model endpoints
+- **[MCP Servers](/api/mcp-servers)** - Manage Model Context Protocol server integrations
+
+### Authentication
+
+- **[Auth](/api/auth)** - Login, registration, password reset, and 2FA
+
+## Rate Limiting
+
+Most endpoints implement rate limiting to prevent abuse:
+
+- **IP-based limits**: Applied per IP address
+- **User-based limits**: Applied per authenticated user
+- **Special limits**: File uploads, imports, and message endpoints have specific rate limits
+
+Rate limit responses include:
+
+```json
+{
+  "error": "Too many requests",
+  "message": "Rate limit exceeded. Please try again later."
+}
+```
+
+## Error Handling
+
+The API uses standard HTTP status codes:
+
+| Status Code | Description |
+|-------------|-------------|
+| `200` | Success |
+| `201` | Created |
+| `204` | No Content |
+| `400` | Bad Request |
+| `401` | Unauthorized |
+| `403` | Forbidden |
+| `404` | Not Found |
+| `500` | Internal Server Error |
+
+Error responses follow this format:
+
+```json
+{
+  "error": "Error type",
+  "message": "Human-readable error message"
+}
+```
+
+## Pagination
+
+Many list endpoints support cursor-based pagination:
+
+```http
+GET /api/convos?limit=25&cursor=abc123
+```
+
+<ParamField query="limit" type="number" default="25">
+  Number of results to return
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from previous response
+</ParamField>
+
+Paginated responses include:
+
+```json
+{
+  "conversations": [...],
+  "pageNumber": 1,
+  "pageSize": 25,
+  "pages": 5
+}
+```
+
+## Filtering & Search
+
+Many endpoints support filtering and search:
+
+```http
+GET /api/convos?search=machine%20learning&tags=important
+GET /api/messages?conversationId=abc123&search=keyword
+```
+
+## WebSocket Connections
+
+For real-time features, LibreChat uses Server-Sent Events (SSE) for streaming responses:
+
+```http
+GET /api/agents/chat/stream/:streamId
+```
+
+See the [Agents](/api/agents) documentation for streaming details.
+
+## SDK Support
+
+LibreChat provides TypeScript type definitions in `packages/data-provider`:
+
+```typescript
+import { TConversation, TMessage } from 'librechat-data-provider';
+```
+
+## API Versioning
+
+Some endpoints support versioning:
+
+- `/api/agents/v1/*` - Agent API v1
+- `/api/assistants/v1/*` - Assistants API v1
+- `/api/assistants/v2/*` - Assistants API v2
+
+## Health Check
+
+```http
+GET /health
+```
+
+Returns the health status of the API server.
+
+## Next Steps
+
+- [Set up authentication](/api/authentication)
+- [Create your first conversation](/api/conversations)
+- [Send messages](/api/messages)
+- [Upload files](/api/files)

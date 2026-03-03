@@ -1,0 +1,416 @@
+---
+title: Presets
+description: Save and load conversation configuration presets
+---
+
+## Overview
+
+The Presets API allows you to save and manage conversation configurations for quick reuse. Presets store model settings, parameters, and endpoint configurations.
+
+All preset endpoints are prefixed with `/api/presets`.
+
+## List Presets
+
+Retrieve all presets for the authenticated user:
+
+```http
+GET /api/presets
+Authorization: Bearer <token>
+```
+
+### Response
+
+Returns an array of preset objects:
+
+```json
+[
+  {
+    "presetId": "preset_abc123",
+    "title": "GPT-4 Creative Mode",
+    "endpoint": "openAI",
+    "model": "gpt-4",
+    "modelLabel": "GPT-4",
+    "temperature": 0.9,
+    "top_p": 1,
+    "presence_penalty": 0.6,
+    "frequency_penalty": 0.5,
+    "max_tokens": 2000,
+    "instructions": "You are a creative writing assistant...",
+    "createdAt": "2024-01-15T10:00:00Z",
+    "updatedAt": "2024-01-15T10:00:00Z"
+  },
+  {
+    "presetId": "preset_xyz789",
+    "title": "Claude Code Helper",
+    "endpoint": "anthropic",
+    "model": "claude-3-opus",
+    "temperature": 0.3,
+    "max_tokens": 4096,
+    "instructions": "You are an expert programmer...",
+    "createdAt": "2024-01-14T09:00:00Z"
+  }
+]
+```
+
+## Create or Update Preset
+
+Create a new preset or update an existing one:
+
+```http
+POST /api/presets
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "My Custom Preset",
+  "endpoint": "openAI",
+  "model": "gpt-4",
+  "temperature": 0.7,
+  "top_p": 1,
+  "presence_penalty": 0,
+  "frequency_penalty": 0,
+  "max_tokens": 1500,
+  "instructions": "You are a helpful assistant."
+}
+```
+
+### Request Body
+
+<ParamField body="presetId" type="string">
+  Preset ID (auto-generated if not provided). Include to update existing preset.
+</ParamField>
+
+<ParamField body="title" type="string" required>
+  Preset name/title
+</ParamField>
+
+<ParamField body="endpoint" type="string" required>
+  AI endpoint (e.g., `openAI`, `anthropic`, `google`, `azureOpenAI`)
+</ParamField>
+
+<ParamField body="model" type="string" required>
+  Model identifier (e.g., `gpt-4`, `claude-3-opus`, `gemini-pro`)
+</ParamField>
+
+<ParamField body="modelLabel" type="string">
+  Display label for the model
+</ParamField>
+
+<ParamField body="temperature" type="number">
+  Sampling temperature (0-2). Higher values make output more random.
+</ParamField>
+
+<ParamField body="top_p" type="number">
+  Nucleus sampling parameter (0-1)
+</ParamField>
+
+<ParamField body="presence_penalty" type="number">
+  Presence penalty (-2 to 2). Positive values penalize new tokens based on whether they appear in the text so far.
+</ParamField>
+
+<ParamField body="frequency_penalty" type="number">
+  Frequency penalty (-2 to 2). Positive values penalize new tokens based on their frequency in the text so far.
+</ParamField>
+
+<ParamField body="max_tokens" type="number">
+  Maximum number of tokens to generate
+</ParamField>
+
+<ParamField body="instructions" type="string">
+  System instructions/prompt
+</ParamField>
+
+<ParamField body="stop" type="string[]">
+  Stop sequences
+</ParamField>
+
+<ParamField body="tools" type="string[]">
+  Enabled tools
+</ParamField>
+
+<ParamField body="agent_id" type="string">
+  Associated agent ID
+</ParamField>
+
+### OpenAI-specific Parameters
+
+<ParamField body="resendFiles" type="boolean">
+  Whether to resend files with each message (OpenAI)
+</ParamField>
+
+<ParamField body="imageDetail" type="string">
+  Image detail level: `auto`, `low`, or `high` (OpenAI Vision)
+</ParamField>
+
+### Anthropic-specific Parameters
+
+<ParamField body="top_k" type="number">
+  Top-k sampling parameter (Anthropic)
+</ParamField>
+
+### Google-specific Parameters
+
+<ParamField body="topK" type="number">
+  Top-k parameter (Google)
+</ParamField>
+
+<ParamField body="safetySettings" type="object[]">
+  Safety settings configuration (Google)
+</ParamField>
+
+### Response
+
+<ResponseField name="presetId" type="string">
+  Unique preset identifier
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Preset title
+</ResponseField>
+
+<ResponseField name="endpoint" type="string">
+  Configured endpoint
+</ResponseField>
+
+<ResponseField name="model" type="string">
+  Model identifier
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Creation timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  Last update timestamp
+</ResponseField>
+
+Returns the created/updated preset object with HTTP status 201.
+
+```json
+{
+  "presetId": "preset_abc123",
+  "title": "My Custom Preset",
+  "endpoint": "openAI",
+  "model": "gpt-4",
+  "temperature": 0.7,
+  "top_p": 1,
+  "presence_penalty": 0,
+  "frequency_penalty": 0,
+  "max_tokens": 1500,
+  "instructions": "You are a helpful assistant.",
+  "createdAt": "2024-01-15T10:00:00Z",
+  "updatedAt": "2024-01-15T10:00:00Z"
+}
+```
+
+## Delete Preset
+
+Delete one or more presets:
+
+```http
+POST /api/presets/delete
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "presetId": "preset_abc123"
+}
+```
+
+### Request Body
+
+<ParamField body="presetId" type="string">
+  ID of preset to delete. If not provided, all user presets are deleted.
+</ParamField>
+
+### Response
+
+<ResponseField name="deletedCount" type="number">
+  Number of presets deleted
+</ResponseField>
+
+```json
+{
+  "deletedCount": 1
+}
+```
+
+## Preset Configuration Examples
+
+### Creative Writing
+
+```json
+{
+  "title": "Creative Writer",
+  "endpoint": "openAI",
+  "model": "gpt-4",
+  "temperature": 0.9,
+  "top_p": 1,
+  "presence_penalty": 0.6,
+  "frequency_penalty": 0.5,
+  "instructions": "You are a creative writing assistant who helps with storytelling, character development, and narrative structure."
+}
+```
+
+### Code Assistant
+
+```json
+{
+  "title": "Code Helper",
+  "endpoint": "anthropic",
+  "model": "claude-3-opus",
+  "temperature": 0.2,
+  "top_p": 0.9,
+  "max_tokens": 4096,
+  "instructions": "You are an expert programmer. Provide clear, well-documented code with explanations.",
+  "tools": ["code_interpreter"]
+}
+```
+
+### Research Assistant
+
+```json
+{
+  "title": "Research Helper",
+  "endpoint": "google",
+  "model": "gemini-pro",
+  "temperature": 0.4,
+  "topK": 40,
+  "max_tokens": 2048,
+  "instructions": "You are a thorough research assistant. Provide accurate, well-cited information.",
+  "tools": ["web_search"]
+}
+```
+
+### Concise Responses
+
+```json
+{
+  "title": "Concise Mode",
+  "endpoint": "openAI",
+  "model": "gpt-4",
+  "temperature": 0.5,
+  "max_tokens": 500,
+  "instructions": "Provide brief, direct answers. Be concise and to the point."
+}
+```
+
+## Preset Parameters by Endpoint
+
+### OpenAI
+
+Supported parameters:
+- `temperature` (0-2)
+- `top_p` (0-1)
+- `presence_penalty` (-2 to 2)
+- `frequency_penalty` (-2 to 2)
+- `max_tokens`
+- `stop`
+- `resendFiles`
+- `imageDetail`
+
+### Anthropic (Claude)
+
+Supported parameters:
+- `temperature` (0-1)
+- `top_p` (0-1)
+- `top_k` (1-500)
+- `max_tokens`
+- `stop_sequences`
+
+### Google (Gemini)
+
+Supported parameters:
+- `temperature` (0-2)
+- `topP` (0-1)
+- `topK` (1-40)
+- `maxOutputTokens`
+- `safetySettings`
+
+### Azure OpenAI
+
+Same as OpenAI parameters.
+
+## Error Responses
+
+### Invalid Preset Data
+
+```json
+{
+  "error": "There was an error when saving the preset",
+  "message": "Invalid model specified"
+}
+```
+
+HTTP Status: 500
+
+### Preset Not Found
+
+```json
+{
+  "error": "Preset not found"
+}
+```
+
+HTTP Status: 404
+
+### Delete Error
+
+```json
+{
+  "error": "There was an error deleting the presets"
+}
+```
+
+HTTP Status: 500
+
+## Use Cases
+
+### Quick Model Switching
+
+Save presets for different models to quickly switch between GPT-4, Claude, and Gemini without reconfiguring.
+
+### Task-Specific Configurations
+
+Create presets optimized for specific tasks:
+- Code review (low temperature, code tools)
+- Creative writing (high temperature, presence penalty)
+- Data analysis (code interpreter enabled)
+- Research (web search enabled)
+
+### Team Collaboration
+
+Share preset configurations with team members by exporting/importing preset JSON.
+
+### A/B Testing
+
+Compare different parameter configurations by creating multiple presets and testing which works best for your use case.
+
+## TypeScript Types
+
+```typescript
+import type { TPreset } from 'librechat-data-provider';
+
+interface TPreset {
+  presetId?: string;
+  title: string;
+  endpoint: EModelEndpoint;
+  model: string;
+  modelLabel?: string;
+  temperature?: number;
+  top_p?: number;
+  presence_penalty?: number;
+  frequency_penalty?: number;
+  max_tokens?: number;
+  instructions?: string;
+  stop?: string[];
+  tools?: string[];
+  agent_id?: string;
+  // Endpoint-specific parameters
+  resendFiles?: boolean; // OpenAI
+  imageDetail?: string; // OpenAI Vision
+  top_k?: number; // Anthropic
+  topK?: number; // Google
+  safetySettings?: object[]; // Google
+}
+```

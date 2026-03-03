@@ -1,0 +1,326 @@
+---
+title: Roles & Permissions
+description: Configure role-based access control (RBAC) and permissions for users, agents, and prompts in LibreChat
+---
+
+LibreChat implements a comprehensive role-based access control (RBAC) system that allows you to control access to features, resources, and administrative functions.
+
+## Overview
+
+The permissions system controls:
+- Feature access (agents, prompts, bookmarks, etc.)
+- Resource sharing and visibility
+- Administrative capabilities
+- API access levels
+
+## Permission Types
+
+<CardGroup cols={2}>
+  <Card title="User Permissions" icon="user-lock">
+    Control what features users can access
+  </Card>
+  <Card title="Resource Permissions" icon="folder-lock">
+    Manage access to agents, prompts, and files
+  </Card>
+  <Card title="Admin Permissions" icon="user-shield">
+    Administrative and system-level access
+  </Card>
+  <Card title="API Permissions" icon="key">
+    API access and rate limiting
+  </Card>
+</CardGroup>
+
+## Environment Variables
+
+Configure permissions using environment variables in your `.env` file:
+
+### User Registration & Login
+
+<ParamField path="ALLOW_REGISTRATION" type="boolean" default="true">
+  Allow new users to register accounts
+</ParamField>
+
+<ParamField path="ALLOW_UNVERIFIED_EMAIL_LOGIN" type="boolean" default="false">
+  Allow users to log in without verifying their email
+</ParamField>
+
+<ParamField path="ALLOW_SOCIAL_LOGIN" type="boolean" default="false">
+  Enable social login (Google, GitHub, etc.)
+</ParamField>
+
+### Feature Permissions
+
+<ParamField path="ALLOW_AGENTS" type="boolean" default="true">
+  Allow users to create and use agents
+</ParamField>
+
+<ParamField path="ALLOW_PROMPTS" type="boolean" default="true">
+  Allow users to create and save prompts
+</ParamField>
+
+<ParamField path="ALLOW_BOOKMARKS" type="boolean" default="true">
+  Enable conversation bookmarking
+</ParamField>
+
+### Sharing Permissions
+
+<ParamField path="ALLOW_SHARED_LINKS" type="boolean" default="true">
+  Allow users to create shared conversation links
+</ParamField>
+
+## YAML Configuration
+
+For more granular control, use `librechat.yaml`:
+
+```yaml librechat.yaml
+interface:
+  # Control feature visibility
+  agents:
+    use: true      # Users can use agents
+    create: true   # Users can create agents
+    share: false   # Users cannot share agents
+    public: false  # No public agent marketplace
+  
+  prompts:
+    use: true      # Users can use prompts
+    create: true   # Users can create prompts
+    share: true    # Users can share prompts
+    public: false  # No public prompt library
+  
+  bookmarks: true
+  multiConvo: true
+  presets: true
+  
+  # People picker for sharing
+  peoplePicker:
+    enabled: true
+    searchByEmail: true
+    searchByUsername: true
+```
+
+## Resource Access Control
+
+LibreChat uses an Access Control List (ACL) system for resources like agents and prompts.
+
+### Permission Types
+
+<Tabs>
+  <Tab title="Agents">
+    **Agent permissions:**
+    - `use` - Can use the agent in conversations
+    - `execute` - Can run agent actions
+    - `share` - Can share agent with others
+    - `update` - Can modify agent configuration
+    - `delete` - Can delete the agent
+
+    **Sharing levels:**
+    - Private (creator only)
+    - Specific users
+    - Specific groups
+    - Organization-wide
+  </Tab>
+  
+  <Tab title="Prompts">
+    **Prompt permissions:**
+    - `use` - Can use the prompt
+    - `edit` - Can modify the prompt
+    - `share` - Can share prompt with others
+    - `delete` - Can delete the prompt
+
+    **Version control:**
+    - Production version (stable)
+    - Draft versions (work in progress)
+  </Tab>
+  
+  <Tab title="Conversations">
+    **Conversation permissions:**
+    - Private (creator only)
+    - Shared (specific users)
+    - Shared link (anyone with link)
+  </Tab>
+</Tabs>
+
+## Migration Scripts
+
+LibreChat provides migration scripts for updating permissions on existing resources.
+
+### Agent Permissions Migration
+
+Migrate existing agents to the new permission system:
+
+<Steps>
+  <Step title="Dry Run">
+    Preview changes without applying them:
+    ```bash
+    npm run migrate:agent-permissions:dry-run
+    ```
+  </Step>
+
+  <Step title="Full Migration">
+    Apply permission changes to all agents:
+    ```bash
+    npm run migrate:agent-permissions
+    ```
+  </Step>
+
+  <Step title="Batch Migration">
+    Process agents in batches for large datasets:
+    ```bash
+    npm run migrate:agent-permissions:batch
+    ```
+  </Step>
+</Steps>
+
+### Prompt Permissions Migration
+
+Migrate existing prompts to the new permission system:
+
+<Steps>
+  <Step title="Dry Run">
+    ```bash
+    npm run migrate:prompt-permissions:dry-run
+    ```
+  </Step>
+
+  <Step title="Full Migration">
+    ```bash
+    npm run migrate:prompt-permissions
+    ```
+  </Step>
+
+  <Step title="Batch Migration">
+    ```bash
+    npm run migrate:prompt-permissions:batch
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+Always run the dry-run command first to preview changes before applying migrations in production.
+</Warning>
+
+## Admin Roles
+
+LibreChat supports different admin roles with varying permission levels.
+
+### Default Roles
+
+<Accordion title="Super Admin">
+  Full system access:
+  - Manage all users
+  - Configure system settings
+  - Access all conversations and resources
+  - Manage permissions and roles
+  - View system logs and analytics
+</Accordion>
+
+<Accordion title="Admin">
+  User and resource management:
+  - Create and manage users
+  - Ban/unban users
+  - View user statistics
+  - Manage shared resources
+</Accordion>
+
+<Accordion title="Moderator">
+  Content moderation:
+  - Review flagged content
+  - Ban abusive users
+  - Delete inappropriate content
+</Accordion>
+
+<Accordion title="User">
+  Standard user permissions:
+  - Create conversations
+  - Use agents and prompts (if enabled)
+  - Manage own resources
+</Accordion>
+
+## API Access Control
+
+Control API access with environment variables:
+
+<ParamField path="CHECK_BALANCE" type="boolean" default="false">
+  Enable token balance checking for API requests
+</ParamField>
+
+<ParamField path="LIMIT_CONCURRENT_MESSAGES" type="boolean" default="true">
+  Limit concurrent API requests per user
+</ParamField>
+
+<ParamField path="CONCURRENT_MESSAGE_MAX" type="number" default="2">
+  Maximum concurrent messages per user
+</ParamField>
+
+## Rate Limiting
+
+Configure rate limits in `librechat.yaml`:
+
+```yaml librechat.yaml
+rateLimits:
+  # File uploads
+  fileUploads:
+    ipMax: 100
+    ipWindowInMinutes: 60
+    userMax: 50
+    userWindowInMinutes: 60
+  
+  # Conversations
+  conversationsImport:
+    ipMax: 100
+    ipWindowInMinutes: 60
+    userMax: 50
+    userWindowInMinutes: 60
+```
+
+## Best Practices
+
+<Steps>
+  <Step title="Principle of Least Privilege">
+    Grant users only the permissions they need. Start restrictive and expand as needed.
+  </Step>
+
+  <Step title="Regular Permission Audits">
+    Periodically review user permissions and resource access to ensure they're still appropriate.
+  </Step>
+
+  <Step title="Use Groups for Organization">
+    Organize users into groups (departments, teams, etc.) for easier permission management.
+  </Step>
+
+  <Step title="Test Permission Changes">
+    Always test permission changes in a development environment before applying to production.
+  </Step>
+
+  <Step title="Document Custom Roles">
+    Keep documentation of any custom roles or permission configurations you create.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<Accordion title="Users cannot see shared resources">
+  - Verify sharing is enabled in `librechat.yaml`
+  - Check resource-specific permissions
+  - Ensure users have `use` permission for the resource type
+  - Verify the resource is shared with the correct users/groups
+</Accordion>
+
+<Accordion title="Permission migration fails">
+  - Run dry-run first to identify issues
+  - Use batch migration for large datasets
+  - Check MongoDB connection and permissions
+  - Review error logs for specific failures
+</Accordion>
+
+<Accordion title="Admin cannot access certain features">
+  - Verify admin role is properly configured
+  - Check environment variables for feature flags
+  - Ensure database has been migrated to latest schema
+</Accordion>
+
+## Related Documentation
+
+- [User Management](/admin/user-management) - Creating and managing users
+- [Token Management](/admin/token-management) - Managing user token balances
+- [Configuration](/configuration/overview) - System configuration options

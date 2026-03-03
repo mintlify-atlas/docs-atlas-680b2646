@@ -1,0 +1,638 @@
+---
+title: 'librechat.yaml Configuration'
+description: 'Complete guide to configuring LibreChat using the librechat.yaml file'
+---
+
+# librechat.yaml Configuration
+
+The `librechat.yaml` file provides advanced configuration options for LibreChat, including endpoint configuration, interface customization, and feature toggles.
+
+## Configuration File Location
+
+<ParamField path="CONFIG_PATH" type="string" default="./librechat.yaml">
+  Path to the LibreChat YAML configuration file. Can be absolute, relative, or a URL.
+  
+  ```bash .env
+  CONFIG_PATH="/alternative/path/to/librechat.yaml"
+  ```
+</ParamField>
+
+## Version
+
+<ParamField path="version" type="string" required>
+  Configuration file version. Current version: `1.3.4`
+  
+  ```yaml
+  version: 1.3.4
+  ```
+</ParamField>
+
+## Cache Settings
+
+<ParamField path="cache" type="boolean" default="true">
+  Enable caching for improved performance
+  
+  ```yaml
+  cache: true
+  ```
+</ParamField>
+
+## File Storage Strategy
+
+Configure where files are stored. Supports both legacy single-strategy and new granular configurations.
+
+### Legacy Format (Single Strategy)
+
+<ParamField path="fileStrategy" type="string" default="local">
+  Single storage strategy for all file types.
+  
+  Options: `"local"`, `"s3"`, `"firebase"`, `"azure_blob"`
+  
+  ```yaml
+  fileStrategy: "s3"
+  ```
+</ParamField>
+
+### Granular Format (Recommended)
+
+<ParamField path="fileStrategy" type="object">
+  Different storage strategies for different file types:
+  
+  - `avatar`: User and agent avatar images
+  - `image`: Uploaded images in chats
+  - `document`: Document uploads (PDFs, text files, etc.)
+  
+  ```yaml
+  fileStrategy:
+    avatar: "s3"        # Fast global access
+    image: "firebase"   # Automatic optimization
+    document: "local"   # Privacy/compliance
+  ```
+</ParamField>
+
+<Tip>
+  Mix and match storage strategies based on your needs:
+  - Use S3 for avatars for fast global access
+  - Use Firebase for images with automatic optimization
+  - Use local storage for documents for privacy/compliance
+</Tip>
+
+## Interface Configuration
+
+<ParamField path="interface" type="object">
+  Customize the LibreChat user interface
+</ParamField>
+
+### Welcome Message
+
+<ParamField path="interface.customWelcome" type="string">
+  Custom welcome message displayed to users
+  
+  ```yaml
+  interface:
+    customWelcome: 'Welcome to LibreChat! Enjoy your experience.'
+  ```
+</ParamField>
+
+### Feature Toggles
+
+<ParamField path="interface.fileSearch" type="boolean" default="true">
+  Enable/disable file search in chat area
+  
+  <Note>This does not disable the Agents File Search Capability</Note>
+  
+  ```yaml
+  interface:
+    fileSearch: true
+  ```
+</ParamField>
+
+<ParamField path="interface.endpointsMenu" type="boolean" default="true">
+  Show/hide endpoints selection menu
+</ParamField>
+
+<ParamField path="interface.modelSelect" type="boolean" default="true">
+  Enable/disable model selection dropdown
+</ParamField>
+
+<ParamField path="interface.parameters" type="boolean" default="true">
+  Show/hide model parameters configuration
+</ParamField>
+
+<ParamField path="interface.sidePanel" type="boolean" default="true">
+  Enable/disable side panel
+</ParamField>
+
+<ParamField path="interface.presets" type="boolean" default="true">
+  Enable/disable presets feature
+</ParamField>
+
+<ParamField path="interface.bookmarks" type="boolean" default="true">
+  Enable/disable bookmarks feature
+</ParamField>
+
+<ParamField path="interface.multiConvo" type="boolean" default="true">
+  Enable/disable multi-conversation feature
+</ParamField>
+
+<ParamField path="interface.fileCitations" type="boolean" default="true">
+  Enable/disable file citations in responses
+</ParamField>
+
+### Privacy Policy & Terms
+
+<ParamField path="interface.privacyPolicy" type="object">
+  Privacy policy configuration
+  
+  ```yaml
+  interface:
+    privacyPolicy:
+      externalUrl: 'https://librechat.ai/privacy-policy'
+      openNewTab: true
+  ```
+</ParamField>
+
+<ParamField path="interface.termsOfService" type="object">
+  Terms of service configuration with modal support
+  
+  ```yaml
+  interface:
+    termsOfService:
+      externalUrl: 'https://librechat.ai/tos'
+      openNewTab: true
+      modalAcceptance: true
+      modalTitle: 'Terms of Service for LibreChat'
+      modalContent: |
+        # Terms and Conditions for LibreChat
+        *Effective Date: February 18, 2024*
+        
+        Your terms content here in Markdown format...
+  ```
+</ParamField>
+
+### Prompts Configuration
+
+<ParamField path="interface.prompts" type="object">
+  Configure prompt sharing and creation
+  
+  ```yaml
+  interface:
+    prompts:
+      use: true      # Allow using prompts
+      create: true   # Allow creating prompts
+      share: false   # Allow sharing with specific users
+      public: false  # Allow public sharing
+  ```
+</ParamField>
+
+### Agents Configuration
+
+<ParamField path="interface.agents" type="object">
+  Configure agent permissions
+  
+  ```yaml
+  interface:
+    agents:
+      use: true      # Allow using agents
+      create: true   # Allow creating agents
+      share: false   # Allow sharing agents
+      public: false  # Allow public agent sharing
+  ```
+</ParamField>
+
+### People Picker
+
+<ParamField path="interface.peoplePicker" type="object">
+  Configure people picker for sharing
+  
+  ```yaml
+  interface:
+    peoplePicker:
+      users: true   # Search for users
+      groups: true  # Search for groups
+      roles: true   # Search by roles
+  ```
+</ParamField>
+
+### Marketplace
+
+<ParamField path="interface.marketplace" type="object">
+  Enable/disable marketplace features
+  
+  ```yaml
+  interface:
+    marketplace:
+      use: false
+  ```
+</ParamField>
+
+### MCP Servers Configuration
+
+<ParamField path="interface.mcpServers" type="object">
+  Configure MCP (Model Context Protocol) server permissions and UI elements
+  
+  ```yaml
+  interface:
+    mcpServers:
+      # User permissions
+      use: true      # Allow using MCP servers
+      create: true   # Allow creating MCP servers
+      share: false   # Allow sharing with specific users
+      public: false  # Allow public sharing
+      
+      # Creation dialog configuration
+      trustCheckbox:
+        label:
+          en: 'I understand and I want to continue'
+          de: 'Ich verstehe und möchte fortfahren'
+        subLabel:
+          en: |
+            LibreChat hasn't reviewed this MCP server. Attackers may attempt to steal your data.
+            <a href="https://example.com" target="_blank"><strong>Learn more.</strong></a>
+  ```
+</ParamField>
+
+### Temporary Chat Retention
+
+<ParamField path="interface.temporaryChatRetention" type="number" default="720">
+  Retention period for temporary chats in hours
+  
+  - Minimum: 1 hour
+  - Maximum: 8760 hours (1 year)
+  - Default: 720 hours (30 days)
+  
+  ```yaml
+  interface:
+    temporaryChatRetention: 168  # 7 days
+  ```
+</ParamField>
+
+## Cloudflare Turnstile
+
+<ParamField path="turnstile" type="object">
+  Configure Cloudflare Turnstile CAPTCHA
+  
+  ```yaml
+  turnstile:
+    siteKey: "your-site-key-here"
+    options:
+      language: "auto"  # or ISO 639-1 code (e.g., "en")
+      size: "normal"    # "normal", "compact", "flexible", "invisible"
+  ```
+</ParamField>
+
+## Registration
+
+<ParamField path="registration" type="object">
+  Configure registration settings
+</ParamField>
+
+<ParamField path="registration.socialLogins" type="array">
+  Enable social login providers
+  
+  Options: `github`, `google`, `discord`, `openid`, `facebook`, `apple`, `saml`
+  
+  ```yaml
+  registration:
+    socialLogins: ['github', 'google', 'discord', 'openid']
+  ```
+</ParamField>
+
+<ParamField path="registration.allowedDomains" type="array">
+  Restrict registration to specific email domains
+  
+  ```yaml
+  registration:
+    allowedDomains:
+      - "company.com"
+      - "partner.com"
+  ```
+</ParamField>
+
+## Balance System
+
+<ParamField path="balance" type="object">
+  Configure token balance system
+  
+  ```yaml
+  balance:
+    enabled: false
+    startBalance: 20000              # Initial tokens
+    autoRefillEnabled: false         # Auto-refill tokens
+    refillIntervalValue: 30          # Refill every 30...
+    refillIntervalUnit: 'days'       # ...days
+    refillAmount: 10000              # Tokens to add
+  ```
+</ParamField>
+
+## Transactions
+
+<ParamField path="transactions" type="object">
+  Control transaction record saving
+  
+  ```yaml
+  transactions:
+    enabled: true  # Save transaction records
+  ```
+  
+  <Note>If balance is enabled, transactions are always enabled regardless of this setting</Note>
+</ParamField>
+
+## Speech Configuration
+
+### Text-to-Speech
+
+<ParamField path="speech.tts" type="object">
+  Configure text-to-speech services
+  
+  ```yaml
+  speech:
+    tts:
+      openai:
+        url: 'https://api.openai.com/v1'
+        apiKey: '${TTS_API_KEY}'
+        model: 'tts-1'
+        voices: ['alloy', 'echo', 'fable']
+  ```
+</ParamField>
+
+### Speech-to-Text
+
+<ParamField path="speech.stt" type="object">
+  Configure speech-to-text services
+  
+  ```yaml
+  speech:
+    stt:
+      openai:
+        url: 'https://api.openai.com/v1'
+        apiKey: '${STT_API_KEY}'
+        model: 'whisper-1'
+  ```
+</ParamField>
+
+## Rate Limits
+
+<ParamField path="rateLimits" type="object">
+  Configure rate limiting for various operations
+  
+  ```yaml
+  rateLimits:
+    fileUploads:
+      ipMax: 100                    # Max uploads per IP
+      ipWindowInMinutes: 60         # Time window for IP limit
+      userMax: 50                   # Max uploads per user
+      userWindowInMinutes: 60       # Time window for user limit
+    conversationsImport:
+      ipMax: 100
+      ipWindowInMinutes: 60
+      userMax: 50
+      userWindowInMinutes: 60
+  ```
+</ParamField>
+
+## Agent Actions Domain Restrictions
+
+<ParamField path="actions" type="object">
+  Configure allowed domains for Agent Actions (OpenAPI specs)
+  
+  <Warning>
+    If not configured, SSRF targets are blocked (localhost, private IPs, .internal/.local TLDs).
+    To allow internal targets, explicitly add them to allowedDomains.
+  </Warning>
+  
+  ```yaml
+  actions:
+    allowedDomains:
+      - 'swapi.dev'
+      - 'librechat.ai'
+      - '*.example.com'                      # Wildcard subdomain
+      - 'https://api.example.com:8443'       # Protocol/port restriction
+      - 'http://10.225.26.25:7894'           # Internal IP (if needed)
+  ```
+</ParamField>
+
+## MCP Server Domain Restrictions
+
+<ParamField path="mcpSettings" type="object">
+  Configure allowed domains for MCP remote transports (SSE, WebSocket, HTTP)
+  
+  <Warning>
+    If not configured, SSRF targets are blocked. To allow Docker host access or internal targets, explicitly add them.
+  </Warning>
+  
+  ```yaml
+  mcpSettings:
+    allowedDomains:
+      - 'host.docker.internal'    # Docker host access (required for Docker)
+      - 'localhost'               # Local development
+      - '*.example.com'           # Wildcard subdomain
+      - 'https://secure.api.com'  # Protocol-restricted
+      - 'http://internal:8080'    # Protocol and port restricted
+  ```
+</ParamField>
+
+## MCP Servers
+
+<ParamField path="mcpServers" type="object">
+  Define MCP (Model Context Protocol) server connections
+  
+  ```yaml
+  mcpServers:
+    everything:
+      type: sse  # Optional, can be omitted
+      url: http://localhost:3001/sse
+      timeout: 60000  # 1 minute (default)
+    
+    puppeteer:
+      type: stdio
+      command: npx
+      args:
+        - -y
+        - "@modelcontextprotocol/server-puppeteer"
+      timeout: 300000  # 5 minutes
+    
+    filesystem:
+      type: stdio  # Optional
+      command: npx
+      args:
+        - -y
+        - "@modelcontextprotocol/server-filesystem"
+        - /home/user/LibreChat/
+      iconPath: /home/user/LibreChat/client/public/assets/logo.svg
+    
+    mcp-obsidian:
+      command: npx
+      args:
+        - -y
+        - "mcp-obsidian"
+        - /path/to/obsidian/vault
+  ```
+</ParamField>
+
+## File Upload Configuration
+
+<ParamField path="fileConfig" type="object">
+  Configure file upload limits and restrictions
+  
+  ```yaml
+  fileConfig:
+    endpoints:
+      assistants:
+        fileLimit: 5                    # Max number of files
+        fileSizeLimit: 10               # Max size per file (MB)
+        totalSizeLimit: 50              # Max total size (MB)
+        supportedMimeTypes:
+          - "image/.*"
+          - "application/pdf"
+      openAI:
+        disabled: true                  # Disable file uploads
+      default:
+        totalSizeLimit: 20
+      YourCustomEndpointName:
+        fileLimit: 2
+        fileSizeLimit: 5
+    
+    serverFileSizeLimit: 100            # Global limit (MB)
+    avatarSizeLimit: 2                  # Avatar limit (MB)
+    
+    imageGeneration:
+      percentage: 100                   # Percentage-based sizing
+      # OR
+      px: 1024                          # Pixel-based sizing
+    
+    clientImageResize:
+      enabled: false                    # Client-side image resizing
+      maxWidth: 1900                    # Max width (px)
+      maxHeight: 1900                   # Max height (px)
+      quality: 0.92                     # JPEG quality (0.0-1.0)
+  ```
+</ParamField>
+
+## Web Search Configuration
+
+<ParamField path="webSearch" type="object">
+  Configure web search functionality
+  
+  ```yaml
+  webSearch:
+    # Rerankers
+    jinaApiKey: '${JINA_API_KEY}'
+    jinaApiUrl: '${JINA_API_URL}'  # Optional, defaults to Jina API
+    cohereApiKey: '${COHERE_API_KEY}'
+    
+    # Search providers
+    serperApiKey: '${SERPER_API_KEY}'
+    searxngInstanceUrl: '${SEARXNG_INSTANCE_URL}'
+    searxngApiKey: '${SEARXNG_API_KEY}'
+    
+    # Content scrapers
+    firecrawlApiKey: '${FIRECRAWL_API_KEY}'
+    firecrawlApiUrl: '${FIRECRAWL_API_URL}'
+  ```
+</ParamField>
+
+## Memory Configuration
+
+<ParamField path="memory" type="object">
+  Configure user memory functionality
+  
+  ```yaml
+  memory:
+    disabled: false                     # Enable/disable memory
+    validKeys:                          # Restrict memory keys
+      - "preferences"
+      - "work_info"
+      - "personal_info"
+      - "skills"
+      - "interests"
+      - "context"
+    tokenLimit: 10000                   # Max tokens for memory storage
+    personalize: true                   # Show Personalization tab
+    
+    # Option 1: Use existing agent by ID
+    agent:
+      id: "your-memory-agent-id"
+    
+    # Option 2: Define agent inline
+    # agent:
+    #   provider: "openai"
+    #   model: "gpt-4o-mini"
+    #   instructions: "You are a memory management assistant."
+    #   model_parameters:
+    #     temperature: 0.1
+  ```
+</ParamField>
+
+## Model Specs
+
+<ParamField path="modelSpecs" type="object">
+  Define custom model specifications with grouping
+  
+  ```yaml
+  modelSpecs:
+    list:
+      # Nested under an endpoint
+      - name: "gpt-4o"
+        label: "GPT-4 Optimized"
+        description: "Most capable GPT-4 model with multimodal support"
+        group: "openAI"              # Groups with openAI endpoint
+        preset:
+          endpoint: "openAI"
+          model: "gpt-4o"
+      
+      # Custom group with icon URL
+      - name: "coding-assistant"
+        label: "Coding Assistant"
+        description: "Specialized for coding tasks"
+        group: "my-assistants"       # Custom group
+        groupIcon: "https://example.com/icons/assistants.png"
+        preset:
+          endpoint: "openAI"
+          model: "gpt-4o"
+          instructions: "You are an expert coding assistant..."
+          temperature: 0.3
+      
+      # Custom group with built-in icon
+      - name: "fast-models"
+        label: "Fast Response Model"
+        group: "Fast Models"
+        groupIcon: "groq"            # Uses built-in Groq icon
+        preset:
+          endpoint: "groq"
+          model: "llama3-8b-8192"
+      
+      # Standalone (no group)
+      - name: "general-assistant"
+        label: "General Assistant"
+        description: "General purpose assistant"
+        preset:
+          endpoint: "openAI"
+          model: "gpt-4o-mini"
+  ```
+</ParamField>
+
+<Tip>
+  **Model Spec Grouping**:
+  - If `group` matches an endpoint name, the spec appears nested under that endpoint
+  - If `group` is a custom name, it creates a separate collapsible section
+  - If `group` is omitted, the spec appears as a standalone item
+  - Use `groupIcon` to set icons for custom groups (URL or built-in endpoint key)
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="AI Endpoints" icon="brain" href="/configuration/ai-endpoints">
+    Configure AI endpoints and custom models
+  </Card>
+  <Card title="Environment Variables" icon="terminal" href="/configuration/environment-variables">
+    Complete environment variable reference
+  </Card>
+  <Card title="File Storage" icon="database" href="/configuration/file-storage">
+    Set up file storage strategies
+  </Card>
+  <Card title="Authentication" icon="shield" href="/configuration/authentication">
+    Configure authentication methods
+  </Card>
+</CardGroup>

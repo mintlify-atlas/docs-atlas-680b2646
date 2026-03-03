@@ -1,0 +1,573 @@
+---
+title: Prompts
+description: Manage prompt libraries and prompt groups
+---
+
+## Overview
+
+The Prompts API allows you to create, organize, and manage reusable prompts and prompt groups. Prompts can be shared, tagged, and organized into groups for better organization.
+
+All prompt endpoints are prefixed with `/api/prompts`.
+
+## List Prompt Groups
+
+Retrieve prompt groups with pagination:
+
+```http
+GET /api/prompts/groups?limit=25&after=cursor_abc
+Authorization: Bearer <token>
+```
+
+### Query Parameters
+
+<ParamField query="pageSize" type="number">
+  Number of results per page (alternative to `limit`)
+</ParamField>
+
+<ParamField query="limit" type="number" default="25">
+  Maximum number of groups to return
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor (alternative to `after`)
+</ParamField>
+
+<ParamField query="after" type="string">
+  Cursor for next page
+</ParamField>
+
+<ParamField query="name" type="string">
+  Filter by group name
+</ParamField>
+
+<ParamField query="category" type="string">
+  Filter by category
+</ParamField>
+
+### Response
+
+<ResponseField name="data" type="TPromptGroup[]">
+  Array of prompt groups
+</ResponseField>
+
+<ResponseField name="pageNumber" type="string">
+  Current page number (always "1" for cursor pagination)
+</ResponseField>
+
+<ResponseField name="pageSize" type="string">
+  Page size
+</ResponseField>
+
+<ResponseField name="hasMore" type="boolean">
+  Whether more pages exist
+</ResponseField>
+
+<ResponseField name="after" type="string">
+  Cursor for next page
+</ResponseField>
+
+```json
+{
+  "data": [
+    {
+      "_id": "group_abc123",
+      "name": "Code Review Prompts",
+      "description": "Prompts for code review and analysis",
+      "author": "user123",
+      "authorName": "John Doe",
+      "category": "development",
+      "productionId": "prompt_xyz",
+      "oneliner": "Quick code review prompts",
+      "isPublic": false,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-16T14:00:00Z"
+    }
+  ],
+  "pageNumber": "1",
+  "pageSize": "25",
+  "hasMore": true,
+  "after": "cursor_next"
+}
+```
+
+## Get All Prompt Groups
+
+Retrieve all accessible prompt groups (no pagination):
+
+```http
+GET /api/prompts/all?name=code&category=development
+Authorization: Bearer <token>
+```
+
+### Query Parameters
+
+<ParamField query="name" type="string">
+  Filter by group name (partial match)
+</ParamField>
+
+<ParamField query="category" type="string">
+  Filter by category
+</ParamField>
+
+### Response
+
+Returns an array of prompt groups:
+
+```json
+[
+  {
+    "_id": "group_abc123",
+    "name": "Code Review Prompts",
+    "description": "Prompts for code review",
+    "author": "user123",
+    "isPublic": false,
+    "prompts": [
+      {
+        "_id": "prompt_xyz",
+        "prompt": "Review this code for security issues...",
+        "title": "Security Review"
+      }
+    ]
+  }
+]
+```
+
+## Get Prompt Group
+
+Retrieve a specific prompt group:
+
+```http
+GET /api/prompts/groups/:groupId
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="groupId" type="string" required>
+  Prompt group ID
+</ParamField>
+
+### Response
+
+<ResponseField name="_id" type="string">
+  Unique group identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Group name
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Group description
+</ResponseField>
+
+<ResponseField name="author" type="string">
+  Author user ID
+</ResponseField>
+
+<ResponseField name="authorName" type="string">
+  Author display name
+</ResponseField>
+
+<ResponseField name="category" type="string">
+  Category name
+</ResponseField>
+
+<ResponseField name="productionId" type="string">
+  ID of the production (main) prompt in this group
+</ResponseField>
+
+<ResponseField name="isPublic" type="boolean">
+  Whether the group is publicly accessible
+</ResponseField>
+
+<ResponseField name="prompts" type="TPrompt[]">
+  Array of prompts in this group
+</ResponseField>
+
+```json
+{
+  "_id": "group_abc123",
+  "name": "Code Review Prompts",
+  "description": "Comprehensive code review prompts",
+  "author": "user123",
+  "authorName": "John Doe",
+  "category": "development",
+  "productionId": "prompt_xyz",
+  "oneliner": "Quick code review",
+  "isPublic": false,
+  "prompts": [
+    {
+      "_id": "prompt_xyz",
+      "prompt": "Review this code for security, performance, and best practices...",
+      "title": "Comprehensive Review",
+      "tags": ["production"]
+    }
+  ],
+  "createdAt": "2024-01-15T10:00:00Z",
+  "updatedAt": "2024-01-16T14:00:00Z"
+}
+```
+
+## Create Prompt Group
+
+Create a new prompt group with an initial prompt:
+
+```http
+POST /api/prompts
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "group": {
+    "name": "Writing Prompts",
+    "description": "Creative writing assistance",
+    "category": "creative",
+    "oneliner": "Creative writing helpers"
+  },
+  "prompt": {
+    "prompt": "Help me write a compelling story opening...",
+    "title": "Story Opener"
+  }
+}
+```
+
+### Request Body
+
+<ParamField body="group" type="object" required>
+  Prompt group configuration
+</ParamField>
+
+<ParamField body="group.name" type="string" required>
+  Group name
+</ParamField>
+
+<ParamField body="group.description" type="string">
+  Group description
+</ParamField>
+
+<ParamField body="group.category" type="string">
+  Category name
+</ParamField>
+
+<ParamField body="group.oneliner" type="string">
+  Short one-line description
+</ParamField>
+
+<ParamField body="prompt" type="object" required>
+  Initial prompt to add to the group
+</ParamField>
+
+<ParamField body="prompt.prompt" type="string" required>
+  Prompt text/content
+</ParamField>
+
+<ParamField body="prompt.title" type="string">
+  Prompt title
+</ParamField>
+
+### Response
+
+Returns the created prompt group and prompt.
+
+Note: The creator automatically receives OWNER permissions on the prompt group.
+
+## Add Prompt to Group
+
+Add a new prompt to an existing group:
+
+```http
+POST /api/prompts/groups/:groupId/prompts
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "prompt": {
+    "prompt": "Analyze this code for performance issues...",
+    "title": "Performance Analysis"
+  }
+}
+```
+
+### Path Parameters
+
+<ParamField path="groupId" type="string" required>
+  Prompt group ID
+</ParamField>
+
+### Request Body
+
+<ParamField body="prompt" type="object" required>
+  Prompt to add
+</ParamField>
+
+<ParamField body="prompt.prompt" type="string" required>
+  Prompt text/content
+</ParamField>
+
+<ParamField body="prompt.title" type="string">
+  Prompt title
+</ParamField>
+
+Requires EDIT permission on the prompt group.
+
+## Update Prompt Group
+
+Update an existing prompt group:
+
+```http
+PATCH /api/prompts/groups/:groupId
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Updated Group Name",
+  "description": "Updated description",
+  "category": "new-category"
+}
+```
+
+### Path Parameters
+
+<ParamField path="groupId" type="string" required>
+  Prompt group ID
+</ParamField>
+
+### Request Body
+
+All fields are optional:
+
+<ParamField body="name" type="string">
+  New group name
+</ParamField>
+
+<ParamField body="description" type="string">
+  New description
+</ParamField>
+
+<ParamField body="category" type="string">
+  New category
+</ParamField>
+
+<ParamField body="oneliner" type="string">
+  New one-liner
+</ParamField>
+
+Requires EDIT permission on the prompt group.
+
+## Delete Prompt Group
+
+Delete a prompt group and all its prompts:
+
+```http
+DELETE /api/prompts/groups/:groupId
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="groupId" type="string" required>
+  Prompt group ID to delete
+</ParamField>
+
+### Response
+
+```json
+{
+  "message": "Prompt group deleted successfully"
+}
+```
+
+Requires DELETE permission on the prompt group.
+
+## Get Prompts
+
+Retrieve prompts in a specific group:
+
+```http
+GET /api/prompts?groupId=group_abc123
+Authorization: Bearer <token>
+```
+
+### Query Parameters
+
+<ParamField query="groupId" type="string">
+  Filter by group ID (returns all prompts in the group)
+</ParamField>
+
+If no `groupId` is provided, returns all prompts authored by the current user (admin users see all prompts).
+
+### Response
+
+```json
+[
+  {
+    "_id": "prompt_xyz",
+    "groupId": "group_abc123",
+    "prompt": "Review this code for security issues...",
+    "title": "Security Review",
+    "tags": ["production"],
+    "author": "user123",
+    "createdAt": "2024-01-15T10:00:00Z"
+  }
+]
+```
+
+## Get Single Prompt
+
+Retrieve a specific prompt:
+
+```http
+GET /api/prompts/:promptId
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="promptId" type="string" required>
+  Prompt ID
+</ParamField>
+
+Requires VIEW permission on the prompt's group.
+
+## Delete Prompt
+
+Delete a specific prompt:
+
+```http
+DELETE /api/prompts/:promptId?groupId=group_abc123
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="promptId" type="string" required>
+  Prompt ID to delete
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="groupId" type="string" required>
+  Group ID containing the prompt
+</ParamField>
+
+Requires DELETE permission on the prompt's group.
+
+## Mark Prompt as Production
+
+Set a prompt as the production/main prompt in its group:
+
+```http
+PATCH /api/prompts/:promptId/tags/production
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="promptId" type="string" required>
+  Prompt ID to mark as production
+</ParamField>
+
+Requires EDIT permission on the prompt's group.
+
+## Categories
+
+Get all available categories:
+
+```http
+GET /api/categories
+Authorization: Bearer <token>
+```
+
+### Response
+
+```json
+[
+  "development",
+  "creative",
+  "business",
+  "education",
+  "research"
+]
+```
+
+## Permissions
+
+Prompt groups support fine-grained access control:
+
+- **VIEW**: Can view prompts in the group
+- **EDIT**: Can modify group and add/update prompts
+- **DELETE**: Can delete group and prompts
+- **SHARE**: Can share group with others
+
+Public prompt groups are accessible to all users with VIEW permission.
+
+## Error Responses
+
+### Group Not Found
+
+```json
+{
+  "message": "Prompt group not found"
+}
+```
+
+HTTP Status: 404
+
+### Insufficient Permissions
+
+```json
+{
+  "error": "Insufficient permissions to view prompts in this group"
+}
+```
+
+HTTP Status: 403
+
+### Invalid Request Body
+
+```json
+{
+  "error": "Invalid request body",
+  "details": [
+    {
+      "field": "name",
+      "message": "Name is required"
+    }
+  ]
+}
+```
+
+HTTP Status: 400
+
+## TypeScript Types
+
+```typescript
+import type { TPromptGroup, TPrompt } from 'librechat-data-provider';
+
+interface TPromptGroup {
+  _id: string;
+  name: string;
+  description?: string;
+  author: string;
+  authorName?: string;
+  category?: string;
+  productionId?: string;
+  oneliner?: string;
+  isPublic?: boolean;
+  prompts?: TPrompt[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface TPrompt {
+  _id: string;
+  groupId: string;
+  prompt: string;
+  title?: string;
+  tags?: string[];
+  author: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```

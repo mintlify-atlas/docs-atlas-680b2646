@@ -1,0 +1,590 @@
+---
+title: Artifacts
+description: Generative UI with code artifacts, interactive components, and visualizations
+icon: "palette"
+---
+
+LibreChat's Artifacts feature enables AI to create substantial, self-contained content displayed in a separate UI window, including interactive React components, HTML pages, diagrams, and more.
+
+## What are Artifacts?
+
+Artifacts are substantial pieces of content that:
+
+<CardGroup cols={2}>
+  <Card title="Self-Contained" icon="box">
+    Complete, standalone content users can modify
+  </Card>
+  <Card title="Interactive" icon="hand-pointer">
+    Live previews of code, diagrams, and apps
+  </Card>
+  <Card title="Reusable" icon="recycle">
+    Content intended for use outside the chat
+  </Card>
+  <Card title="Iterative" icon="rotate">
+    Easily modified and improved through conversation
+  </Card>
+</CardGroup>
+
+## Enabling Artifacts
+
+Artifacts can be configured per agent:
+
+```yaml librechat.yaml
+endpoints:
+  agents:
+    capabilities:
+      - artifacts  # Enable artifacts capability
+```
+
+Or set in agent model parameters:
+
+```typescript
+{
+  name: 'Creative Assistant',
+  provider: 'anthropic',
+  model: 'claude-4.5-sonnet',
+  artifacts: 'default',  // 'default', 'shadcnui', or 'custom'
+  instructions: 'You are a creative assistant...'
+}
+```
+
+## Artifact Modes
+
+<Tabs>
+  <Tab title="Default">
+    Standard artifacts with all content types:
+    - HTML pages
+    - React components
+    - SVG images
+    - Mermaid diagrams
+    - Markdown documents
+  </Tab>
+  
+  <Tab title="ShadCN UI">
+    Enhanced mode with shadcn/ui component library:
+    ```typescript
+    artifacts: 'shadcnui'
+    ```
+    Includes pre-built UI components for professional interfaces
+  </Tab>
+  
+  <Tab title="Custom">
+    Provide your own artifact instructions:
+    ```typescript
+    artifacts: 'custom',
+    additional_instructions: 'Your custom artifact guidelines...'
+    ```
+  </Tab>
+</Tabs>
+
+## Artifact Types
+
+### React Components
+
+Interactive React components with hooks and state:
+
+```jsx
+:::artifact{identifier="counter-app" type="application/vnd.react" title="Interactive Counter"}
+import { useState } from 'react';
+
+export default function Counter() {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div className="p-8 text-center">
+      <h1 className="text-4xl font-bold mb-4">Counter</h1>
+      <p className="text-6xl mb-8">{count}</p>
+      <div className="space-x-4">
+        <button 
+          className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600"
+          onClick={() => setCount(count + 1)}
+        >
+          Increment
+        </button>
+        <button 
+          className="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600"
+          onClick={() => setCount(0)}
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  );
+}
+:::
+```
+
+**Available Libraries**:
+- `react` - Core React library with hooks
+- `lucide-react@0.394.0` - Icon library
+- `recharts` - Charting library
+- `three.js` - 3D graphics
+- `date-fns` - Date utilities
+- `react-day-picker` - Date picker component
+- `shadcn/ui` - UI components (in shadcnui mode)
+
+### HTML Pages
+
+Single-file HTML with embedded CSS and JavaScript:
+
+```html
+:::artifact{identifier="landing-page" type="text/html" title="Landing Page"}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Landing</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 60px 20px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+    .cta-button {
+      background: white;
+      color: #667eea;
+      padding: 15px 40px;
+      border: none;
+      border-radius: 50px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .cta-button:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome to Our Product</h1>
+    <p style="font-size: 1.5rem; margin-bottom: 40px;">
+      The best solution for your needs
+    </p>
+    <button class="cta-button" onclick="alert('Thanks for your interest!')">
+      Get Started
+    </button>
+  </div>
+</body>
+</html>
+:::
+```
+
+### SVG Graphics
+
+Scalable vector graphics:
+
+```xml
+:::artifact{identifier="logo-design" type="image/svg+xml" title="Logo"}
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:rgb(255,165,0);stop-opacity:1" />
+      <stop offset="100%" style="stop-color:rgb(255,69,0);stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <circle cx="100" cy="100" r="80" fill="url(#grad1)" />
+  <path d="M 60 100 L 100 60 L 140 100 L 100 140 Z" fill="white" opacity="0.8" />
+  <text x="100" y="180" font-family="Arial" font-size="20" 
+        text-anchor="middle" fill="#333">My Logo</text>
+</svg>
+:::
+```
+
+### Mermaid Diagrams
+
+Flowcharts, sequence diagrams, and more:
+
+```mermaid
+:::artifact{identifier="system-arch" type="application/vnd.mermaid" title="System Architecture"}
+graph TD
+    A[User] -->|Request| B[Load Balancer]
+    B --> C[Web Server 1]
+    B --> D[Web Server 2]
+    C --> E[Application Server]
+    D --> E
+    E --> F[Database Primary]
+    E --> G[Cache]
+    F --> H[Database Replica]
+    
+    style A fill:#e1f5ff
+    style B fill:#fff3e0
+    style E fill:#f3e5f5
+    style F fill:#e8f5e9
+:::
+```
+
+### Markdown Documents
+
+Formatted text with markdown:
+
+```markdown
+:::artifact{identifier="technical-doc" type="text/markdown" title="API Documentation"}
+# API Documentation
+
+## Overview
+
+This API provides access to our data services.
+
+## Authentication
+
+All requests require an API key in the header:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.example.com/data
+```
+
+## Endpoints
+
+### GET /users
+
+Retrieve a list of users.
+
+**Parameters:**
+- `limit` (optional): Number of results (default: 10)
+- `offset` (optional): Pagination offset
+
+**Response:**
+```json
+{
+  "users": [
+    {"id": 1, "name": "John Doe"},
+    {"id": 2, "name": "Jane Smith"}
+  ],
+  "total": 100
+}
+```
+
+## Rate Limits
+
+- 1000 requests per hour per API key
+- 429 status code when exceeded
+:::
+```
+
+## Creating Artifacts
+
+### When to Use Artifacts
+
+<Check>
+  **Good for Artifacts:**
+  - Substantial content (>15 lines)
+  - Content users will modify or iterate on
+  - Self-contained, reusable code
+  - Reports, presentations, documents
+  - Interactive tools and calculators
+</Check>
+
+<Warning>
+  **NOT for Artifacts:**
+  - Simple code snippets
+  - Brief explanations or examples
+  - Conversational responses
+  - One-off questions
+  - Context-dependent content
+</Warning>
+
+### Artifact Syntax
+
+Artifacts use remark-directive syntax:
+
+```markdown
+:::artifact{identifier="unique-id" type="mime-type" title="Display Title"}
+Your content here
+:::
+```
+
+**Required Attributes:**
+- `identifier`: Unique kebab-case ID for the artifact
+- `type`: MIME type or content type
+- `title`: Human-readable title
+
+### Updating Artifacts
+
+Reuse the same identifier to update an artifact:
+
+```markdown
+:::artifact{identifier="my-counter" type="application/vnd.react" title="Counter v2"}
+// Updated code here - same identifier, new content
+import { useState } from 'react';
+
+export default function Counter() {
+  const [count, setCount] = useState(0);
+  // ... enhanced implementation
+}
+:::
+```
+
+## Advanced Examples
+
+### Data Visualization with Recharts
+
+```jsx
+:::artifact{identifier="sales-chart" type="application/vnd.react" title="Sales Dashboard"}
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+const data = [
+  { month: 'Jan', revenue: 4000, expenses: 2400 },
+  { month: 'Feb', revenue: 3000, expenses: 1398 },
+  { month: 'Mar', revenue: 2000, expenses: 9800 },
+  { month: 'Apr', revenue: 2780, expenses: 3908 },
+  { month: 'May', revenue: 1890, expenses: 4800 },
+  { month: 'Jun', revenue: 2390, expenses: 3800 },
+];
+
+export default function SalesDashboard() {
+  return (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-6">Sales Dashboard</h1>
+      <ResponsiveContainer width="100%" height={400}>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="month" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey="revenue" stroke="#8884d8" strokeWidth={2} />
+          <Line type="monotone" dataKey="expenses" stroke="#82ca9d" strokeWidth={2} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+:::
+```
+
+### Interactive Calculator
+
+```jsx
+:::artifact{identifier="tip-calculator" type="application/vnd.react" title="Tip Calculator"}
+import { useState } from 'react';
+
+export default function TipCalculator() {
+  const [bill, setBill] = useState('');
+  const [tipPercent, setTipPercent] = useState(15);
+  
+  const tipAmount = (parseFloat(bill) || 0) * (tipPercent / 100);
+  const total = (parseFloat(bill) || 0) + tipAmount;
+  
+  return (
+    <div className="p-8 max-w-md mx-auto">
+      <h1 className="text-3xl font-bold mb-6">Tip Calculator</h1>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">Bill Amount</label>
+          <input
+            type="number"
+            value={bill}
+            onChange={(e) => setBill(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg"
+            placeholder="0.00"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Tip Percentage: {tipPercent}%
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="30"
+            value={tipPercent}
+            onChange={(e) => setTipPercent(parseInt(e.target.value))}
+            className="w-full"
+          />
+        </div>
+        
+        <div className="bg-gray-100 p-4 rounded-lg space-y-2">
+          <div className="flex justify-between">
+            <span>Tip Amount:</span>
+            <span className="font-bold">${tipAmount.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-xl">
+            <span>Total:</span>
+            <span className="font-bold">${total.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+:::
+```
+
+### ShadCN UI Components
+
+With `artifacts: 'shadcnui'` mode:
+
+```jsx
+:::artifact{identifier="form-demo" type="application/vnd.react" title="Contact Form"}
+import { useState } from 'react';
+import { Button } from '/components/ui/button';
+import { Input } from '/components/ui/input';
+import { Alert, AlertDescription } from '/components/ui/alert';
+
+export default function ContactForm() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+  };
+  
+  return (
+    <div className="p-8 max-w-md mx-auto">
+      <h1 className="text-3xl font-bold mb-6">Contact Us</h1>
+      
+      {submitted ? (
+        <Alert>
+          <AlertDescription>
+            Thank you, {name}! We'll contact you at {email}.
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Name</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">Email</label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          
+          <Button type="submit" className="w-full">
+            Submit
+          </Button>
+        </form>
+      )}
+    </div>
+  );
+}
+:::
+```
+
+## Configuration
+
+### Endpoint Settings
+
+Configure artifacts in OpenAI or Anthropic endpoints:
+
+```typescript
+// OpenAI endpoint
+{
+  endpoint: 'openAI',
+  model: 'gpt-4o',
+  artifacts: 'default'  // Uses OpenAI-specific artifact format
+}
+
+// Anthropic endpoint  
+{
+  endpoint: 'anthropic',
+  model: 'claude-4.5-sonnet',
+  artifacts: 'shadcnui'  // Uses Anthropic XML format with ShadCN
+}
+```
+
+### Provider Differences
+
+<Tabs>
+  <Tab title="Anthropic (Claude)">
+    - Uses XML-style artifact tags
+    - Native artifact support
+    - Comprehensive artifact guidelines
+  </Tab>
+  
+  <Tab title="OpenAI (GPT)">
+    - Uses markdown directive format
+    - Adapted artifact implementation
+    - Consistent user experience
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+<Tip>
+  **Complete Code**: Always provide full, functional code without placeholders or "..." ellipses
+</Tip>
+
+<Tip>
+  **Unique Identifiers**: Use descriptive, unique kebab-case identifiers for each artifact
+</Tip>
+
+<Tip>
+  **Appropriate Type**: Choose the right artifact type for your content
+</Tip>
+
+<Warning>
+  **No Arbitrary Values**: Don't use arbitrary Tailwind values like `h-[600px]`
+</Warning>
+
+<Info>
+  **Placeholder Images**: Use `/api/placeholder/WIDTH/HEIGHT` for images
+</Info>
+
+## Limitations
+
+### React Components
+
+- No external libraries beyond those listed
+- No form libraries (zod, hookform)
+- Components must use `/components/ui/` imports (not `@/components/`)
+- Must be standalone with no required props
+
+### HTML
+
+- Single-file only (no external CSS/JS files)
+- External scripts only from `https://cdnjs.cloudflare.com`
+- No external images (use placeholder API)
+
+### General
+
+- One artifact per message (unless specifically requested)
+- Must be substantial content (>15 lines)
+- Should be self-contained and reusable
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Agents" icon="robot" href="/features/agents">
+    Enable artifacts in agent configurations
+  </Card>
+  <Card title="Code Interpreter" icon="code" href="/features/code-interpreter">
+    Execute code and generate visualizations
+  </Card>
+  <Card title="AI Models" icon="brain-circuit" href="/features/ai-models">
+    Compatible AI models and providers
+  </Card>
+  <Card title="Multimodal" icon="image" href="/features/multimodal">
+    Process images for artifact generation
+  </Card>
+</CardGroup>

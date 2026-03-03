@@ -1,0 +1,378 @@
+---
+title: Webhooks
+description: Webhook support for LibreChat events
+---
+
+## Overview
+
+Webhooks allow LibreChat to send real-time notifications to external services when specific events occur. This enables integration with third-party systems, automation workflows, and custom event handling.
+
+<Note>
+Webhook support in LibreChat is currently limited. This page documents the webhook architecture and potential integration points. Check the LibreChat documentation for the latest webhook capabilities.
+</Note>
+
+## Webhook Events
+
+LibreChat can potentially send webhooks for the following events:
+
+### Conversation Events
+
+- `conversation.created` - New conversation started
+- `conversation.updated` - Conversation title or settings changed
+- `conversation.deleted` - Conversation deleted
+- `conversation.archived` - Conversation archived/unarchived
+
+### Message Events
+
+- `message.created` - New message sent (user or AI)
+- `message.updated` - Message edited
+- `message.deleted` - Message deleted
+- `message.feedback` - Feedback added to message
+
+### User Events
+
+- `user.registered` - New user registered
+- `user.login` - User logged in
+- `user.logout` - User logged out
+
+### Agent Events
+
+- `agent.created` - New agent created
+- `agent.updated` - Agent configuration updated
+- `agent.deleted` - Agent deleted
+
+### File Events
+
+- `file.uploaded` - File uploaded
+- `file.deleted` - File deleted
+
+## Webhook Payload Format
+
+Webhook payloads follow this general structure:
+
+```json
+{
+  "event": "message.created",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "data": {
+    "messageId": "msg_abc123",
+    "conversationId": "conv_xyz789",
+    "userId": "user_123",
+    "text": "Hello, how can I help?",
+    "isCreatedByUser": false,
+    "endpoint": "openAI",
+    "model": "gpt-4"
+  },
+  "userId": "user_123",
+  "webhookId": "webhook_def456"
+}
+```
+
+### Payload Fields
+
+<ResponseField name="event" type="string">
+  Event type identifier
+</ResponseField>
+
+<ResponseField name="timestamp" type="string">
+  ISO 8601 timestamp when the event occurred
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Event-specific data payload
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  ID of the user who triggered the event
+</ResponseField>
+
+<ResponseField name="webhookId" type="string">
+  Unique identifier for this webhook delivery
+</ResponseField>
+
+## Webhook Configuration
+
+Webhooks can be configured via environment variables or configuration file:
+
+### Environment Variables
+
+```bash
+# Webhook URL
+WEBHOOK_URL=https://your-server.com/webhooks/librechat
+
+# Webhook secret for signature verification
+WEBHOOK_SECRET=your-webhook-secret
+
+# Events to send (comma-separated)
+WEBHOOK_EVENTS=message.created,conversation.created
+```
+
+### Configuration File (librechat.yaml)
+
+```yaml
+webhooks:
+  enabled: true
+  url: "https://your-server.com/webhooks/librechat"
+  secret: "your-webhook-secret"
+  events:
+    - message.created
+    - conversation.created
+    - user.registered
+  headers:
+    X-Custom-Header: "custom-value"
+  retries: 3
+  timeout: 5000
+```
+
+## Security
+
+### Signature Verification
+
+Webhook requests include an `X-Webhook-Signature` header for verification:
+
+```
+X-Webhook-Signature: sha256=abc123...
+```
+
+To verify the signature:
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhook(payload, signature, secret) {
+  const hmac = crypto.createHmac('sha256', secret);
+  const digest = 'sha256=' + hmac.update(payload).digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(digest)
+  );
+}
+```
+
+### Headers
+
+Webhook requests include:
+
+- `Content-Type: application/json`
+- `X-Webhook-Signature: sha256=...`
+- `X-Webhook-Event: message.created`
+- `X-Webhook-ID: webhook_abc123`
+- `User-Agent: LibreChat-Webhooks/1.0`
+
+## Handling Webhooks
+
+Example Express.js webhook handler:
+
+```javascript
+const express = require('express');
+const crypto = require('crypto');
+
+const app = express();
+app.use(express.json());
+
+app.post('/webhooks/librechat', (req, res) => {
+  const signature = req.headers['x-webhook-signature'];
+  const payload = JSON.stringify(req.body);
+  
+  // Verify signature
+  if (!verifyWebhook(payload, signature, process.env.WEBHOOK_SECRET)) {
+    return res.status(401).send('Invalid signature');
+  }
+  
+  // Handle event
+  const { event, data } = req.body;
+  
+  switch (event) {
+    case 'message.created':
+      console.log('New message:', data.messageId);
+      // Process message event
+      break;
+    
+    case 'conversation.created':
+      console.log('New conversation:', data.conversationId);
+      // Process conversation event
+      break;
+  }
+  
+  // Acknowledge receipt
+  res.status(200).send('OK');
+});
+```
+
+## Retry Logic
+
+LibreChat will retry failed webhook deliveries:
+
+- **Initial attempt**: Immediate
+- **Retry 1**: After 5 seconds
+- **Retry 2**: After 15 seconds
+- **Retry 3**: After 60 seconds
+
+Webhooks are considered failed if:
+- HTTP status code is not 2xx
+- Request times out (default 5 seconds)
+- Connection error occurs
+
+## Rate Limiting
+
+To prevent overwhelming your webhook endpoint:
+
+- Maximum 100 events per second per webhook
+- Events may be batched if rate is exceeded
+- Configure rate limits in `librechat.yaml`:
+
+```yaml
+webhooks:
+  rateLimit:
+    maxPerSecond: 100
+    batchSize: 10
+```
+
+## Filtering Events
+
+Filter events by user, conversation, or other criteria:
+
+```yaml
+webhooks:
+  filters:
+    - event: "message.created"
+      condition:
+        endpoint: "openAI"
+        isCreatedByUser: false
+```
+
+## Testing Webhooks
+
+Use tools like:
+
+- **Webhook.site**: Test webhook deliveries
+- **ngrok**: Expose local server for testing
+- **Postman**: Mock webhook responses
+
+## Event Examples
+
+### Message Created
+
+```json
+{
+  "event": "message.created",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "data": {
+    "messageId": "msg_abc123",
+    "conversationId": "conv_xyz",
+    "userId": "user_123",
+    "text": "What is machine learning?",
+    "isCreatedByUser": true,
+    "endpoint": "openAI",
+    "model": "gpt-4"
+  },
+  "userId": "user_123",
+  "webhookId": "webhook_001"
+}
+```
+
+### Conversation Created
+
+```json
+{
+  "event": "conversation.created",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "data": {
+    "conversationId": "conv_xyz",
+    "userId": "user_123",
+    "title": "New Chat",
+    "endpoint": "openAI",
+    "model": "gpt-4"
+  },
+  "userId": "user_123",
+  "webhookId": "webhook_002"
+}
+```
+
+### User Registered
+
+```json
+{
+  "event": "user.registered",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "data": {
+    "userId": "user_123",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "provider": "local"
+  },
+  "userId": "user_123",
+  "webhookId": "webhook_003"
+}
+```
+
+## Use Cases
+
+### Analytics
+
+Send conversation and message data to analytics platforms:
+
+```javascript
+if (event === 'message.created') {
+  analytics.track('AI Message', {
+    userId: data.userId,
+    model: data.model,
+    endpoint: data.endpoint,
+    messageLength: data.text.length
+  });
+}
+```
+
+### Notifications
+
+Send notifications to Slack, Discord, or email:
+
+```javascript
+if (event === 'conversation.created') {
+  slack.send({
+    text: `New conversation started by ${data.userId}`,
+    channel: '#librechat-activity'
+  });
+}
+```
+
+### Automation
+
+Trigger workflows based on events:
+
+```javascript
+if (event === 'user.registered') {
+  sendWelcomeEmail(data.email);
+  createUserInCRM(data);
+}
+```
+
+### Logging
+
+Log all events to external logging service:
+
+```javascript
+logService.log({
+  level: 'info',
+  event: event,
+  data: data,
+  timestamp: timestamp
+});
+```
+
+## Limitations
+
+- Webhooks are fire-and-forget (no response data used)
+- Maximum payload size: 1MB
+- Maximum retry attempts: 3
+- Webhook URL must be HTTPS in production
+
+## Future Enhancements
+
+Planned webhook features:
+
+- Webhook management UI
+- Multiple webhook URLs per event
+- Custom webhook transformations
+- Webhook delivery logs and analytics
+- Conditional webhooks with complex filters

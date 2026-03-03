@@ -1,0 +1,579 @@
+---
+title: Agents
+description: Create and manage AI agents with custom capabilities
+---
+
+## Overview
+
+The Agents API allows you to create, manage, and interact with AI agents. Agents are AI assistants with custom instructions, tools, and capabilities.
+
+All agent endpoints are prefixed with `/api/agents`.
+
+## List Agents
+
+Retrieve accessible agents:
+
+```http
+GET /api/agents
+Authorization: Bearer <token>
+```
+
+### Query Parameters
+
+<ParamField query="limit" type="number">
+  Maximum number of agents to return
+</ParamField>
+
+<ParamField query="after" type="string">
+  Cursor for pagination
+</ParamField>
+
+### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "agent_abc123",
+      "name": "Code Assistant",
+      "description": "Helps with code review and debugging",
+      "author": "user123",
+      "model": "gpt-4",
+      "provider": "openai",
+      "tools": ["code_interpreter"],
+      "createdAt": "2024-01-15T10:00:00Z"
+    }
+  ],
+  "has_more": false
+}
+```
+
+## Get Agent
+
+Retrieve a specific agent by ID:
+
+```http
+GET /api/agents/:agent_id
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="agent_id" type="string" required>
+  Agent ID
+</ParamField>
+
+### Response
+
+<ResponseField name="id" type="string">
+  Unique agent identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Agent name
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Agent description
+</ResponseField>
+
+<ResponseField name="instructions" type="string">
+  System instructions for the agent
+</ResponseField>
+
+<ResponseField name="model" type="string">
+  Model identifier (e.g., `gpt-4`, `claude-3-opus`)
+</ResponseField>
+
+<ResponseField name="provider" type="string">
+  Provider identifier (e.g., `openai`, `anthropic`)
+</ResponseField>
+
+<ResponseField name="tools" type="string[]">
+  Array of enabled tool identifiers
+</ResponseField>
+
+<ResponseField name="tool_resources" type="object">
+  Tool-specific resources (e.g., file_ids for code_interpreter)
+</ResponseField>
+
+<ResponseField name="author" type="string">
+  User ID of the agent creator
+</ResponseField>
+
+<ResponseField name="avatar" type="object">
+  Avatar configuration
+</ResponseField>
+
+```json
+{
+  "id": "agent_abc123",
+  "name": "Code Assistant",
+  "description": "Helps with code review and debugging",
+  "instructions": "You are an expert code reviewer...",
+  "model": "gpt-4",
+  "provider": "openai",
+  "tools": ["code_interpreter", "web_search"],
+  "tool_resources": {
+    "code_interpreter": {
+      "file_ids": ["file_xyz"]
+    }
+  },
+  "author": "user123",
+  "avatar": {
+    "source": "custom",
+    "filepath": "/avatars/agent_abc123.png"
+  },
+  "createdAt": "2024-01-15T10:00:00Z",
+  "updatedAt": "2024-01-16T14:00:00Z"
+}
+```
+
+## Create Agent
+
+Create a new AI agent:
+
+```http
+POST /api/agents
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Research Assistant",
+  "description": "Helps with research and fact-checking",
+  "instructions": "You are a thorough research assistant...",
+  "model": "gpt-4",
+  "provider": "openai",
+  "tools": ["web_search", "calculator"]
+}
+```
+
+### Request Body
+
+<ParamField body="name" type="string" required>
+  Agent name (max 256 characters)
+</ParamField>
+
+<ParamField body="description" type="string">
+  Brief description of the agent's purpose
+</ParamField>
+
+<ParamField body="instructions" type="string" required>
+  System instructions that define the agent's behavior
+</ParamField>
+
+<ParamField body="model" type="string" required>
+  Model to use (e.g., `gpt-4`, `claude-3-opus`)
+</ParamField>
+
+<ParamField body="provider" type="string" required>
+  AI provider (e.g., `openai`, `anthropic`, `google`)
+</ParamField>
+
+<ParamField body="tools" type="string[]">
+  Array of tool identifiers to enable
+</ParamField>
+
+<ParamField body="tool_resources" type="object">
+  Tool-specific resources and configurations
+</ParamField>
+
+<ParamField body="temperature" type="number">
+  Sampling temperature (0-2)
+</ParamField>
+
+<ParamField body="top_p" type="number">
+  Nucleus sampling parameter (0-1)
+</ParamField>
+
+### Response
+
+Returns the created agent object with HTTP status 201.
+
+## Update Agent
+
+Update an existing agent:
+
+```http
+PATCH /api/agents/:agent_id
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Updated Agent Name",
+  "instructions": "Updated instructions...",
+  "tools": ["web_search", "code_interpreter", "calculator"]
+}
+```
+
+### Path Parameters
+
+<ParamField path="agent_id" type="string" required>
+  Agent ID to update
+</ParamField>
+
+### Request Body
+
+All fields from Create Agent are optional for updates. Only include fields you want to change.
+
+### Response
+
+Returns the updated agent object.
+
+## Delete Agent
+
+Delete an agent:
+
+```http
+DELETE /api/agents/:agent_id
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="agent_id" type="string" required>
+  Agent ID to delete
+</ParamField>
+
+### Response
+
+```json
+{
+  "id": "agent_abc123",
+  "deleted": true
+}
+```
+
+## Revert Agent Version
+
+Revert an agent to a previous version:
+
+```http
+POST /api/agents/:agent_id/revert
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "version": 2
+}
+```
+
+### Path Parameters
+
+<ParamField path="agent_id" type="string" required>
+  Agent ID
+</ParamField>
+
+### Request Body
+
+<ParamField body="version" type="number" required>
+  Version number to revert to
+</ParamField>
+
+## Chat with Agent
+
+Send a message to an agent and get a streaming response:
+
+```http
+POST /api/agents/chat
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "conversationId": "conv_abc",
+  "agentId": "agent_123",
+  "message": "Can you help me debug this code?",
+  "attachments": []
+}
+```
+
+### Request Body
+
+<ParamField body="conversationId" type="string" required>
+  Conversation ID (use UUID or `new` for new conversation)
+</ParamField>
+
+<ParamField body="agentId" type="string" required>
+  ID of the agent to chat with
+</ParamField>
+
+<ParamField body="message" type="string" required>
+  User message text
+</ParamField>
+
+<ParamField body="parentMessageId" type="string">
+  ID of the parent message for threading
+</ParamField>
+
+<ParamField body="attachments" type="TAttachment[]">
+  File attachments
+</ParamField>
+
+### Response
+
+Returns a stream ID for Server-Sent Events (SSE) streaming:
+
+```json
+{
+  "streamId": "conv_abc",
+  "conversationId": "conv_abc",
+  "userMessage": {
+    "messageId": "msg_user_123",
+    "text": "Can you help me debug this code?"
+  },
+  "responseMessageId": "msg_ai_124"
+}
+```
+
+## Stream Agent Response
+
+Subscribe to an agent's streaming response:
+
+```http
+GET /api/agents/chat/stream/:streamId?resume=true
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="streamId" type="string" required>
+  Stream ID (usually equals conversationId)
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="resume" type="boolean">
+  Set to `true` for reconnection (sends sync event with resume state)
+</ParamField>
+
+### Response
+
+Server-Sent Events (SSE) stream with the following event types:
+
+#### Message Event
+
+```
+event: message
+data: {"type":"content","text":"Hello! "}
+
+event: message
+data: {"type":"content","text":"I can help "}
+
+event: message
+data: {"type":"content","text":"you debug."}
+
+event: message  
+data: {"type":"done","messageId":"msg_ai_124"}
+```
+
+#### Sync Event (on reconnection)
+
+```
+event: message
+data: {
+  "sync": true,
+  "resumeState": {
+    "runSteps": [...],
+    "aggregatedContent": [...]
+  }
+}
+```
+
+#### Error Event
+
+```
+event: error
+data: {"error":"Generation failed"}
+```
+
+## Abort Generation
+
+Abort an ongoing agent response:
+
+```http
+POST /api/agents/chat/abort
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "streamId": "conv_abc",
+  "conversationId": "conv_abc"
+}
+```
+
+### Request Body
+
+<ParamField body="streamId" type="string">
+  Stream ID to abort
+</ParamField>
+
+<ParamField body="conversationId" type="string">
+  Conversation ID
+</ParamField>
+
+<ParamField body="abortKey" type="string">
+  Abort key (alternative identifier)
+</ParamField>
+
+### Response
+
+```json
+{
+  "success": true,
+  "aborted": "conv_abc"
+}
+```
+
+The partial response is automatically saved before returning.
+
+## Get Active Jobs
+
+Get all active generation jobs for the current user:
+
+```http
+GET /api/agents/chat/active
+Authorization: Bearer <token>
+```
+
+### Response
+
+```json
+{
+  "activeJobIds": ["conv_abc", "conv_xyz"]
+}
+```
+
+## Check Generation Status
+
+Check if there's an active generation for a conversation:
+
+```http
+GET /api/agents/chat/status/:conversationId
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="conversationId" type="string" required>
+  Conversation ID
+</ParamField>
+
+### Response
+
+<ResponseField name="active" type="boolean">
+  Whether generation is currently active
+</ResponseField>
+
+<ResponseField name="streamId" type="string">
+  Stream ID if active
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Job status: `running`, `completed`, or `failed`
+</ResponseField>
+
+<ResponseField name="aggregatedContent" type="array">
+  Content generated so far
+</ResponseField>
+
+<ResponseField name="resumeState" type="object">
+  Complete resume state for reconnection
+</ResponseField>
+
+```json
+{
+  "active": true,
+  "streamId": "conv_abc",
+  "status": "running",
+  "aggregatedContent": [
+    {
+      "type": "text",
+      "text": "Partial response so far..."
+    }
+  ],
+  "createdAt": "2024-01-15T10:00:00Z",
+  "resumeState": {
+    "runSteps": [],
+    "aggregatedContent": []
+  }
+}
+```
+
+## OpenAI-Compatible API
+
+LibreChat provides an OpenAI-compatible API for agents:
+
+### Chat Completions
+
+```http
+POST /api/agents/v1/chat/completions
+Authorization: Bearer <api-key>
+Content-Type: application/json
+
+{
+  "model": "agent_abc123",
+  "messages": [
+    {"role": "user", "content": "Hello!"}
+  ],
+  "stream": true
+}
+```
+
+See the [OpenAI Chat Completions documentation](https://platform.openai.com/docs/api-reference/chat) for full API details.
+
+## Available Tools
+
+Agents can use the following tools:
+
+- `code_interpreter` - Execute Python code
+- `web_search` - Search the web
+- `calculator` - Perform calculations
+- `file_search` - Search uploaded documents
+- `dalle` - Generate images
+- Custom MCP (Model Context Protocol) tools
+
+## Permissions
+
+Agent access is controlled by permissions:
+
+- **VIEW**: Can view agent details
+- **USE**: Can chat with agent
+- **EDIT**: Can modify agent configuration
+- **DELETE**: Can delete agent
+- **SHARE**: Can share agent with others
+
+Only the agent author and users with appropriate permissions can access agents.
+
+## Error Responses
+
+### Agent Not Found
+
+```json
+{
+  "error": "Agent not found"
+}
+```
+
+HTTP Status: 404
+
+### Insufficient Permissions
+
+```json
+{
+  "error": "Forbidden",
+  "message": "Insufficient permissions to access this agent"
+}
+```
+
+HTTP Status: 403
+
+### Job Not Found
+
+```json
+{
+  "error": "Job not found",
+  "streamId": "conv_abc"
+}
+```
+
+HTTP Status: 404

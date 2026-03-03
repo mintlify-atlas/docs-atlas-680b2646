@@ -1,0 +1,532 @@
+---
+title: Import & Export
+description: Import and export conversations for backup, sharing, and migration
+---
+
+# Importing and Exporting Conversations
+
+LibreChat allows you to import and export conversations in various formats. This enables backing up important chats, sharing conversations with others, or migrating data between instances.
+
+## Overview
+
+Import/Export features include:
+
+- **Export formats** - Screenshot, text, markdown, JSON, CSV
+- **Import formats** - JSON
+- **Export options** - Include/exclude settings, branches, recursive structure
+- **Batch operations** - Export multiple conversations
+- **Data preservation** - Maintain message history and metadata
+
+## Exporting Conversations
+
+### Accessing Export
+
+There are multiple ways to export conversations:
+
+#### From Active Conversation
+
+1. Open the conversation you want to export
+2. Click the conversation options menu (usually in the header)
+3. Select **Export** or find the export icon
+4. The export dialog opens
+
+#### From Conversation Options Menu
+
+1. In the sidebar, hover over a conversation
+2. Click the options menu (three dots)
+3. Select **Export**
+4. The export dialog opens
+
+### Export Modal
+
+The export dialog provides configuration options:
+
+#### Filename
+
+- **Auto-generated** - Based on conversation title
+- **Editable** - Change the filename before exporting
+- **Sanitized** - Special characters removed for filesystem compatibility
+- **Extension added** - Automatically based on selected format
+
+**Example:** A conversation titled "My Project Ideas" exports as `My-Project-Ideas.json`
+
+#### Export Format
+
+Choose from available formats:
+
+##### 1. Screenshot (.png)
+
+Visual image of the conversation:
+
+- **Contents:** Rendered messages as they appear in the UI
+- **Best for:** Quick visual sharing, presentations, documentation
+- **Includes:** Message text, formatting, sender labels
+- **Excludes:** Endpoint options, metadata, interactive elements
+- **Limitations:** Not editable, not importable
+
+##### 2. Text (.txt)
+
+Plain text format:
+
+- **Contents:** Raw message text without formatting
+- **Best for:** Simple backups, text analysis, searching
+- **Includes:** Message content, sender labels, basic structure
+- **Excludes:** Formatting, metadata, endpoint settings
+- **Advantages:** Universal compatibility, small file size
+
+##### 3. Markdown (.md)
+
+Formatted markdown document:
+
+- **Contents:** Messages with markdown formatting preserved
+- **Best for:** Documentation, readability, version control
+- **Includes:** Message text, formatting (bold, italics, code blocks, lists), structure
+- **Excludes:** Endpoint options, attachments (referenced but not embedded)
+- **Advantages:** Human-readable, supports formatting, works with many tools
+
+##### 4. JSON (.json)
+
+Structured data format:
+
+- **Contents:** Complete conversation data structure
+- **Best for:** Re-importing, programmatic processing, complete backups
+- **Includes:** All messages, metadata, settings, IDs, timestamps, branching info
+- **Importable:** Yes - can be re-imported into LibreChat
+- **Advantages:** Preserves all data, machine-readable, supports branching
+
+##### 5. CSV (.csv)
+
+Spreadsheet-compatible format:
+
+- **Contents:** Tabular message data
+- **Best for:** Data analysis, spreadsheet import, reporting
+- **Includes:** Message fields as columns (ID, sender, content, timestamp, etc.)
+- **Excludes:** Complex nested structures, formatting
+- **Advantages:** Excel/Sheets compatible, easy to analyze, queryable
+
+### Export Options
+
+#### Include Endpoint Options
+
+Decide whether to include conversation configuration:
+
+- **Enabled:** Exports model settings, parameters, endpoint configuration
+- **Disabled:** Only message content is exported
+- **Available for:** JSON, text, markdown (not screenshot or CSV)
+- **Use when enabled:** You want to preserve full conversation setup
+- **Use when disabled:** You only need message content
+
+#### Export All Message Branches
+
+Handle conversations with multiple branches:
+
+- **Enabled:** Exports all alternative message paths and branches
+- **Disabled:** Exports only the currently visible message thread
+- **Available for:** JSON, CSV
+- **Use when enabled:** You want complete conversation history including alternatives
+- **Use when disabled:** You only want the linear conversation path you see
+
+**What are branches?**
+When you edit a message or regenerate a response, LibreChat creates alternative branches. This option determines if those alternatives are included.
+
+#### Recursive vs Sequential (JSON only)
+
+Choose how branching conversations are structured:
+
+##### Recursive (Default)
+
+Nested structure showing parent-child relationships:
+
+```json
+{
+  "message": "Hello",
+  "children": [
+    {
+      "message": "Response 1",
+      "children": [...]
+    }
+  ]
+}
+```
+
+- **Best for:** Preserving conversation tree structure
+- **Advantages:** Shows branching clearly, maintains relationships
+- **Disadvantages:** More complex to parse programmatically
+
+##### Sequential
+
+Flat list of all messages:
+
+```json
+[
+  {"id": "1", "message": "Hello", "parentId": null},
+  {"id": "2", "message": "Response", "parentId": "1"}
+]
+```
+
+- **Best for:** Simpler data processing, database import
+- **Advantages:** Easy to iterate, simple structure
+- **Disadvantages:** Relationships stored as references, not nested
+
+### Performing an Export
+
+1. Configure export settings:
+   - Set filename (or use default)
+   - Select export format
+   - Choose options (endpoint settings, branches, structure)
+2. Review settings in the preview (if available)
+3. Click **Export**
+4. File downloads to your browser's download folder
+5. Confirmation message appears
+
+### Export File Naming
+
+Exported files follow this pattern:
+
+```
+{conversation-title}.{extension}
+```
+
+Examples:
+- `Code-Review-Discussion.json`
+- `Project-Planning.md`
+- `Meeting-Notes.txt`
+- `Data-Analysis.csv`
+- `Screenshot-2024-03-15.png`
+
+## Importing Conversations
+
+### Import Requirements
+
+- **Format:** JSON only (exported from LibreChat)
+- **File type:** `.json` extension
+- **File size:** May be limited by server configuration
+- **Structure:** Must match LibreChat's conversation schema
+
+### How to Import
+
+1. Go to **Settings** (gear icon)
+2. Navigate to **Data** tab
+3. Find **Import Conversations** section
+4. Click the **Import** button
+5. Select your JSON file from your computer
+6. Upload begins automatically
+7. Wait for success confirmation
+
+### Import Process
+
+1. **File validation** - LibreChat checks the JSON structure
+2. **Size check** - Ensures file is within size limits
+3. **Data parsing** - Extracts conversation data
+4. **Conversation creation** - Recreates messages and structure
+5. **Completion** - Imported conversation appears in your list
+
+### What Gets Imported
+
+When importing a JSON conversation:
+
+- **Messages** - All message content and order
+- **Branching** - Alternative message paths (if exported with branches)
+- **Metadata** - Timestamps, sender information, IDs
+- **Endpoint settings** - Model configuration (if exported with options)
+- **Attachments** - File references (files themselves not included)
+- **Structure** - Parent-child message relationships
+
+### Import Limitations
+
+**File attachments:**
+- File references are imported
+- Actual file data is not included in JSON exports
+- Imported conversations show missing attachment placeholders
+- You'll need to re-upload files if needed
+
+**Conversation IDs:**
+- New IDs are generated on import
+- Original IDs are not preserved
+- Links to original conversation won't work
+
+**User references:**
+- Imported to your account
+- Original creator information may be preserved in metadata
+- Shared conversations become your own
+
+### Import Notifications
+
+**Success:**
+- Green toast notification
+- Message: "Conversation imported successfully"
+- Imported conversation appears in sidebar
+
+**Error:**
+- Red toast notification
+- Possible messages:
+  - "Unsupported import type" - Not a valid JSON conversation file
+  - "Import error" - File corrupted or incompatible format
+  - "File too large" - Exceeds size limit
+  - "Upload error" - Network or server issue
+
+### After Importing
+
+1. **Locate the conversation** - Look in your conversation list (usually at the top)
+2. **Verify content** - Open and review imported messages
+3. **Rename if needed** - Give it a distinct title
+4. **Check settings** - Verify endpoint and model configurations
+5. **Continue conversation** - You can continue from any message
+
+## Advanced Export Scenarios
+
+### Exporting Conversation Branches
+
+For conversations with multiple branches:
+
+1. Select **JSON** format
+2. Enable **Export All Message Branches**
+3. Choose **Recursive** structure (recommended for preserving tree)
+4. Export
+5. The file contains all alternative conversation paths
+
+**Use cases:**
+- Backing up complex brainstorming sessions
+- Preserving all experimental responses
+- Archiving conversations with multiple solution attempts
+
+### Exporting for Sharing
+
+#### Share as Markdown
+
+1. Export as **Markdown** (.md)
+2. Disable endpoint options (cleaner output)
+3. Share file via email, Slack, or documentation system
+4. Recipients can read in any markdown viewer
+
+#### Share for Re-import
+
+1. Export as **JSON**
+2. Include all branches (if recipient needs full history)
+3. Include endpoint options (if recipient should use same settings)
+4. Share JSON file
+5. Recipient imports using Import feature
+
+### Batch Export
+
+To export multiple conversations:
+
+1. Export each conversation individually
+2. Organize exported files in a folder
+3. Consider naming convention (date, topic, etc.)
+
+**Note:** LibreChat currently doesn't support bulk export UI, but you may be able to export multiple conversations via API or database access (check with administrator).
+
+### Programmatic Export
+
+For developers or advanced users:
+
+- Use LibreChat's API to export conversations programmatically
+- Query the database directly for bulk exports
+- Parse JSON exports with scripts for analysis
+- Convert between formats using custom tools
+
+## Migration Use Cases
+
+### Moving to New LibreChat Instance
+
+1. **Export from old instance:**
+   - Export important conversations as JSON
+   - Include all options and branches
+   - Download all files to your computer
+
+2. **Import to new instance:**
+   - Log in to new LibreChat instance
+   - Import each JSON file
+   - Verify conversations imported correctly
+
+3. **Note:** Attachments must be re-uploaded manually
+
+### Backup Strategy
+
+**Regular backups:**
+1. Weekly or monthly, export important conversations
+2. Use JSON format for full fidelity
+3. Store in cloud storage (Google Drive, Dropbox, etc.)
+4. Organize by date or topic
+
+**Long-term archive:**
+1. Export as both JSON (for re-import) and Markdown (for readability)
+2. Include all branches for completeness
+3. Store in multiple locations
+
+### Sharing with Non-LibreChat Users
+
+1. **For reading:** Export as Markdown or Text
+2. **For analysis:** Export as CSV
+3. **For presentations:** Export as Screenshot
+
+Recipients don't need LibreChat to view these formats.
+
+## Tips and Best Practices
+
+### Choosing Export Format
+
+- **Backup:** JSON (preserves everything)
+- **Sharing with team:** Markdown (readable, formatted)
+- **Data analysis:** CSV (spreadsheet compatible)
+- **Documentation:** Markdown or Screenshot
+- **Quick reference:** Text or Screenshot
+
+### File Organization
+
+- **Use folders:** Organize exports by project, date, or topic
+- **Naming convention:** Include date and topic in filename
+- **Version control:** Keep different versions of important conversations
+- **Cloud backup:** Store exports in Google Drive, OneDrive, etc.
+
+### Export Frequency
+
+- **Important conversations:** Export immediately after completion
+- **Ongoing projects:** Export weekly or at milestones
+- **Routine chats:** Export monthly or as needed
+- **Experimental work:** Export major iterations
+
+### Import Best Practices
+
+- **Review first:** Open JSON in text editor to verify structure
+- **Rename after import:** Distinguish from similar conversations
+- **Check size limits:** Split large conversations if needed
+- **Test with small file:** Verify import works before large files
+
+## Troubleshooting
+
+### Export Issues
+
+**Export button not working:**
+- Check browser console for errors
+- Try refreshing the page
+- Verify conversation has messages to export
+- Try a different browser
+
+**File doesn't download:**
+- Check browser download permissions
+- Look in downloads folder (may have different name)
+- Disable popup blockers
+- Try a different format
+
+**Screenshot export is blank:**
+- Ensure conversation is fully loaded
+- Try scrolling through conversation first
+- Check browser rendering
+- Use text/markdown export instead
+
+**CSV/JSON export has errors:**
+- Conversation may have special characters
+- Try exporting without branches
+- Check for very long messages
+- Report issue to administrator
+
+### Import Issues
+
+**"Unsupported import type" error:**
+- Verify file is `.json` format
+- Check the file was exported from LibreChat (not other apps)
+- Open file in text editor to verify it's valid JSON
+- Re-export from original source
+
+**"File too large" error:**
+- Check server's file size limit with administrator
+- Try exporting smaller conversation segments
+- Compress or split the conversation
+
+**Import succeeds but conversation is empty:**
+- File may be corrupted
+- Check JSON structure in text editor
+- Verify export included messages (not just metadata)
+- Re-export and try again
+
+**Imported conversation missing messages:**
+- Check if export included all branches
+- Verify JSON file is complete (not truncated)
+- Some messages may have been filtered during export
+
+**Upload fails or times out:**
+- Check internet connection
+- Try smaller file
+- Wait and retry (server may be busy)
+- Contact administrator if persistent
+
+## Security and Privacy
+
+### Exported Data Contains
+
+- Message content (what you and the AI wrote)
+- Timestamps
+- Model and endpoint settings
+- Your user ID (in JSON exports)
+- Conversation metadata
+
+### Exported Data Does NOT Contain
+
+- Your password
+- API keys (if you entered them)
+- Other users' conversations
+- File attachments (only references)
+
+### Best Practices
+
+- **Sensitive data:** Be careful sharing exports containing private information
+- **Encryption:** Encrypt files before storing in cloud if sensitive
+- **Access control:** Limit who can access exported files
+- **Secure deletion:** Permanently delete exports you no longer need
+- **Review before sharing:** Check export contents before sending to others
+
+## File Format Specifications
+
+### JSON Export Structure
+
+```json
+{
+  "conversationId": "unique-id",
+  "title": "Conversation Title",
+  "endpoint": "openAI",
+  "model": "gpt-4",
+  "messages": [
+    {
+      "messageId": "msg-id",
+      "parentMessageId": "parent-id",
+      "text": "Message content",
+      "sender": "user",
+      "isCreatedByUser": true,
+      "createdAt": "2024-03-15T10:30:00Z"
+    }
+  ]
+}
+```
+
+### CSV Export Structure
+
+```csv
+MessageID,ParentID,Sender,Content,Timestamp,Model
+msg-1,,user,"Hello",2024-03-15T10:30:00Z,
+msg-2,msg-1,assistant,"Hi!",2024-03-15T10:30:05Z,gpt-4
+```
+
+### Markdown Export Structure
+
+```markdown
+# Conversation Title
+
+**User:** Hello, how are you?
+
+**Assistant:** I'm doing well, thank you for asking!
+
+---
+
+**User:** Can you help me with...
+```
+
+## Keyboard Accessibility
+
+Import/Export features are keyboard accessible:
+
+- **Tab** - Navigate through export options and buttons
+- **Enter/Space** - Activate export button or select options
+- **Arrow keys** - Navigate dropdowns (format, options)
+- **Escape** - Close export modal

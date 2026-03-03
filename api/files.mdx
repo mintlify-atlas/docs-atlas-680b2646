@@ -1,0 +1,501 @@
+---
+title: Files
+description: Upload, download, and manage file attachments
+---
+
+## Overview
+
+The Files API allows you to upload, download, and manage files for use in conversations, agents, and assistants.
+
+All file endpoints are prefixed with `/api/files`.
+
+## Upload File
+
+Upload a file to LibreChat:
+
+```http
+POST /api/files
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="document.pdf"
+Content-Type: application/pdf
+
+[binary file data]
+--boundary
+Content-Disposition: form-data; name="endpoint"
+
+openAI
+--boundary--
+```
+
+### Request Body (Multipart Form Data)
+
+<ParamField body="file" type="File" required>
+  File to upload
+</ParamField>
+
+<ParamField body="endpoint" type="string">
+  Endpoint to associate file with (e.g., `openAI`, `anthropic`)
+</ParamField>
+
+<ParamField body="agent_id" type="string">
+  Agent ID to attach file to
+</ParamField>
+
+<ParamField body="assistant_id" type="string">
+  Assistant ID to attach file to
+</ParamField>
+
+<ParamField body="tool_resource" type="string">
+  Tool resource type (e.g., `code_interpreter`, `file_search`)
+</ParamField>
+
+<ParamField body="message_file" type="boolean">
+  Whether this is a temporary message attachment (vs permanent agent file)
+</ParamField>
+
+<ParamField body="file_id" type="string">
+  Custom file ID (optional, will be auto-generated if not provided)
+</ParamField>
+
+### Response
+
+<ResponseField name="file_id" type="string">
+  Unique file identifier
+</ResponseField>
+
+<ResponseField name="filename" type="string">
+  Original filename
+</ResponseField>
+
+<ResponseField name="filepath" type="string">
+  Server file path
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  MIME type
+</ResponseField>
+
+<ResponseField name="bytes" type="number">
+  File size in bytes
+</ResponseField>
+
+<ResponseField name="user" type="string">
+  Owner user ID
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Upload timestamp
+</ResponseField>
+
+```json
+{
+  "file_id": "file_abc123xyz",
+  "filename": "document.pdf",
+  "filepath": "/uploads/abc123/document.pdf",
+  "type": "application/pdf",
+  "bytes": 102400,
+  "width": null,
+  "height": null,
+  "user": "user123",
+  "createdAt": "2024-01-15T10:00:00Z",
+  "source": "local"
+}
+```
+
+## List Files
+
+Retrieve all files for the authenticated user:
+
+```http
+GET /api/files
+Authorization: Bearer <token>
+```
+
+### Response
+
+Returns an array of file objects:
+
+```json
+[
+  {
+    "file_id": "file_abc123",
+    "filename": "document.pdf",
+    "type": "application/pdf",
+    "bytes": 102400,
+    "createdAt": "2024-01-15T10:00:00Z",
+    "source": "local"
+  },
+  {
+    "file_id": "file_xyz789",
+    "filename": "image.png",
+    "type": "image/png",
+    "bytes": 51200,
+    "width": 1024,
+    "height": 768,
+    "createdAt": "2024-01-14T09:00:00Z",
+    "source": "local"
+  }
+]
+```
+
+## Get Agent Files
+
+Retrieve files attached to a specific agent:
+
+```http
+GET /api/files/agent/:agent_id
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="agent_id" type="string" required>
+  Agent ID
+</ParamField>
+
+### Response
+
+Returns an array of files attached to the agent (excludes the `text` field for performance).
+
+```json
+[
+  {
+    "file_id": "file_abc123",
+    "filename": "knowledge_base.pdf",
+    "type": "application/pdf",
+    "bytes": 512000,
+    "createdAt": "2024-01-10T08:00:00Z"
+  }
+]
+```
+
+Requires VIEW or EDIT permission on the agent.
+
+## Download File
+
+Download a file:
+
+```http
+GET /api/files/download/:userId/:file_id
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="userId" type="string" required>
+  User ID who owns the file
+</ParamField>
+
+<ParamField path="file_id" type="string" required>
+  File ID to download
+</ParamField>
+
+### Response
+
+Returns the file with appropriate headers:
+
+```
+Content-Disposition: attachment; filename="document.pdf"
+Content-Type: application/octet-stream
+X-File-Metadata: {"file_id":"file_abc123",...}
+
+[binary file data]
+```
+
+## Download Code Output
+
+Download output from code interpreter:
+
+```http
+GET /api/files/code/download/:session_id/:fileId
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="session_id" type="string" required>
+  Code execution session ID (21 characters, alphanumeric with - and _)
+</ParamField>
+
+<ParamField path="fileId" type="string" required>
+  File ID from code execution (21 characters, alphanumeric with - and _)
+</ParamField>
+
+### Response
+
+Streams the code output file.
+
+## Delete Files
+
+Delete one or more files:
+
+```http
+DELETE /api/files
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "files": [
+    {
+      "file_id": "file_abc123",
+      "filepath": "/uploads/abc123/document.pdf"
+    }
+  ],
+  "agent_id": "agent_xyz",
+  "tool_resource": "code_interpreter"
+}
+```
+
+### Request Body
+
+<ParamField body="files" type="object[]" required>
+  Array of file objects to delete
+</ParamField>
+
+<ParamField body="files[].file_id" type="string" required>
+  File ID (must be UUID or OpenAI format: `file-*`, `assistant-*`)
+</ParamField>
+
+<ParamField body="files[].filepath" type="string" required>
+  File path on server
+</ParamField>
+
+<ParamField body="agent_id" type="string">
+  Agent ID (for unlinking files from agent)
+</ParamField>
+
+<ParamField body="assistant_id" type="string">
+  Assistant ID (for unlinking files from assistant)
+</ParamField>
+
+<ParamField body="tool_resource" type="string">
+  Tool resource to unlink from (e.g., `code_interpreter`, `file_search`)
+</ParamField>
+
+### Response
+
+```json
+{
+  "message": "Files deleted successfully"
+}
+```
+
+### Authorization
+
+- Users can delete their own files
+- Users with EDIT permission on an agent can delete files attached to that agent
+- Users with EDIT permission on an assistant can delete files attached to that assistant
+
+## Get File Configuration
+
+Retrieve file upload configuration:
+
+```http
+GET /api/files/config
+Authorization: Bearer <token>
+```
+
+### Response
+
+<ResponseField name="endpoints" type="object">
+  File support configuration per endpoint
+</ResponseField>
+
+<ResponseField name="fileSizeLimit" type="number">
+  Maximum file size in bytes
+</ResponseField>
+
+<ResponseField name="supportedMimeTypes" type="string[]">
+  Supported MIME types
+</ResponseField>
+
+```json
+{
+  "endpoints": {
+    "openAI": {
+      "fileLimit": 10,
+      "fileSizeLimit": 10485760,
+      "totalSizeLimit": 52428800,
+      "supportedMimeTypes": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "application/pdf",
+        "text/plain"
+      ]
+    },
+    "assistants": {
+      "fileLimit": 20,
+      "fileSizeLimit": 52428800,
+      "supportedMimeTypes": ["*/*"]
+    }
+  },
+  "fileSizeLimit": 10485760,
+  "supportedMimeTypes": ["image/*", "application/pdf", "text/*"]
+}
+```
+
+## File Sources
+
+LibreChat supports multiple file storage backends:
+
+### Local Storage
+
+```json
+{
+  "source": "local",
+  "filepath": "/uploads/user123/file.pdf"
+}
+```
+
+### Amazon S3
+
+```json
+{
+  "source": "s3",
+  "filepath": "s3://bucket/user123/file.pdf"
+}
+```
+
+### OpenAI Files
+
+```json
+{
+  "source": "openai",
+  "file_id": "file-abc123xyz"
+}
+```
+
+### Azure OpenAI
+
+```json
+{
+  "source": "azure",
+  "file_id": "assistant-abc123xyz"
+}
+```
+
+### Code Execution Output
+
+```json
+{
+  "source": "execute_code",
+  "filepath": "session_id/file_id"
+}
+```
+
+## Supported File Types
+
+### Images
+
+- `image/png`
+- `image/jpeg`
+- `image/webp`
+- `image/gif`
+
+### Documents
+
+- `application/pdf`
+- `text/plain`
+- `text/markdown`
+- `text/csv`
+- `application/json`
+
+### Code Files
+
+- `text/x-python`
+- `text/javascript`
+- `text/x-typescript`
+- `text/html`
+- `text/css`
+
+### Office Documents
+
+- `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (DOCX)
+- `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (XLSX)
+- `application/vnd.openxmlformats-officedocument.presentationml.presentation` (PPTX)
+
+## File Size Limits
+
+Default limits (configurable per deployment):
+
+- **Single file**: 10 MB
+- **Total per conversation**: 50 MB
+- **Assistant files**: 50 MB per file
+- **Images**: 20 MB per file
+
+## Rate Limiting
+
+File upload endpoints have specific rate limits:
+
+- **IP-based limit**: Protects against abuse from single IP
+- **User-based limit**: Limits uploads per authenticated user
+- **Speech endpoints**: Separate limits for STT/TTS
+
+## Error Responses
+
+### File Too Large
+
+```json
+{
+  "message": "Error processing file: File exceeds size limit",
+  "error": "File too large"
+}
+```
+
+HTTP Status: 500
+
+### Unsupported File Type
+
+```json
+{
+  "message": "Error processing file: Invalid file format",
+  "error": "Unsupported file type"
+}
+```
+
+HTTP Status: 500
+
+### Insufficient Permissions
+
+```json
+{
+  "error": "Forbidden",
+  "message": "Insufficient permissions to upload files to this agent"
+}
+```
+
+HTTP Status: 403
+
+### File Not Found
+
+```json
+{
+  "error": "File not found"
+}
+```
+
+HTTP Status: 404
+
+## TypeScript Types
+
+```typescript
+import type { TFile } from 'librechat-data-provider';
+
+interface TFile {
+  file_id: string;
+  user: string;
+  filename: string;
+  filepath: string;
+  type: string;
+  bytes: number;
+  width?: number;
+  height?: number;
+  source: FileSources;
+  createdAt: string;
+  updatedAt?: string;
+}
+```

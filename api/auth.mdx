@@ -1,0 +1,486 @@
+---
+title: Auth Endpoints
+description: Authentication endpoints for login, registration, and session management
+---
+
+## Overview
+
+Authentication endpoints handle user login, registration, password reset, and two-factor authentication.
+
+All auth endpoints are prefixed with `/api/auth`.
+
+## Login
+
+Authenticate and obtain a JWT token:
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "your-password"
+}
+```
+
+### Request Body
+
+<ParamField body="email" type="string" required>
+  User email address
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User password
+</ParamField>
+
+### Response
+
+<ResponseField name="token" type="string">
+  JWT access token
+</ResponseField>
+
+<ResponseField name="user" type="TUser">
+  User object with profile information
+</ResponseField>
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "user123",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "role": "user"
+  }
+}
+```
+
+If 2FA is enabled, the response will include a temporary token instead:
+
+```json
+{
+  "tempToken": "temp_abc123",
+  "message": "2FA verification required"
+}
+```
+
+Rate limiting is applied to prevent brute force attacks.
+
+## Logout
+
+Invalidate the current session:
+
+```http
+POST /api/auth/logout
+Authorization: Bearer <token>
+```
+
+### Response
+
+```json
+{
+  "message": "Logged out successfully"
+}
+```
+
+## Register
+
+Create a new user account:
+
+```http
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com",
+  "password": "secure-password",
+  "name": "Jane Smith",
+  "username": "janesmith"
+}
+```
+
+### Request Body
+
+<ParamField body="email" type="string" required>
+  Email address (must be unique)
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  Password (minimum 8 characters)
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  Full name
+</ParamField>
+
+<ParamField body="username" type="string">
+  Username (optional)
+</ParamField>
+
+<ParamField body="confirm_password" type="string">
+  Password confirmation (if required by server)
+</ParamField>
+
+### Response
+
+Returns the same format as login (token + user object).
+
+Note: Registration may require:
+- Invitation codes (if server is invite-only)
+- Email verification before account activation
+- Agreement to terms of service
+
+## Refresh Token
+
+Refresh an expired or expiring JWT token:
+
+```http
+POST /api/auth/refresh
+```
+
+### Query Parameters
+
+<ParamField query="retry" type="boolean">
+  Set to `true` to retry refresh
+</ParamField>
+
+### Response
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {...}
+}
+```
+
+## Password Reset
+
+### Request Password Reset
+
+Send a password reset email:
+
+```http
+POST /api/auth/requestPasswordReset
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+```
+
+<ParamField body="email" type="string" required>
+  Email address of the account
+</ParamField>
+
+### Response
+
+```json
+{
+  "message": "Password reset email sent"
+}
+```
+
+Note: For security, the response is the same whether the email exists or not.
+
+### Reset Password
+
+Reset password using token from email:
+
+```http
+POST /api/auth/resetPassword
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "token": "reset-token-from-email",
+  "password": "new-secure-password"
+}
+```
+
+<ParamField body="userId" type="string" required>
+  User ID from reset email
+</ParamField>
+
+<ParamField body="token" type="string" required>
+  Reset token from email
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  New password
+</ParamField>
+
+### Response
+
+```json
+{
+  "message": "Password reset successful"
+}
+```
+
+## Two-Factor Authentication
+
+### Enable 2FA
+
+Enable two-factor authentication:
+
+```http
+GET /api/auth/2fa/enable
+Authorization: Bearer <token>
+```
+
+### Response
+
+<ResponseField name="qrCode" type="string">
+  QR code data URL for authenticator app
+</ResponseField>
+
+<ResponseField name="secret" type="string">
+  TOTP secret for manual entry
+</ResponseField>
+
+<ResponseField name="backupCodes" type="string[]">
+  One-time backup codes
+</ResponseField>
+
+```json
+{
+  "qrCode": "data:image/png;base64,iVBORw0KG...",
+  "secret": "JBSWY3DPEHPK3PXP",
+  "backupCodes": [
+    "12345678",
+    "87654321",
+    "11223344",
+    "55667788",
+    "99001122"
+  ]
+}
+```
+
+### Verify 2FA Code
+
+Verify a TOTP code:
+
+```http
+POST /api/auth/2fa/verify
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "token": "123456"
+}
+```
+
+<ParamField body="token" type="string" required>
+  6-digit TOTP code from authenticator app
+</ParamField>
+
+### Confirm 2FA
+
+Confirm and activate 2FA:
+
+```http
+POST /api/auth/2fa/confirm
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "token": "123456"
+}
+```
+
+### Disable 2FA
+
+Disable two-factor authentication:
+
+```http
+POST /api/auth/2fa/disable
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "token": "123456"
+}
+```
+
+<ParamField body="token" type="string" required>
+  6-digit TOTP code to confirm disable
+</ParamField>
+
+### Regenerate Backup Codes
+
+Generate new backup codes:
+
+```http
+POST /api/auth/2fa/backup/regenerate
+Authorization: Bearer <token>
+```
+
+### Response
+
+```json
+{
+  "backupCodes": [
+    "12345678",
+    "87654321",
+    "11223344"
+  ]
+}
+```
+
+### Verify with Temp Token
+
+Complete 2FA verification during login:
+
+```http
+POST /api/auth/2fa/verify-temp
+Content-Type: application/json
+
+{
+  "tempToken": "temp_abc123",
+  "token": "123456"
+}
+```
+
+<ParamField body="tempToken" type="string" required>
+  Temporary token from login response
+</ParamField>
+
+<ParamField body="token" type="string" required>
+  6-digit TOTP code or backup code
+</ParamField>
+
+### Response
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {...}
+}
+```
+
+## OAuth / Social Login
+
+### Google OAuth
+
+Initiate Google OAuth flow:
+
+```http
+GET /api/auth/google
+```
+
+Redirects to Google OAuth consent screen. After authentication, redirects back to LibreChat with auth token.
+
+### Facebook OAuth
+
+Initiate Facebook OAuth flow:
+
+```http
+GET /api/auth/facebook
+```
+
+## Graph Token (Microsoft)
+
+Obtain Microsoft Graph API token:
+
+```http
+GET /api/auth/graph-token?scopes=Files.Read%20User.Read
+Authorization: Bearer <token>
+```
+
+### Query Parameters
+
+<ParamField query="scopes" type="string" required>
+  Space-separated Microsoft Graph scopes (URL-encoded)
+</ParamField>
+
+### Response
+
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGci...",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}
+```
+
+## LDAP Authentication
+
+If LDAP is configured (`LDAP_URL` and `LDAP_USER_SEARCH_BASE` environment variables), the login endpoint will authenticate against LDAP instead of local database.
+
+## Error Responses
+
+### Invalid Credentials
+
+```json
+{
+  "error": "Invalid credentials",
+  "message": "Email or password is incorrect"
+}
+```
+
+HTTP Status: 401
+
+### Email Already Exists
+
+```json
+{
+  "error": "Email already exists",
+  "message": "An account with this email already exists"
+}
+```
+
+HTTP Status: 409
+
+### Weak Password
+
+```json
+{
+  "error": "Weak password",
+  "message": "Password must be at least 8 characters"
+}
+```
+
+HTTP Status: 400
+
+### Account Banned
+
+```json
+{
+  "error": "Account banned",
+  "message": "Your account has been suspended"
+}
+```
+
+HTTP Status: 403
+
+### Rate Limited
+
+```json
+{
+  "error": "Too many requests",
+  "message": "Too many login attempts. Please try again later."
+}
+```
+
+HTTP Status: 429
+
+### Invalid 2FA Token
+
+```json
+{
+  "error": "Invalid 2FA token",
+  "message": "The verification code is incorrect"
+}
+```
+
+HTTP Status: 401
+
+## Security Features
+
+- **Rate Limiting**: Login and registration endpoints have strict rate limits
+- **Password Hashing**: Passwords are hashed using bcrypt
+- **JWT Expiration**: Tokens expire and require refresh
+- **HTTPS Required**: Production deployments should use HTTPS
+- **CSRF Protection**: Session cookies include CSRF tokens
+- **Account Lockout**: Multiple failed login attempts may lock the account
+- **Email Verification**: Optional email verification before account activation

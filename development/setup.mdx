@@ -1,0 +1,347 @@
+---
+title: 'Development Environment Setup'
+description: 'Set up your local development environment for LibreChat'
+---
+
+<Info>
+  **Prerequisites**:
+  - Node.js v20.19.0+ or ^22.12.0 or >= 23.0.0
+  - MongoDB database
+  - npm 11.10.0 (specified as package manager)
+</Info>
+
+## Initial Setup
+
+LibreChat uses a monorepo structure with npm workspaces. Follow these steps to set up your development environment.
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/danny-avila/LibreChat.git
+    cd LibreChat
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Use the smart reinstall command that only reinstalls if the lockfile has changed:
+
+    ```bash
+    npm run smart-reinstall
+    ```
+
+    This command will:
+    - Check if `package-lock.json` has changed
+    - Install dependencies across all workspaces
+    - Build packages via Turborepo with parallel execution and caching
+
+    <Accordion title="Alternative installation methods">
+      **Clean install** (wipes `node_modules` and reinstalls from scratch):
+      ```bash
+      npm run reinstall
+      ```
+
+      **Docker environment**:
+      ```bash
+      npm run reinstall:docker
+      ```
+
+      **Using Bun** (alternative runtime):
+      ```bash
+      npm run b:reinstall
+      ```
+    </Accordion>
+  </Step>
+
+  <Step title="Configure environment variables">
+    Copy the example environment file and configure it for your local setup:
+
+    ```bash
+    cp .env.example .env
+    ```
+
+    Update the following required variables in `.env`:
+
+    ```bash
+    # Server Configuration
+    HOST=localhost
+    PORT=3080
+
+    # Database
+    MONGO_URI=mongodb://127.0.0.1:27017/LibreChat
+
+    # Domain Configuration
+    DOMAIN_CLIENT=http://localhost:3080
+    DOMAIN_SERVER=http://localhost:3080
+
+    # Enable debug logging
+    DEBUG_LOGGING=true
+    DEBUG_CONSOLE=false
+
+    # Trust proxy settings (1 = behind one reverse proxy)
+    TRUST_PROXY=1
+    ```
+
+    <Note>
+      The backend runs on `http://localhost:3080/` by default.
+      The frontend dev server runs on `http://localhost:3090/`.
+    </Note>
+  </Step>
+
+  <Step title="Build packages">
+    Build all compiled code via Turborepo:
+
+    ```bash
+    npm run build
+    ```
+
+    This uses Turborepo for parallel, cached builds across all workspaces.
+
+    <Accordion title="Build individual packages">
+      You can also build specific packages:
+
+      ```bash
+      # Build data-provider (required by most other packages)
+      npm run build:data-provider
+
+      # Build individual packages
+      npm run build:data-schemas
+      npm run build:api
+      npm run build:client-package
+      npm run build:client
+
+      # Build all packages sequentially (legacy)
+      npm run frontend
+      ```
+    </Accordion>
+  </Step>
+</Steps>
+
+## Running the Development Servers
+
+### Backend Development Server
+
+Start the backend server with file watching and hot reload:
+
+```bash
+npm run backend:dev
+```
+
+This runs the Express server in development mode using nodemon, which automatically restarts when files change.
+
+<Accordion title="Other backend options">
+  **Production mode**:
+  ```bash
+  npm run backend
+  ```
+
+  **With Node.js inspector** (for debugging):
+  ```bash
+  npm run backend:inspect
+  ```
+
+  **Experimental features**:
+  ```bash
+  npm run backend:experimental
+  ```
+
+  **Stop backend server**:
+  ```bash
+  npm run backend:stop
+  ```
+
+  **Using Bun**:
+  ```bash
+  npm run b:api:dev
+  ```
+</Accordion>
+
+### Frontend Development Server
+
+Start the frontend dev server with Hot Module Replacement (HMR):
+
+```bash
+npm run frontend:dev
+```
+
+<Warning>
+  The frontend dev server requires the backend to be running first. Start the backend server before running this command.
+</Warning>
+
+The frontend will be available at `http://localhost:3090/` and will proxy API requests to the backend at `http://localhost:3080/`.
+
+<Accordion title="Using Bun for frontend">
+  ```bash
+  npm run b:client:dev
+  ```
+</Accordion>
+
+## Development Workflow
+
+### Making Changes to Data Provider
+
+The `packages/data-provider` package is shared between frontend and backend. After making changes, rebuild it:
+
+```bash
+npm run build:data-provider
+```
+
+<Note>
+  Frontend and backend shared API logic (endpoints, types, data-service) goes in `packages/data-provider`.
+</Note>
+
+### Code Formatting and Linting
+
+```bash
+# Run ESLint
+npm run lint
+
+# Fix linting errors automatically
+npm run lint:fix
+
+# Format code with Prettier
+npm run format
+```
+
+<Warning>
+  All TypeScript and ESLint warnings/errors must be resolved before submitting PRs. Fix all formatting lint errors (trailing spaces, tabs, newlines, indentation) using auto-fix when available.
+</Warning>
+
+## Testing
+
+### Running Tests
+
+LibreChat uses Jest for testing. Tests are run per-workspace:
+
+```bash
+# Run all tests
+npm run test:all
+
+# Run tests for specific workspaces
+npm run test:client
+npm run test:api
+npm run test:packages:api
+npm run test:packages:data-provider
+npm run test:packages:data-schemas
+```
+
+### Running Tests in a Workspace
+
+Navigate to the workspace directory and run Jest:
+
+```bash
+# Backend tests
+cd api && npx jest <pattern>
+
+# Package tests
+cd packages/api && npx jest <pattern>
+
+# Frontend tests
+cd client && npm run test
+```
+
+<Note>
+  Frontend tests are located in `__tests__` directories alongside components. Use `test/layout-test-utils` for rendering utilities.
+</Note>
+
+### End-to-End Testing
+
+LibreChat uses Playwright for E2E testing:
+
+```bash
+# Run E2E tests (local)
+npm run e2e
+
+# Run with headed browser
+npm run e2e:headed
+
+# Accessibility tests
+npm run e2e:a11y
+
+# Debug mode
+npm run e2e:debug
+
+# Generate E2E code
+npm run e2e:codegen
+```
+
+## Node.js Memory Configuration
+
+For large builds or development work, you may need to increase Node.js memory:
+
+```bash
+# Set in your .env file or export directly
+export NODE_OPTIONS="--max-old-space-size=6144"
+```
+
+<Note>
+  `NODE_MAX_OLD_SPACE_SIZE` is used as a Docker build argument but is NOT recognized by Node.js at runtime. Use `NODE_OPTIONS` instead.
+</Note>
+
+## Common Issues
+
+<AccordionGroup>
+  <Accordion title="Port already in use">
+    If port 3080 or 3090 is already in use:
+
+    1. Stop any running LibreChat processes
+    2. Kill the process using the port:
+       ```bash
+       # Find the process
+       lsof -i :3080
+       # Kill it
+       kill -9 <PID>
+       ```
+    3. Or change the port in your `.env` file
+  </Accordion>
+
+  <Accordion title="MongoDB connection failed">
+    Ensure MongoDB is running:
+
+    ```bash
+    # Start MongoDB (macOS with Homebrew)
+    brew services start mongodb-community
+
+    # Start MongoDB (Linux)
+    sudo systemctl start mongod
+
+    # Verify MongoDB is running
+    mongosh
+    ```
+  </Accordion>
+
+  <Accordion title="Build fails with memory errors">
+    Increase Node.js memory allocation:
+
+    ```bash
+    export NODE_OPTIONS="--max-old-space-size=6144"
+    npm run build
+    ```
+  </Accordion>
+
+  <Accordion title="Changes not reflecting in data-provider">
+    After modifying `packages/data-provider`, rebuild it:
+
+    ```bash
+    npm run build:data-provider
+    ```
+
+    Then restart both frontend and backend servers.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture Overview" icon="sitemap" href="/development/architecture">
+    Learn about LibreChat's system architecture and how components interact
+  </Card>
+  <Card title="Monorepo Structure" icon="folder-tree" href="/development/monorepo">
+    Understand the workspace organization and dependencies
+  </Card>
+  <Card title="Code Style Guide" icon="code" href="/development/code-style">
+    Follow LibreChat's coding standards and best practices
+  </Card>
+  <Card title="Contributing Guide" icon="hand-holding-heart" href="/development/contributing">
+    Learn how to contribute to LibreChat
+  </Card>
+</CardGroup>

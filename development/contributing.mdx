@@ -1,0 +1,287 @@
+---
+title: Contributing to LibreChat
+description: Guidelines for contributing to the LibreChat project
+---
+
+Thank you for your interest in contributing to LibreChat! We welcome various types of contributions, including bug reports, documentation improvements, feature requests, and code contributions.
+
+## Before You Start
+
+### Feature Contributions
+
+If the feature you'd like to contribute hasn't received prior approval from the project maintainers (i.e., isn't on the [roadmap](https://github.com/users/danny-avila/projects/2)), please submit a request in the [Feature Requests & Suggestions category](https://github.com/danny-avila/LibreChat/discussions/new?category=feature-requests-suggestions) before beginning work.
+
+Your request should include:
+- Specific implementation details
+- Areas of the application affected by the change
+- Designs (if applicable)
+- Any other relevant information for review
+
+**Note:** Proposals are not required for small changes, bug fixes, or documentation improvements. These should be tied to an [issue](https://github.com/danny-avila/LibreChat/issues) in the pull request for tracking.
+
+### Community Support
+
+Join our [Discord community](https://discord.librechat.ai) to discuss changes, engage with contributors, and seek guidance.
+
+## Development Setup
+
+### Requirements
+
+- **Node.js:** v20.19.0+ or ^22.12.0 or >= 23.0.0
+- **Database:** MongoDB Community Edition
+- **Package Manager:** npm 11.10.0
+
+### Installation
+
+<Steps>
+  <Step title="Install Dependencies">
+    Run one of the following commands:
+    
+    ```bash
+    # Smart install (uses Turborepo, installs only if lockfile changed)
+    npm run smart-reinstall
+    
+    # Clean install (wipes node_modules and reinstalls from scratch)
+    npm run reinstall
+    
+    # Fresh lockfile-based install
+    npm ci
+    ```
+  </Step>
+  
+  <Step title="Build Compiled Code">
+    ```bash
+    npm run build
+    ```
+  </Step>
+  
+  <Step title="Setup Unit Tests">
+    ```bash
+    # Copy test environment file
+    cp api/test/.env.test.example api/test/.env.test
+    
+    # Run backend tests
+    npm run test:api
+    
+    # Run frontend tests
+    npm run test:client
+    ```
+  </Step>
+  
+  <Step title="Setup Integration Tests">
+    ```bash
+    # Create environment file
+    cp .env.example .env
+    
+    # Install Playwright
+    npx install playwright
+    npx playwright install
+    
+    # Copy config files
+    cp e2e/config.local.example.ts e2e/config.local.ts
+    cp librechat.example.yaml librechat.yaml
+    
+    # Run E2E tests
+    npm run e2e
+    ```
+    
+    Ensure MongoDB is installed and `mongosh` connects to your local instance.
+  </Step>
+</Steps>
+
+## Development Workflow
+
+### Before Starting Work
+
+1. Ensure your main branch has the latest commits:
+   ```bash
+   npm run update
+   ```
+
+2. Create a new branch with a descriptive slash-based name:
+   ```bash
+   git checkout -b new/feature/x
+   ```
+
+### During Development
+
+1. **Run linting** to find errors:
+   ```bash
+   npm run lint
+   ```
+   Or enable husky pre-commit checks.
+
+2. **Clear cache** before and after changes:
+   - Clear web app localStorage and cookies
+
+3. **Restart ESLint server** after reinstalling or updating:
+   - In VS Code: "ESLint: Restart ESLint Server" in command palette
+
+### Before Submitting
+
+<Accordion title="Pre-submission Checklist">
+  <Steps>
+    <Step title="Reinstall Packages">
+      ```bash
+      npm run reinstall
+      ```
+      Ensure everything still works after reinstalling.
+    </Step>
+    
+    <Step title="Build All Code">
+      ```bash
+      npm run build
+      ```
+    </Step>
+    
+    <Step title="Run Tests">
+      ```bash
+      # Backend unit tests
+      npm run test:api
+      
+      # Frontend unit tests
+      npm run test:client
+      
+      # Integration tests
+      npm run e2e
+      ```
+    </Step>
+  </Steps>
+</Accordion>
+
+## Git Workflow
+
+LibreChat uses a GitFlow workflow:
+
+### Branch Naming
+
+Use descriptive slash-based names:
+- `new/feature/x` - New features
+- `fix/bug-name` - Bug fixes
+- `docs/update-guide` - Documentation
+- `refactor/component-name` - Code refactoring
+
+### Commit Messages
+
+Follow the [semantic format](https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716):
+
+```
+feat: add hat wobble
+^--^  ^------------^
+|     |
+|     +-> Summary in present tense
+|
++-------> Type: chore, docs, feat, fix, refactor, style, or test
+```
+
+**Commit Types:**
+- `feat` - New feature
+- `fix` - Bug fix
+- `docs` - Documentation changes
+- `refactor` - Code refactoring
+- `style` - Code style/formatting
+- `test` - Adding tests
+- `chore` - Maintenance tasks
+
+**Commit Guidelines:**
+- Reduce the number of commits by organizing and [squashing](https://www.freecodecamp.org/news/git-squash-commits/)
+- Keep commit history clean and easy to follow
+- Unorganized commits may be squashed during merge, reducing your commit count to 1
+
+### Pull Request Process
+
+<Steps>
+  <Step title="Implement Changes">
+    Make your changes and ensure all tests pass.
+  </Step>
+  
+  <Step title="Update Documentation">
+    Update README.md with:
+    - Interface changes
+    - New environment variables
+    - Exposed ports
+    - Useful file locations
+  </Step>
+  
+  <Step title="Submit Pull Request">
+    Include in your PR description:
+    - Clear summary of changes
+    - Reasons behind the changes
+    - Steps to test the PR
+    
+    Ensure:
+    - All tests pass
+    - Code is well-formatted
+    - Commit history is clean
+    - Follows coding standards
+  </Step>
+</Steps>
+
+## Naming Conventions
+
+<CardGroup cols={2}>
+  <Card title="Branch Names">
+    Descriptive, slash-based
+    
+    Example: `new/feature/x`
+  </Card>
+  
+  <Card title="Labels">
+    Descriptive, kebab-case
+    
+    Example: `bug-fix`
+  </Card>
+  
+  <Card title="JS/TS Files">
+    camelCase, uppercase first letter for React
+    
+    Examples: `helperFunction.ts`, `ReactComponent.tsx`
+  </Card>
+  
+  <Card title="Docs Files">
+    snake_case
+    
+    Example: `config_files.md`
+  </Card>
+</CardGroup>
+
+## Code Standards
+
+For detailed coding conventions, workspace boundaries, and architecture guidance, refer to:
+- [Code Style Guide](/development/code-style)
+- [Testing Guidelines](/development/testing)
+- [`AGENTS.md`](https://github.com/danny-avila/LibreChat/blob/main/AGENTS.md) in the repository
+
+## Our Standards
+
+We strive to maintain a positive and inclusive environment. All contributors should:
+
+- Use welcoming and inclusive language
+- Be respectful of differing viewpoints and experiences
+- Gracefully accept constructive criticism
+- Focus on what is best for the community
+- Show empathy towards other community members
+
+Project maintainers have the right to remove, edit, or reject contributions that don't align with these standards.
+
+## Getting Help
+
+If you need assistance:
+
+<CardGroup cols={2}>
+  <Card title="Discord Community" icon="discord" href="https://discord.librechat.ai">
+    Join our Discord for real-time help and discussions
+  </Card>
+  
+  <Card title="GitHub Discussions" icon="github" href="https://github.com/danny-avila/LibreChat/discussions">
+    Browse or start discussions on GitHub
+  </Card>
+  
+  <Card title="Issues" icon="bug" href="https://github.com/danny-avila/LibreChat/issues">
+    Report bugs or track existing issues
+  </Card>
+  
+  <Card title="Documentation" icon="book" href="https://docs.librechat.ai">
+    Read the full documentation
+  </Card>
+</CardGroup>

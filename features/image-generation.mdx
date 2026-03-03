@@ -1,0 +1,598 @@
+---
+title: Image Generation
+description: Generate images with DALL-E, Flux, Stable Diffusion, and other AI models
+icon: "palette"
+---
+
+LibreChat supports multiple AI image generation models, allowing you to create images from text descriptions through various providers and endpoints.
+
+## Supported Image Models
+
+<CardGroup cols={2}>
+  <Card title="DALL-E" icon="openai">
+    OpenAI's DALL-E 2 and DALL-E 3 models
+  </Card>
+  <Card title="Flux" icon="bolt">
+    Black Forest Labs' Flux models via API
+  </Card>
+  <Card title="Stable Diffusion" icon="image">
+    Stability AI's image generation
+  </Card>
+  <Card title="Gemini Image Gen" icon="google">
+    Google's Imagen through Gemini
+  </Card>
+</CardGroup>
+
+## DALL-E Configuration
+
+### OpenAI DALL-E
+
+DALL-E is available through the OpenAI endpoint:
+
+```bash .env
+DALLE_API_KEY=your-openai-api-key
+# Or use the same key as OpenAI
+OPENAI_API_KEY=your-openai-api-key
+```
+
+**Available Models:**
+- `dall-e-3`: Latest model with highest quality
+- `dall-e-2`: Legacy model, faster and cheaper
+
+### Azure DALL-E
+
+For Azure-hosted DALL-E:
+
+```bash .env
+DALLE3_AZURE_API_VERSION=2024-02-01
+DALLE3_BASEURL=https://your-resource.openai.azure.com
+DALLE3_API_KEY=your-azure-key
+```
+
+### DALL-E Reverse Proxy
+
+Use a custom endpoint:
+
+```bash .env
+DALLE_REVERSE_PROXY=https://your-proxy.com/v1
+```
+
+## Image Generation Parameters
+
+### DALL-E 3 Parameters
+
+<ParamField path="prompt" type="string" required>
+  Text description of the desired image (up to 4000 characters)
+</ParamField>
+
+<ParamField path="size" type="string" default="1024x1024">
+  Image dimensions:
+  - `1024x1024` - Square (default)
+  - `1792x1024` - Wide/landscape
+  - `1024x1792` - Tall/portrait
+</ParamField>
+
+<ParamField path="quality" type="string" default="standard">
+  Image quality:
+  - `standard` - Faster, lower cost
+  - `hd` - Higher detail, slower, more expensive
+</ParamField>
+
+<ParamField path="style" type="string" default="vivid">
+  Image style:
+  - `vivid` - Hyper-real and dramatic
+  - `natural` - More natural, less dramatic
+</ParamField>
+
+### Example DALL-E Request
+
+```json
+{
+  "prompt": "A serene mountain landscape at sunset with a lake reflection",
+  "size": "1792x1024",
+  "quality": "hd",
+  "style": "natural"
+}
+```
+
+## Flux API Configuration
+
+Flux models through various providers:
+
+```typescript
+// Flux API configuration
+{
+  action: 'generate',
+  prompt: 'Your image description',
+  aspect_ratio: '16:9',
+  output_format: 'jpeg',
+  output_quality: 90,
+  safety_tolerance: 3,
+  seed: 42,
+  endpoint: 'pro/v1'  // or 'dev/v1'
+}
+```
+
+**Actions:**
+- `generate`: Standard image generation
+- `generate_finetuned`: Use fine-tuned models
+- `list_finetunes`: Get available custom models
+
+**Aspect Ratios:**
+- `1:1` - Square
+- `16:9` - Landscape
+- `9:16` - Portrait
+- `4:3`, `3:4`, `21:9`, etc.
+
+## Stable Diffusion Configuration
+
+Configure Stable Diffusion endpoints:
+
+```bash .env
+SD_WEBUI_URL=http://localhost:7860
+STABLE_DIFFUSION_API_KEY=your-api-key  # If required
+```
+
+```typescript
+// Stable Diffusion parameters
+{
+  prompt: 'Image description',
+  negative_prompt: 'Things to avoid',
+  steps: 30,
+  sampler_name: 'DPM++ 2M Karras',
+  cfg_scale: 7,
+  width: 512,
+  height: 512,
+  seed: -1
+}
+```
+
+## Google Gemini Image Generation
+
+Gemini models with image generation:
+
+```typescript
+{
+  model: 'gemini-2.0-flash-exp',
+  // Image generation through native capabilities
+  prompt: 'Generate: A futuristic city skyline'
+}
+```
+
+## Using Image Generation
+
+### In Chat
+
+Simply ask the AI to generate an image:
+
+```
+User: Generate an image of a cozy coffee shop interior with warm lighting
+
+Assistant: I'll create that image for you.
+
+[Uses DALL-E tool]
+
+[Image appears]
+
+I've generated an image of a cozy coffee shop with:
+- Warm, ambient lighting from hanging fixtures
+- Comfortable seating areas
+- A wooden bar counter
+- Shelves with coffee equipment
+- Large windows showing a street view
+```
+
+### With Agents
+
+Configure agents with image generation tools:
+
+```typescript
+{
+  name: 'Creative Designer',
+  provider: 'openAI',
+  model: 'gpt-4o',
+  instructions: `
+    You are a creative designer. When users request images:
+    1. Create detailed, descriptive prompts
+    2. Specify appropriate size and style
+    3. Generate high-quality images
+    4. Offer variations if requested
+  `,
+  tools: ['dalle']  // Image generation tool
+}
+```
+
+### Tool Configuration
+
+Image generation tools are automatically available:
+
+```typescript
+// Tool definition
+{
+  name: 'dalle',
+  description: 'Create images from text descriptions',
+  parameters: {
+    type: 'object',
+    properties: {
+      prompt: {
+        type: 'string',
+        description: 'Detailed image description'
+      },
+      size: {
+        type: 'string',
+        enum: ['1024x1024', '1792x1024', '1024x1792']
+      },
+      quality: {
+        type: 'string',
+        enum: ['standard', 'hd']
+      },
+      style: {
+        type: 'string',
+        enum: ['vivid', 'natural']
+      }
+    },
+    required: ['prompt']
+  }
+}
+```
+
+## Generated Image Handling
+
+### File Context
+
+Generated images are stored with specific context:
+
+```typescript
+{
+  file_id: 'file-gen-123',
+  filename: 'generated_image.png',
+  context: FileContext.image_generation,
+  messageId: 'msg-456',
+  conversationId: 'conv-789',
+  type: ContentTypes.image_file
+}
+```
+
+### File Storage
+
+Configure storage for generated images:
+
+```yaml librechat.yaml
+fileStrategy:
+  image: "s3"  # Store generated images in S3
+  # or
+  image: "firebase"
+  # or
+  image: "local"
+```
+
+### Download and Usage
+
+Generated images can be:
+- Downloaded directly from the UI
+- Referenced in future messages
+- Used with vision models for analysis
+- Saved to conversation history
+
+## Advanced Techniques
+
+### Prompt Engineering
+
+Create effective image prompts:
+
+```
+Good Prompt:
+"A serene Japanese garden in spring, with cherry blossoms in full bloom, 
+a wooden bridge over a koi pond, stone lanterns, and Mount Fuji visible 
+in the background, soft morning light, photorealistic style"
+
+Poor Prompt:
+"Japanese garden"
+```
+
+**Tips:**
+- Be specific about subject, setting, lighting
+- Include style preferences (photorealistic, artistic, etc.)
+- Mention colors, mood, atmosphere
+- Specify composition and perspective
+- Add details about time of day, season
+
+### Iterative Refinement
+
+```
+User: Generate a logo for a tech startup
+
+[Image 1 generated]
+
+User: Make it more modern and minimalist
+
+[Image 2 generated]
+
+User: Change the color scheme to blue and white
+
+[Image 3 generated]
+```
+
+### Batch Generation
+
+```
+User: Generate 3 different variations of a mountain landscape
+
+Assistant: I'll create three different mountain landscapes:
+
+1. Realistic photograph style
+2. Watercolor painting style  
+3. Minimalist illustration style
+
+[Generates 3 images]
+```
+
+## Model Comparison
+
+<Tabs>
+  <Tab title="DALL-E 3">
+    **Strengths:**
+    - Highest quality results
+    - Best prompt following
+    - Good text rendering
+    - Consistent style
+    
+    **Best For:**
+    - Professional content
+    - Marketing materials
+    - Detailed scenes
+    - Text in images
+  </Tab>
+  
+  <Tab title="DALL-E 2">
+    **Strengths:**
+    - Faster generation
+    - Lower cost
+    - Multiple sizes
+    
+    **Best For:**
+    - Quick iterations
+    - Concept exploration
+    - Budget-conscious projects
+  </Tab>
+  
+  <Tab title="Flux">
+    **Strengths:**
+    - Fine-tuned models
+    - Custom training
+    - Flexible parameters
+    - Various aspect ratios
+    
+    **Best For:**
+    - Brand-specific styles
+    - Custom aesthetics
+    - Specialized use cases
+  </Tab>
+  
+  <Tab title="Stable Diffusion">
+    **Strengths:**
+    - Self-hosted option
+    - Full control
+    - Community models
+    - Free to use
+    
+    **Best For:**
+    - Privacy-sensitive projects
+    - Custom deployments
+    - Experimentation
+  </Tab>
+</Tabs>
+
+## File Size Configuration
+
+Set limits for generated images:
+
+```yaml librechat.yaml
+fileConfig:
+  imageGeneration:
+    percentage: 100  # Scale to percentage of original
+    # or
+    px: 1024  # Scale to pixel dimension
+```
+
+## Best Practices
+
+<Tip>
+  **Detailed Prompts**: More detail generally produces better results
+</Tip>
+
+<Tip>
+  **Aspect Ratio**: Choose size based on use case (social media, print, web)
+</Tip>
+
+<Tip>
+  **Quality Settings**: Use HD quality for final production, standard for drafts
+</Tip>
+
+<Warning>
+  **Content Policy**: All generated images must comply with provider content policies
+</Warning>
+
+<Info>
+  **Cost Awareness**: HD images and larger sizes cost more - use appropriately
+</Info>
+
+## Example Use Cases
+
+<AccordionGroup>
+  <Accordion title="Marketing Materials">
+    ```
+    User: Create a hero image for our eco-friendly product landing page
+    
+    Assistant: I'll create a compelling hero image:
+    
+    Prompt: "Professional product photography of eco-friendly bamboo 
+    products on a clean white surface, surrounded by green leaves and 
+    natural light, sustainable lifestyle aesthetic, modern and minimalist, 
+    high-end commercial photography style"
+    
+    Size: 1792x1024 (wide format for hero)
+    Quality: HD
+    Style: Natural
+    
+    [Generates image]
+    ```
+  </Accordion>
+  
+  <Accordion title="Social Media Content">
+    ```
+    User: Create an Instagram post image about productivity tips
+    
+    Assistant: Creating an engaging Instagram image:
+    
+    Prompt: "Flat lay of a organized desk workspace, laptop, coffee cup, 
+    notebook with checklist, succulent plant, modern minimalist aesthetic, 
+    bright and clean, perfect lighting, Instagram-ready composition"
+    
+    Size: 1024x1024 (square for Instagram)
+    Quality: HD
+    Style: Vivid
+    
+    [Generates image]
+    ```
+  </Accordion>
+  
+  <Accordion title="Concept Art">
+    ```
+    User: Generate concept art for a sci-fi video game character
+    
+    Assistant: I'll create detailed concept art:
+    
+    Prompt: "Full body character concept art of a cyberpunk hacker, 
+    neon-lit urban environment, futuristic tech gear, holographic 
+    interface elements, detailed costume design, professional game 
+    concept art style, dynamic pose, dramatic lighting"
+    
+    Size: 1024x1792 (portrait orientation)
+    Quality: HD  
+    Style: Vivid
+    
+    [Generates image]
+    ```
+  </Accordion>
+  
+  <Accordion title="Educational Diagrams">
+    ```
+    User: Create a simple diagram showing the water cycle
+    
+    Assistant: Creating an educational diagram:
+    
+    Prompt: "Simple, clean educational diagram of the water cycle, 
+    showing evaporation, condensation, precipitation, and collection, 
+    labeled arrows, bright colors, child-friendly illustration style, 
+    clear and easy to understand"
+    
+    Size: 1024x1024
+    Quality: Standard
+    Style: Natural
+    
+    [Generates image]
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Content Policy Violation">
+    **Issue:** Image rejected for policy violation
+    
+    **Solutions:**
+    - Revise prompt to remove potentially sensitive content
+    - Be more specific and appropriate
+    - Avoid violent, adult, or copyrighted content
+    - Use different phrasing
+  </Accordion>
+  
+  <Accordion title="Poor Quality Results">
+    **Issue:** Generated images don't match expectations
+    
+    **Solutions:**
+    - Add more detail to prompt
+    - Specify style and mood
+    - Use quality: "hd" setting
+    - Try different style parameter
+    - Iterate with refinements
+  </Accordion>
+  
+  <Accordion title="Generation Fails">
+    **Issue:** Tool fails to generate image
+    
+    **Solutions:**
+    - Check API key is valid
+    - Verify endpoint configuration
+    - Check rate limits
+    - Review error messages
+    - Try simpler prompt
+  </Accordion>
+</AccordionGroup>
+
+## Environment Variables
+
+<CodeGroup>
+```bash OpenAI DALL-E
+OPENAI_API_KEY=sk-...
+# or
+DALLE_API_KEY=sk-...
+DALLE3_API_KEY=sk-...
+```
+
+```bash Azure DALL-E
+DALLE3_AZURE_API_VERSION=2024-02-01
+DALLE3_BASEURL=https://your-resource.openai.azure.com
+DALLE3_API_KEY=your-azure-key
+```
+
+```bash Reverse Proxy
+DALLE_REVERSE_PROXY=https://your-proxy.com/v1
+```
+
+```bash Stable Diffusion
+SD_WEBUI_URL=http://localhost:7860
+STABLE_DIFFUSION_API_KEY=your-key
+```
+</CodeGroup>
+
+## Cost Optimization
+
+<Tip>
+  **Use Standard Quality**: For drafts and iterations, use standard quality
+</Tip>
+
+<Tip>
+  **Right-Size Images**: Don't generate larger images than needed
+</Tip>
+
+<Tip>
+  **Batch Similar Requests**: Generate variations in one session
+</Tip>
+
+<Info>
+  **Pricing (DALL-E 3):**
+  - Standard 1024x1024: $0.040
+  - Standard 1024x1792/1792x1024: $0.080
+  - HD 1024x1024: $0.080
+  - HD 1024x1792/1792x1024: $0.120
+</Info>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Multimodal" icon="image" href="/features/multimodal">
+    Analyze generated images with vision models
+  </Card>
+  <Card title="Agents" icon="robot" href="/features/agents">
+    Use image generation in agent workflows
+  </Card>
+  <Card title="Artifacts" icon="palette" href="/features/artifacts">
+    Display generated images in artifacts
+  </Card>
+  <Card title="Code Interpreter" icon="code" href="/features/code-interpreter">
+    Process and manipulate generated images
+  </Card>
+</CardGroup>

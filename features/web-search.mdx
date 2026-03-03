@@ -1,0 +1,634 @@
+---
+title: Web Search
+description: Search the web and retrieve current information with AI agents
+icon: "globe"
+---
+
+LibreChat's Web Search feature enables AI agents to search the internet, scrape web pages, and retrieve up-to-date information to answer questions with current data.
+
+## Overview
+
+Web Search allows agents to:
+
+<CardGroup cols={2}>
+  <Card title="Real-Time Search" icon="magnifying-glass">
+    Search the web for current information
+  </Card>
+  <Card title="Content Scraping" icon="file-lines">
+    Extract and analyze web page content
+  </Card>
+  <Card title="Result Reranking" icon="arrow-down-wide-short">
+    Improve relevance with AI reranking
+  </Card>
+  <Card title="Source Citations" icon="quote-left">
+    Provide sources and references
+  </Card>
+</CardGroup>
+
+## Configuration
+
+Configure web search in your `librechat.yaml`:
+
+```yaml librechat.yaml
+webSearch:
+  # Search Providers
+  serperApiKey: '${SERPER_API_KEY}'
+  searxngInstanceUrl: '${SEARXNG_INSTANCE_URL}'
+  searxngApiKey: '${SEARXNG_API_KEY}'
+  
+  # Content Scrapers
+  firecrawlApiKey: '${FIRECRAWL_API_KEY}'
+  firecrawlApiUrl: '${FIRECRAWL_API_URL}'
+  
+  # Rerankers
+  jinaApiKey: '${JINA_API_KEY}'
+  cohereApiKey: '${COHERE_API_KEY}'
+  
+  # Safe search filter
+  safeSearch: 'moderate'  # 'off', 'moderate', 'strict'
+  
+  # Scraper timeout
+  scraperTimeout: 7500  # milliseconds
+  
+  # Firecrawl options
+  firecrawlOptions:
+    timeout: 10000
+```
+
+## Components
+
+### Search Providers
+
+Choose your search engine:
+
+<Tabs>
+  <Tab title="Serper">
+    Google Search API through Serper.dev:
+    
+    ```yaml
+    webSearch:
+      serperApiKey: '${SERPER_API_KEY}'
+    ```
+    
+    **Setup:**
+    1. Sign up at [serper.dev](https://serper.dev)
+    2. Get your API key
+    3. Set `SERPER_API_KEY` environment variable
+    
+    **Features:**
+    - Google search results
+    - Fast and reliable
+    - Generous free tier
+  </Tab>
+  
+  <Tab title="SearXNG">
+    Self-hosted metasearch engine:
+    
+    ```yaml
+    webSearch:
+      searxngInstanceUrl: '${SEARXNG_INSTANCE_URL}'
+      searxngApiKey: '${SEARXNG_API_KEY}'  # Optional
+    ```
+    
+    **Setup:**
+    1. Deploy SearXNG instance
+    2. Configure instance URL
+    3. Optional: Set API key for authentication
+    
+    **Features:**
+    - Privacy-focused
+    - Aggregates multiple search engines
+    - Self-hosted control
+  </Tab>
+</Tabs>
+
+### Content Scrapers
+
+Extract content from web pages:
+
+<Tabs>
+  <Tab title="Firecrawl">
+    Advanced web scraping with clean content extraction:
+    
+    ```yaml
+    webSearch:
+      firecrawlApiKey: '${FIRECRAWL_API_KEY}'
+      firecrawlApiUrl: '${FIRECRAWL_API_URL}'
+      firecrawlOptions:
+        timeout: 10000
+        formats: ['markdown', 'html']
+    ```
+    
+    **Setup:**
+    1. Sign up at [firecrawl.dev](https://firecrawl.dev)
+    2. Get your API key
+    3. Set environment variable
+    
+    **Features:**
+    - Clean markdown extraction
+    - JavaScript rendering
+    - Removes ads and clutter
+    - Configurable timeouts
+  </Tab>
+  
+  <Tab title="Basic Scraper">
+    Built-in HTML scraping:
+    
+    ```yaml
+    webSearch:
+      scraperTimeout: 7500
+    ```
+    
+    **Features:**
+    - No API key required
+    - Basic HTML parsing
+    - Fallback option
+  </Tab>
+</Tabs>
+
+### Result Rerankers
+
+Improve search result relevance:
+
+<Tabs>
+  <Tab title="Jina AI">
+    Neural reranking with Jina AI:
+    
+    ```yaml
+    webSearch:
+      jinaApiKey: '${JINA_API_KEY}'
+      jinaApiUrl: '${JINA_API_URL}'  # Optional
+    ```
+    
+    **Setup:**
+    1. Sign up at [jina.ai](https://jina.ai)
+    2. Get your API key
+    3. Set `JINA_API_KEY` environment variable
+    
+    **Features:**
+    - Neural reranking models
+    - Multilingual support
+    - High accuracy
+  </Tab>
+  
+  <Tab title="Cohere">
+    Cohere's reranking API:
+    
+    ```yaml
+    webSearch:
+      cohereApiKey: '${COHERE_API_KEY}'
+    ```
+    
+    **Setup:**
+    1. Sign up at [cohere.ai](https://cohere.ai)
+    2. Get your API key
+    3. Set `COHERE_API_KEY` environment variable
+    
+    **Features:**
+    - State-of-the-art reranking
+    - Fast processing
+    - Scalable
+  </Tab>
+</Tabs>
+
+## Enabling Web Search
+
+### For Agents
+
+Enable web search in agent tools:
+
+```typescript
+{
+  name: 'Research Assistant',
+  provider: 'openAI',
+  model: 'gpt-4o',
+  instructions: 'You are a research assistant with web search capabilities.',
+  tools: ['web_search', 'file_search'],
+  tool_options: {
+    web_search: {
+      enabled: true
+    }
+  }
+}
+```
+
+### For Standard Chats
+
+Enable web search in model parameters:
+
+```typescript
+{
+  endpoint: 'openAI',
+  model: 'gpt-4o',
+  web_search: true  // Enable web search
+}
+```
+
+### Interface Configuration
+
+Control user access to web search:
+
+```yaml librechat.yaml
+interface:
+  fileSearch: true  # Enable file search UI (includes web search)
+```
+
+## Using Web Search
+
+### Search Queries
+
+The AI automatically formulates search queries:
+
+```
+User: What are the latest developments in quantum computing?
+
+Agent: Let me search for recent quantum computing news...
+[Uses web_search tool]
+
+Search query: "quantum computing latest developments 2024"
+
+Results:
+1. IBM announces new quantum processor...
+2. Google achieves quantum advantage in...
+3. Breakthrough in quantum error correction...
+
+[Agent synthesizes information with citations]
+```
+
+### Citation Format
+
+Web search results include citations:
+
+```markdown
+According to recent reports, quantum computing has made significant 
+advances in error correction [1]. IBM's latest processor features 
+127 qubits [2], while Google has demonstrated quantum advantage 
+in specific tasks [3].
+
+Sources:
+[1] Nature: "Breakthrough in Quantum Error Correction"
+[2] IBM Research: "New Quantum Processor Announcement"
+[3] Google AI Blog: "Quantum Advantage Demonstrated"
+```
+
+## Search Categories
+
+Web search authentication is organized by categories:
+
+<Tabs>
+  <Tab title="Providers">
+    Search engine selection:
+    - **Serper**: Google search via API
+    - **SearXNG**: Metasearch engine
+    
+    At least one provider must be configured.
+  </Tab>
+  
+  <Tab title="Scrapers">
+    Content extraction:
+    - **Firecrawl**: Advanced scraping
+    - **Basic**: Built-in scraper
+    
+    Falls back to basic scraper if no API key.
+  </Tab>
+  
+  <Tab title="Rerankers">
+    Result optimization (optional):
+    - **Jina AI**: Neural reranking
+    - **Cohere**: ML-based reranking
+    
+    Improves relevance but not required.
+  </Tab>
+</Tabs>
+
+## Safe Search
+
+Control content filtering:
+
+<ParamField path="safeSearch" type="string" default="moderate">
+  Filter search results by content safety level
+</ParamField>
+
+```yaml librechat.yaml
+webSearch:
+  safeSearch: 'moderate'  # 'off', 'moderate', 'strict'
+```
+
+**Levels:**
+- `off`: No filtering
+- `moderate`: Filter explicit content (default)
+- `strict`: Strict filtering
+
+## Advanced Configuration
+
+### Timeout Settings
+
+Configure timeouts for scrapers:
+
+```yaml librechat.yaml
+webSearch:
+  scraperTimeout: 7500  # Default scraper timeout
+  
+  firecrawlOptions:
+    timeout: 10000  # Firecrawl-specific timeout
+```
+
+### Custom Firecrawl Options
+
+Configure Firecrawl behavior:
+
+```yaml librechat.yaml
+webSearch:
+  firecrawlOptions:
+    timeout: 10000
+    formats: ['markdown', 'html']
+    onlyMainContent: true
+    includeMetadata: true
+    removeScripts: true
+```
+
+### Authentication Types
+
+Web search supports different authentication modes:
+
+<Tabs>
+  <Tab title="System-Defined">
+    API keys configured in environment:
+    
+    ```bash
+    SERPER_API_KEY=your-key-here
+    FIRECRAWL_API_KEY=your-key-here
+    JINA_API_KEY=your-key-here
+    ```
+    
+    Shared across all users.
+  </Tab>
+  
+  <Tab title="User-Provided">
+    Users provide their own API keys:
+    
+    ```typescript
+    // User can configure personal API keys
+    {
+      userId: 'user-123',
+      serperApiKey: 'user-specific-key',
+      firecrawlApiKey: 'user-firecrawl-key'
+    }
+    ```
+    
+    Allows individual usage tracking.
+  </Tab>
+</Tabs>
+
+## Example Configurations
+
+### Basic Setup
+
+Minimal configuration with Serper:
+
+```yaml librechat.yaml
+webSearch:
+  serperApiKey: '${SERPER_API_KEY}'
+```
+
+```bash .env
+SERPER_API_KEY=your-serper-key
+```
+
+### Full-Featured Setup
+
+Complete configuration with all services:
+
+```yaml librechat.yaml
+webSearch:
+  # Search
+  serperApiKey: '${SERPER_API_KEY}'
+  
+  # Scraping
+  firecrawlApiKey: '${FIRECRAWL_API_KEY}'
+  firecrawlOptions:
+    timeout: 15000
+    onlyMainContent: true
+  
+  # Reranking
+  jinaApiKey: '${JINA_API_KEY}'
+  
+  # Settings
+  safeSearch: 'moderate'
+  scraperTimeout: 10000
+```
+
+```bash .env
+SERPER_API_KEY=your-serper-key
+FIRECRAWL_API_KEY=your-firecrawl-key
+JINA_API_KEY=your-jina-key
+```
+
+### Self-Hosted Setup
+
+Using SearXNG with basic scraper:
+
+```yaml librechat.yaml
+webSearch:
+  searxngInstanceUrl: '${SEARXNG_INSTANCE_URL}'
+  searxngApiKey: '${SEARXNG_API_KEY}'
+  scraperTimeout: 7500
+  safeSearch: 'moderate'
+```
+
+```bash .env
+SEARXNG_INSTANCE_URL=https://searx.example.com
+SEARXNG_API_KEY=your-instance-key
+```
+
+## Model Integration
+
+### OpenAI Models
+
+Web search as a tool:
+
+```typescript
+{
+  model: 'gpt-4o',
+  tools: [{ type: 'web_search' }],
+  web_search: true
+}
+```
+
+### OpenRouter
+
+Special handling for OpenRouter:
+
+```typescript
+{
+  model: 'openrouter/model',
+  plugins: {
+    web_search: true  // OpenRouter uses plugins parameter
+  }
+}
+```
+
+### Anthropic Claude
+
+Native tool integration:
+
+```typescript
+{
+  model: 'claude-4.5-sonnet',
+  web_search: true,
+  tools: ['web_search']
+}
+```
+
+## Best Practices
+
+<Tip>
+  **Combine Services**: Use Serper for search + Firecrawl for scraping + Jina for reranking
+</Tip>
+
+<Tip>
+  **Timeout Configuration**: Set appropriate timeouts based on your use case (longer for deep scraping)
+</Tip>
+
+<Warning>
+  **Rate Limits**: Monitor API usage to avoid hitting provider rate limits
+</Warning>
+
+<Info>
+  **Cost Management**: Web search APIs have usage costs - configure wisely
+</Info>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Web Search Not Working">
+    **Check:**
+    - API keys are correctly set in environment
+    - At least one search provider is configured
+    - `web_search` is enabled in agent tools or model parameters
+    - No rate limiting or API quota issues
+  </Accordion>
+  
+  <Accordion title="Poor Search Results">
+    **Solutions:**
+    - Enable a reranker (Jina or Cohere)
+    - Adjust safe search settings
+    - Use more specific search queries
+    - Try different search provider
+  </Accordion>
+  
+  <Accordion title="Scraping Failures">
+    **Solutions:**
+    - Increase `scraperTimeout`
+    - Use Firecrawl for JavaScript-heavy sites
+    - Check firewall/network restrictions
+    - Verify target site allows scraping
+  </Accordion>
+  
+  <Accordion title="Slow Performance">
+    **Optimizations:**
+    - Reduce `scraperTimeout` for faster fails
+    - Skip reranking for speed
+    - Use basic scraper instead of Firecrawl
+    - Cache frequent searches
+  </Accordion>
+</AccordionGroup>
+
+## Environment Variables
+
+Complete list of web search environment variables:
+
+<CodeGroup>
+```bash Search Providers
+SERPER_API_KEY=your-serper-key
+SEARXNG_INSTANCE_URL=https://searx.example.com
+SEARXNG_API_KEY=your-searxng-key
+```
+
+```bash Content Scrapers
+FIRECRAWL_API_KEY=your-firecrawl-key
+FIRECRAWL_API_URL=https://api.firecrawl.dev  # Optional
+```
+
+```bash Rerankers
+JINA_API_KEY=your-jina-key
+JINA_API_URL=https://api.jina.ai/v1/rerank  # Optional
+COHERE_API_KEY=your-cohere-key
+```
+</CodeGroup>
+
+## Example Use Cases
+
+<AccordionGroup>
+  <Accordion title="Research Assistant">
+    ```typescript
+    {
+      name: 'Research Assistant',
+      provider: 'anthropic',
+      model: 'claude-4.5-sonnet',
+      instructions: `
+        You are a research assistant. When users ask questions:
+        1. Search the web for current information
+        2. Analyze multiple sources
+        3. Provide well-cited, accurate answers
+        4. Always include source links
+      `,
+      tools: ['web_search', 'file_search']
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="News Aggregator">
+    ```typescript
+    {
+      name: 'News Aggregator',
+      provider: 'openAI',
+      model: 'gpt-4o',
+      instructions: `
+        You aggregate and summarize news on requested topics.
+        Always search for the latest news and provide:
+        - Key headlines
+        - Brief summaries
+        - Source citations
+        - Publication dates
+      `,
+      tools: ['web_search']
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Fact Checker">
+    ```typescript
+    {
+      name: 'Fact Checker',
+      provider: 'openAI',
+      model: 'gpt-4o',
+      instructions: `
+        You verify claims by:
+        1. Searching for authoritative sources
+        2. Cross-referencing multiple sources
+        3. Providing evidence-based verdicts
+        4. Rating claim accuracy
+      `,
+      tools: ['web_search']
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Agents" icon="robot" href="/features/agents">
+    Use web search with autonomous agents
+  </Card>
+  <Card title="File Search" icon="magnifying-glass" href="/features/agents#file-search">
+    Search uploaded documents
+  </Card>
+  <Card title="Actions" icon="bolt" href="/features/agents#actions-api-calls">
+    Call external APIs for data
+  </Card>
+  <Card title="MCP" icon="plug" href="/features/mcp">
+    Custom tool integrations
+  </Card>
+</CardGroup>

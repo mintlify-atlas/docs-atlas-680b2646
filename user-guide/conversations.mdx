@@ -1,0 +1,271 @@
+---
+title: Managing Conversations
+description: Learn how to organize, navigate, and manage your conversations in LibreChat
+---
+
+# Managing Conversations
+
+LibreChat provides powerful tools for managing your conversations, including organizing chats, navigating conversation history, and advanced features like branching and forking.
+
+## Overview
+
+Conversations in LibreChat are organized in the sidebar, grouped by date for easy navigation. Each conversation can be renamed, shared, duplicated, archived, or deleted.
+
+## Conversation Sidebar
+
+### Viewing Conversations
+
+Your conversations appear in the left sidebar, automatically grouped by:
+
+- **Today** - Conversations from the current day
+- **Yesterday** - Conversations from the previous day
+- **Previous 7 Days** - Recent conversations from the past week
+- **Previous 30 Days** - Older conversations from the past month
+- **Earlier** - All conversations older than 30 days
+
+The sidebar uses virtualized scrolling to efficiently handle large conversation histories.
+
+### Expanding and Collapsing
+
+Click the **Chats** header in the sidebar to collapse or expand your conversation list. This helps you focus on the current chat or navigate to different conversations as needed.
+
+### Searching Conversations
+
+Use the search bar at the top of the sidebar to filter conversations by title. The search updates in real-time as you type.
+
+## Conversation Actions
+
+### Accessing Conversation Options
+
+Hover over any conversation in the sidebar to reveal the options menu (three dots icon). Click it to access:
+
+- **Share** - Create a shareable link to the conversation (if enabled)
+- **Rename** - Change the conversation title
+- **Duplicate** - Create a copy of the conversation
+- **Archive** - Move the conversation to your archive
+- **Delete** - Permanently remove the conversation
+
+### Quick Actions with Shift Key
+
+Hold **Shift** while hovering over the active conversation to reveal quick action buttons:
+
+- **Archive button** - Instantly archive the conversation
+- **Delete button** - Instantly delete without confirmation dialog
+
+This provides faster access to common actions when you're sure of your choice.
+
+### Renaming Conversations
+
+1. Click the options menu (three dots) on a conversation
+2. Select **Rename**
+3. Enter a new title
+4. Press **Enter** or click outside to save
+
+Conversation titles help you quickly identify and find specific chats in your history.
+
+### Duplicating Conversations
+
+Duplicating creates an exact copy of a conversation, including:
+
+- All messages and their content
+- Conversation settings and model configuration
+- File attachments and context
+
+1. Click the options menu on a conversation
+2. Select **Duplicate**
+3. A new conversation will be created and automatically opened
+
+This is useful for:
+- Starting a new conversation with the same context
+- Experimenting with different responses while preserving the original
+- Creating templates from existing conversations
+
+### Archiving Conversations
+
+Archiving removes conversations from your main list without deleting them:
+
+1. Click the options menu on a conversation
+2. Select **Archive**
+3. The conversation is moved to your archive
+
+Archived conversations can be restored from the archive view in your settings.
+
+### Deleting Conversations
+
+Permanently remove conversations you no longer need:
+
+1. Click the options menu on a conversation
+2. Select **Delete**
+3. Confirm the deletion in the dialog that appears
+
+Deleted conversations cannot be recovered.
+
+## Branching Conversations
+
+Branching allows you to explore alternative responses from a specific point in a conversation without affecting the original thread.
+
+### Creating a Branch
+
+When viewing messages with parallel agent responses (multiple agents responding to the same prompt):
+
+1. Locate the agent response header showing the agent/model name
+2. Click the **branch icon** (GitBranchPlus icon) next to the agent name
+3. A new conversation branch is created starting from that specific agent response
+
+Branches are useful for:
+- Comparing different agent approaches to the same problem
+- Continuing a conversation based on a specific agent's response style
+- Exploring multiple solution paths in parallel
+
+### Branch Notifications
+
+When you successfully create a branch:
+- A success toast notification appears
+- The new branch opens automatically
+- The original conversation remains unchanged
+
+## Forking Conversations
+
+Forking creates a new conversation based on a specific message in your chat history, allowing you to explore alternative conversation paths.
+
+### Understanding Fork Options
+
+LibreChat offers three fork modes:
+
+#### 1. Direct Path (Visible Messages)
+
+**Icon:** GitCommit (rotated)
+
+Copies only the directly visible conversation thread from the start up to the target message. This excludes any alternative message branches that weren't selected in the current view.
+
+**Best for:**
+- Creating a linear conversation copy
+- Focusing on a single conversation path
+- Simplifying complex branched conversations
+
+#### 2. Include Branches
+
+**Icon:** GitBranchPlus
+
+Copies all messages from the conversation start to the target message, including all alternative branches and sibling messages.
+
+**Best for:**
+- Preserving the full conversation context
+- Maintaining all explored alternatives
+- Complete conversation backups with branching history
+
+#### 3. All Messages at Target Level (Default)
+
+**Icon:** ListTree
+
+Copies the entire conversation up to the target level, including all messages at and before that depth in the conversation tree.
+
+**Best for:**
+- Standard forking behavior
+- Balanced context preservation
+- Most common use cases
+
+### How to Fork a Conversation
+
+1. Hover over any message in your conversation
+2. Click the **fork icon** (GitFork icon) that appears in the message toolbar
+3. Choose your fork option from the popup menu
+4. The new forked conversation opens automatically
+
+### Fork Settings
+
+#### Split at Target
+
+When enabled, the fork starts at the target message rather than from the beginning of the conversation. This creates a shorter conversation starting from your selected point.
+
+**Enable this when:**
+- You want to continue only from a specific point
+- The earlier context isn't relevant
+- You're creating a focused sub-conversation
+
+#### Remember Fork Preference
+
+Check "Remember fork preference" to save your fork settings:
+- Your chosen fork mode becomes the default
+- Future forks use this setting automatically without showing the menu
+- Click the fork icon to immediately fork using your saved preference
+
+**To change your saved preference:**
+1. Go to Settings > Chat Settings
+2. Find the "Fork Settings" section
+3. Update your default fork mode
+4. Toggle "Remember Default Fork" on or off
+
+### Fork Notifications
+
+- **Processing:** Toast notification appears when fork starts
+- **Success:** Confirmation when fork completes and new conversation opens
+- **Error:** Alert if forking fails (e.g., rate limits, server errors)
+
+### Fork Availability
+
+The fork feature is available when:
+- The conversation has at least one message
+- Forking is supported for the current endpoint
+- You're not currently submitting a new message
+
+## Favorites and Recent Conversations
+
+The sidebar displays your favorited conversations at the top for quick access, followed by recent chats organized by date.
+
+### Managing Favorites
+
+Favorite conversations stay pinned at the top of your sidebar regardless of when they were last updated.
+
+## Conversation Generation Indicators
+
+Active conversations show a generation indicator (spinner icon) next to their title when the AI is currently generating a response.
+
+## Tips and Best Practices
+
+### Organization
+
+- **Use descriptive titles** - Rename conversations with specific, searchable titles
+- **Archive completed topics** - Keep your main list focused on active conversations
+- **Regular cleanup** - Delete test conversations and duplicates periodically
+
+### Working with Branches and Forks
+
+- **Branch for parallel exploration** - Use branching when comparing multiple agent responses
+- **Fork for alternative paths** - Use forking to explore "what if" scenarios from past messages
+- **Name forked conversations** - Immediately rename forks to distinguish them from originals
+
+### Performance
+
+- **Search instead of scroll** - Use search for large conversation histories
+- **Archive old conversations** - Improve sidebar performance by archiving completed chats
+- **Limit open conversations** - Close tabs you're not actively using
+
+## Keyboard Accessibility
+
+All conversation actions are fully keyboard accessible:
+
+- **Tab** - Navigate between conversations
+- **Enter/Space** - Open conversation or activate focused button
+- **Arrow keys** - Navigate within menus
+- **Escape** - Close menus and dialogs
+
+## Troubleshooting
+
+### Conversations Not Loading
+
+- Check your internet connection
+- Refresh the page
+- Clear browser cache if issues persist
+
+### Fork/Branch Failed
+
+- Ensure you're not rate-limited (wait a few moments and retry)
+- Check that the conversation has valid messages
+- Verify your account permissions
+
+### Lost Conversation
+
+- Check the Archive in Settings > Data
+- Use the search function with keywords from the conversation
+- Deleted conversations cannot be recovered

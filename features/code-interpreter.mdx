@@ -1,0 +1,632 @@
+---
+title: Code Interpreter
+description: Execute Python code with AI assistance for data analysis and computation
+icon: "code"
+---
+
+LibreChat's Code Interpreter allows AI agents to write and execute Python code to analyze data, perform calculations, create visualizations, and solve complex problems.
+
+## Overview
+
+The Code Interpreter enables agents to:
+
+<CardGroup cols={2}>
+  <Card title="Execute Python" icon="python">
+    Run Python code in a secure sandbox environment
+  </Card>
+  <Card title="Analyze Data" icon="chart-line">
+    Process CSV, JSON, Excel files and generate insights
+  </Card>
+  <Card title="Create Visualizations" icon="chart-bar">
+    Generate plots and charts with matplotlib, seaborn
+  </Card>
+  <Card title="File Processing" icon="file-code">
+    Read and write files, process images, handle documents
+  </Card>
+</CardGroup>
+
+## Enabling Code Interpreter
+
+### For Agents
+
+Enable code execution in agent configuration:
+
+```yaml librechat.yaml
+endpoints:
+  agents:
+    capabilities:
+      - execute_code  # Enable code interpreter capability
+      - file_search
+      - tools
+```
+
+### In Agent Settings
+
+Enable through the UI when creating or editing an agent:
+
+<Steps>
+  <Step title="Open Agent Builder">
+    Click "New Agent" or edit an existing agent
+  </Step>
+  
+  <Step title="Enable Code Execution">
+    Toggle the "Execute Code" capability
+  </Step>
+  
+  <Step title="Add Files (Optional)">
+    Upload data files the agent can access
+  </Step>
+  
+  <Step title="Save Agent">
+    Save and start using code execution
+  </Step>
+</Steps>
+
+## Code Execution Capabilities
+
+### Data Analysis
+
+Analyze datasets with pandas:
+
+```python
+import pandas as pd
+import numpy as np
+
+# Read uploaded CSV file
+df = pd.read_csv('sales_data.csv')
+
+# Basic statistics
+print(df.describe())
+
+# Calculate metrics
+total_revenue = df['revenue'].sum()
+avg_order_value = df['order_value'].mean()
+
+print(f"Total Revenue: ${total_revenue:,.2f}")
+print(f"Average Order Value: ${avg_order_value:.2f}")
+
+# Group by analysis
+monthly_revenue = df.groupby('month')['revenue'].sum()
+print(monthly_revenue)
+```
+
+### Visualizations
+
+Create charts and graphs:
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Line chart
+plt.figure(figsize=(10, 6))
+plt.plot(df['date'], df['revenue'])
+plt.title('Revenue Over Time')
+plt.xlabel('Date')
+plt.ylabel('Revenue ($)')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.savefig('revenue_trend.png', dpi=300)
+plt.close()
+
+# Bar chart
+plt.figure(figsize=(8, 6))
+df.groupby('category')['sales'].sum().plot(kind='bar')
+plt.title('Sales by Category')
+plt.xlabel('Category')
+plt.ylabel('Sales')
+plt.tight_layout()
+plt.savefig('sales_by_category.png', dpi=300)
+plt.close()
+
+# Heatmap with seaborn
+plt.figure(figsize=(12, 8))
+corr_matrix = df.corr()
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm')
+plt.title('Correlation Matrix')
+plt.tight_layout()
+plt.savefig('correlation_heatmap.png', dpi=300)
+plt.close()
+```
+
+### Mathematical Computations
+
+Perform complex calculations:
+
+```python
+import numpy as np
+from scipy import stats
+
+# Statistical analysis
+data = np.array([23, 45, 67, 89, 12, 34, 56, 78, 90])
+
+mean = np.mean(data)
+median = np.median(data)
+std_dev = np.std(data)
+
+print(f"Mean: {mean}")
+print(f"Median: {median}")
+print(f"Standard Deviation: {std_dev}")
+
+# Linear regression
+x = np.array([1, 2, 3, 4, 5])
+y = np.array([2, 4, 5, 4, 5])
+
+slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+print(f"Slope: {slope}")
+print(f"R-squared: {r_value**2}")
+
+# Financial calculations
+def calculate_roi(initial_investment, final_value):
+    return ((final_value - initial_investment) / initial_investment) * 100
+
+roi = calculate_roi(10000, 15000)
+print(f"ROI: {roi}%")
+```
+
+### File Processing
+
+Work with various file formats:
+
+```python
+import json
+from PIL import Image
+
+# Read JSON file
+with open('config.json', 'r') as f:
+    config = json.load(f)
+    print(config)
+
+# Process images
+img = Image.open('photo.jpg')
+img_resized = img.resize((800, 600))
+img_resized.save('photo_resized.jpg')
+
+# Convert image to grayscale
+img_gray = img.convert('L')
+img_gray.save('photo_grayscale.jpg')
+
+# Write results to file
+results = {
+    'processed': True,
+    'original_size': img.size,
+    'new_size': img_resized.size
+}
+
+with open('results.json', 'w') as f:
+    json.dump(results, f, indent=2)
+```
+
+## File Management
+
+### Uploading Files
+
+Files uploaded to a conversation are automatically available to the code interpreter:
+
+<Tabs>
+  <Tab title="CSV/Excel">
+    ```python
+    import pandas as pd
+    
+    # CSV
+    df = pd.read_csv('data.csv')
+    
+    # Excel
+    df = pd.read_excel('data.xlsx', sheet_name='Sheet1')
+    ```
+  </Tab>
+  
+  <Tab title="JSON">
+    ```python
+    import json
+    
+    with open('data.json', 'r') as f:
+        data = json.load(f)
+    ```
+  </Tab>
+  
+  <Tab title="Images">
+    ```python
+    from PIL import Image
+    import numpy as np
+    
+    img = Image.open('image.png')
+    img_array = np.array(img)
+    ```
+  </Tab>
+  
+  <Tab title="Text Files">
+    ```python
+    with open('document.txt', 'r') as f:
+        content = f.read()
+    ```
+  </Tab>
+</Tabs>
+
+### Generated Files
+
+Files created by code are automatically saved and can be downloaded:
+
+```python
+# Save a plot
+import matplotlib.pyplot as plt
+
+plt.figure()
+plt.plot([1, 2, 3, 4], [1, 4, 2, 3])
+plt.savefig('my_plot.png')
+# File is now available for download
+
+# Save data to CSV
+import pandas as pd
+
+df = pd.DataFrame({'col1': [1, 2, 3], 'col2': [4, 5, 6]})
+df.to_csv('output.csv', index=False)
+# File is now available for download
+```
+
+### File Context
+
+Generated files are tracked with the `execute_code` context:
+
+```typescript
+{
+  file_id: 'file-abc123',
+  filename: 'analysis_plot.png',
+  context: FileContext.execute_code,
+  messageId: 'msg-xyz789',
+  conversationId: 'conv-123'
+}
+```
+
+## Agent Configuration
+
+### Tool Resources
+
+Configure code interpreter with file access:
+
+```typescript
+{
+  name: 'Data Analyst Agent',
+  provider: 'openAI',
+  model: 'gpt-4o',
+  instructions: 'You are a data analyst. Analyze datasets and create visualizations.',
+  tools: ['execute_code'],
+  tool_resources: {
+    execute_code: {
+      file_ids: [
+        'file-123',  // sales_data.csv
+        'file-456'   // customer_data.csv
+      ]
+    }
+  }
+}
+```
+
+### Code Files vs User Files
+
+LibreChat distinguishes between:
+
+1. **User-uploaded files**: Files attached to messages (CSV, images, etc.)
+2. **Code-generated files**: Files created by code execution (plots, outputs)
+
+```typescript
+// User-uploaded files (context: agents or message_attachment)
+{
+  context: FileContext.agents,
+  file_id: 'file-user-123',
+  filename: 'data.csv'
+}
+
+// Code-generated files (context: execute_code)
+{
+  context: FileContext.execute_code,
+  file_id: 'file-gen-456',
+  filename: 'plot.png',
+  messageId: 'msg-789'  // Linked to specific message
+}
+```
+
+## Available Libraries
+
+The code interpreter includes common Python libraries:
+
+<AccordionGroup>
+  <Accordion title="Data Processing">
+    - **pandas**: Data manipulation and analysis
+    - **numpy**: Numerical computing
+    - **scipy**: Scientific computing
+  </Accordion>
+  
+  <Accordion title="Visualization">
+    - **matplotlib**: Plotting and visualization
+    - **seaborn**: Statistical data visualization
+    - **plotly**: Interactive charts
+  </Accordion>
+  
+  <Accordion title="Image Processing">
+    - **PIL/Pillow**: Image manipulation
+    - **opencv-python**: Computer vision
+  </Accordion>
+  
+  <Accordion title="Machine Learning">
+    - **scikit-learn**: ML algorithms
+    - **tensorflow**: Deep learning
+    - **pytorch**: Neural networks
+  </Accordion>
+  
+  <Accordion title="Utilities">
+    - **json**: JSON processing
+    - **csv**: CSV file handling
+    - **datetime**: Date and time
+    - **re**: Regular expressions
+    - **requests**: HTTP requests
+  </Accordion>
+</AccordionGroup>
+
+## Security and Sandboxing
+
+<Warning>
+  **Sandbox Environment**: Code runs in a secure sandbox with limited system access
+</Warning>
+
+Security measures:
+
+- **Isolated execution**: Code runs in containers/sandboxes
+- **File system restrictions**: Limited file access
+- **Network restrictions**: Controlled network access
+- **Resource limits**: CPU and memory constraints
+- **Timeout limits**: Maximum execution time enforced
+
+## Best Practices
+
+<Tip>
+  **Error Handling**: Always include try-except blocks for robust code
+</Tip>
+
+```python
+try:
+    df = pd.read_csv('data.csv')
+    result = df.mean()
+    print(result)
+except FileNotFoundError:
+    print("Error: File not found")
+except Exception as e:
+    print(f"Error: {e}")
+```
+
+<Tip>
+  **Save Outputs**: Use `plt.savefig()` and file writes to preserve results
+</Tip>
+
+```python
+# Save plot with high quality
+plt.savefig('output.png', dpi=300, bbox_inches='tight')
+
+# Save data
+results.to_csv('results.csv', index=False)
+```
+
+<Tip>
+  **Optimize Performance**: Be mindful of large datasets and computation time
+</Tip>
+
+```python
+# Use efficient pandas operations
+df['new_col'] = df['col1'] * df['col2']  # Vectorized operation
+
+# Avoid loops when possible
+# result = df.apply(lambda x: x['col1'] * x['col2'], axis=1)  # Slower
+```
+
+<Info>
+  **Documentation**: Add comments to explain complex logic
+</Info>
+
+## Example Use Cases
+
+<AccordionGroup>
+  <Accordion title="Sales Analysis">
+    ```python
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    
+    # Load sales data
+    df = pd.read_csv('sales_data.csv')
+    
+    # Calculate monthly totals
+    monthly_sales = df.groupby('month')['revenue'].sum()
+    
+    # Create visualization
+    plt.figure(figsize=(12, 6))
+    monthly_sales.plot(kind='bar')
+    plt.title('Monthly Sales Revenue')
+    plt.xlabel('Month')
+    plt.ylabel('Revenue ($)')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig('monthly_sales.png', dpi=300)
+    
+    # Summary statistics
+    print(f"Total Revenue: ${monthly_sales.sum():,.2f}")
+    print(f"Average Monthly Revenue: ${monthly_sales.mean():,.2f}")
+    print(f"Best Month: {monthly_sales.idxmax()} (${monthly_sales.max():,.2f})")
+    ```
+  </Accordion>
+  
+  <Accordion title="Image Processing">
+    ```python
+    from PIL import Image, ImageFilter, ImageEnhance
+    import os
+    
+    # Load image
+    img = Image.open('photo.jpg')
+    
+    # Apply filters
+    img_blur = img.filter(ImageFilter.BLUR)
+    img_sharp = img.filter(ImageFilter.SHARPEN)
+    
+    # Adjust brightness and contrast
+    enhancer = ImageEnhance.Brightness(img)
+    img_bright = enhancer.enhance(1.5)
+    
+    enhancer = ImageEnhance.Contrast(img)
+    img_contrast = enhancer.enhance(1.3)
+    
+    # Save processed images
+    img_blur.save('photo_blur.jpg')
+    img_sharp.save('photo_sharp.jpg')
+    img_bright.save('photo_bright.jpg')
+    img_contrast.save('photo_contrast.jpg')
+    
+    print("Image processing complete!")
+    print(f"Original size: {img.size}")
+    ```
+  </Accordion>
+  
+  <Accordion title="Statistical Analysis">
+    ```python
+    import pandas as pd
+    import numpy as np
+    from scipy import stats
+    import matplotlib.pyplot as plt
+    
+    # Load data
+    df = pd.read_csv('experiment_data.csv')
+    
+    # Descriptive statistics
+    print("Descriptive Statistics:")
+    print(df.describe())
+    
+    # T-test
+    group_a = df[df['group'] == 'A']['value']
+    group_b = df[df['group'] == 'B']['value']
+    
+    t_stat, p_value = stats.ttest_ind(group_a, group_b)
+    print(f"\nT-test results:")
+    print(f"T-statistic: {t_stat:.4f}")
+    print(f"P-value: {p_value:.4f}")
+    
+    # Correlation analysis
+    correlation = df['x'].corr(df['y'])
+    print(f"\nCorrelation: {correlation:.4f}")
+    
+    # Visualization
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    
+    # Box plot
+    df.boxplot(column='value', by='group', ax=axes[0])
+    axes[0].set_title('Value by Group')
+    
+    # Scatter plot
+    axes[1].scatter(df['x'], df['y'])
+    axes[1].set_xlabel('X')
+    axes[1].set_ylabel('Y')
+    axes[1].set_title('X vs Y')
+    
+    plt.tight_layout()
+    plt.savefig('statistical_analysis.png', dpi=300)
+    ```
+  </Accordion>
+  
+  <Accordion title="Financial Modeling">
+    ```python
+    import pandas as pd
+    import numpy as np
+    
+    # Financial metrics
+    def calculate_metrics(revenue, costs, initial_investment):
+        profit = revenue - costs
+        profit_margin = (profit / revenue) * 100
+        roi = ((profit - initial_investment) / initial_investment) * 100
+        
+        return {
+            'profit': profit,
+            'profit_margin': profit_margin,
+            'roi': roi
+        }
+    
+    # Project future revenue
+    def forecast_revenue(historical_data, periods=12):
+        # Simple linear trend
+        x = np.arange(len(historical_data))
+        y = np.array(historical_data)
+        
+        z = np.polyfit(x, y, 1)
+        p = np.poly1d(z)
+        
+        future_x = np.arange(len(historical_data), len(historical_data) + periods)
+        forecast = p(future_x)
+        
+        return forecast
+    
+    # Load financial data
+    df = pd.read_csv('financial_data.csv')
+    
+    # Calculate metrics
+    metrics = calculate_metrics(
+        df['revenue'].sum(),
+        df['costs'].sum(),
+        100000
+    )
+    
+    print("Financial Metrics:")
+    print(f"Total Profit: ${metrics['profit']:,.2f}")
+    print(f"Profit Margin: {metrics['profit_margin']:.2f}%")
+    print(f"ROI: {metrics['roi']:.2f}%")
+    
+    # Forecast
+    forecast = forecast_revenue(df['revenue'].tolist())
+    print(f"\n12-Month Revenue Forecast:")
+    print(f"${forecast.sum():,.2f}")
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Limitations
+
+<Warning>
+  **External Services**: Some network requests may be restricted for security
+</Warning>
+
+<Warning>
+  **Execution Time**: Long-running computations may timeout
+</Warning>
+
+<Info>
+  **File Size**: Large files may impact performance
+</Info>
+
+## Configuration Options
+
+File upload limits for code interpreter:
+
+```yaml librechat.yaml
+fileConfig:
+  endpoints:
+    agents:
+      fileLimit: 10
+      fileSizeLimit: 50  # MB per file
+      totalSizeLimit: 200  # MB total
+      supportedMimeTypes:
+        - "text/csv"
+        - "application/json"
+        - "image/.*"
+        - "application/pdf"
+```
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Agents" icon="robot" href="/features/agents">
+    Use code interpreter with autonomous agents
+  </Card>
+  <Card title="Multimodal" icon="image" href="/features/multimodal">
+    Process images and analyze visual data
+  </Card>
+  <Card title="File Search" icon="magnifying-glass" href="/features/agents#file-search">
+    Search through uploaded documents
+  </Card>
+  <Card title="Artifacts" icon="palette" href="/features/artifacts">
+    Display code and visualizations in UI
+  </Card>
+</CardGroup>

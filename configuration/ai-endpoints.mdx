@@ -1,0 +1,601 @@
+---
+title: 'AI Endpoint Configuration'
+description: 'Configure OpenAI, Anthropic, Google, AWS Bedrock, Azure, and custom AI endpoints'
+---
+
+# AI Endpoint Configuration
+
+LibreChat supports multiple AI providers and custom endpoints. Configure them using environment variables and the librechat.yaml file.
+
+## Endpoint Selection
+
+<ParamField path="ENDPOINTS" type="string">
+  Comma-separated list of enabled endpoints
+  
+  ```bash
+  ENDPOINTS=openAI,assistants,azureOpenAI,google,anthropic
+  ```
+</ParamField>
+
+## OpenAI
+
+<ParamField path="OPENAI_API_KEY" type="string" required>
+  OpenAI API key. Set to `user_provided` to require users to provide their own keys.
+  
+  ```bash
+  OPENAI_API_KEY=sk-xxx
+  # Or require user-provided keys:
+  OPENAI_API_KEY=user_provided
+  ```
+</ParamField>
+
+<ParamField path="OPENAI_MODELS" type="string">
+  Comma-separated list of available OpenAI models
+  
+  ```bash
+  OPENAI_MODELS=gpt-5,gpt-5-codex,gpt-5-mini,gpt-5-nano,o3-pro,o3,o4-mini,gpt-4.1,gpt-4.1-mini,gpt-4.1-nano,o3-mini,o1-pro,o1,gpt-4o,gpt-4o-mini
+  ```
+</ParamField>
+
+<ParamField path="DEBUG_OPENAI" type="boolean" default="false">
+  Enable OpenAI debug logging
+  
+  ```bash
+  DEBUG_OPENAI=false
+  ```
+</ParamField>
+
+<ParamField path="TITLE_CONVO" type="boolean" default="true">
+  Enable automatic conversation title generation
+  
+  ```bash
+  TITLE_CONVO=false
+  ```
+</ParamField>
+
+<ParamField path="OPENAI_TITLE_MODEL" type="string" default="gpt-4o-mini">
+  Model to use for conversation title generation
+  
+  ```bash
+  OPENAI_TITLE_MODEL=gpt-4o-mini
+  ```
+</ParamField>
+
+<ParamField path="OPENAI_SUMMARIZE" type="boolean" default="false">
+  Enable conversation summarization
+  
+  ```bash
+  OPENAI_SUMMARIZE=true
+  ```
+</ParamField>
+
+<ParamField path="OPENAI_SUMMARY_MODEL" type="string" default="gpt-4o-mini">
+  Model to use for summarization
+  
+  ```bash
+  OPENAI_SUMMARY_MODEL=gpt-4o-mini
+  ```
+</ParamField>
+
+<ParamField path="OPENAI_FORCE_PROMPT" type="boolean" default="false">
+  Force system prompt inclusion
+  
+  ```bash
+  OPENAI_FORCE_PROMPT=true
+  ```
+</ParamField>
+
+<ParamField path="OPENAI_REVERSE_PROXY" type="string">
+  Reverse proxy URL for OpenAI API
+  
+  ```bash
+  OPENAI_REVERSE_PROXY=https://your-proxy.com/v1
+  ```
+</ParamField>
+
+<ParamField path="OPENAI_ORGANIZATION" type="string">
+  OpenAI organization ID
+  
+  ```bash
+  OPENAI_ORGANIZATION=org-xxx
+  ```
+</ParamField>
+
+## Assistants API
+
+<ParamField path="ASSISTANTS_API_KEY" type="string">
+  API key for OpenAI Assistants
+  
+  ```bash
+  ASSISTANTS_API_KEY=user_provided
+  # Or use specific key:
+  ASSISTANTS_API_KEY=sk-xxx
+  ```
+</ParamField>
+
+<ParamField path="ASSISTANTS_BASE_URL" type="string">
+  Custom base URL for Assistants API
+  
+  ```bash
+  ASSISTANTS_BASE_URL=https://api.openai.com/v1
+  ```
+</ParamField>
+
+<ParamField path="ASSISTANTS_MODELS" type="string">
+  Comma-separated list of models available for Assistants
+  
+  ```bash
+  ASSISTANTS_MODELS=gpt-4o,gpt-4o-mini,gpt-3.5-turbo-0125
+  ```
+</ParamField>
+
+### Assistants Configuration (YAML)
+
+```yaml librechat.yaml
+endpoints:
+  assistants:
+    disableBuilder: false         # Disable Assistants Builder Interface
+    pollIntervalMs: 3000          # Polling interval for updates
+    timeoutMs: 180000             # Timeout for operations
+    
+    # Filter assistants by ID
+    supportedIds:
+      - "asst_supportedAssistantId1"
+      - "asst_supportedAssistantId2"
+    # OR exclude specific assistants
+    # excludedIds:
+    #   - "asst_excludedAssistantId"
+    
+    # Only show user-created assistants
+    # privateAssistants: false
+    
+    # Models that support retrieval
+    retrievalModels:
+      - "gpt-4-turbo-preview"
+    
+    # Available capabilities
+    capabilities:
+      - "code_interpreter"
+      - "retrieval"
+      - "actions"
+      - "tools"
+      - "image_vision"
+```
+
+## Anthropic
+
+<ParamField path="ANTHROPIC_API_KEY" type="string">
+  Anthropic API key
+  
+  ```bash
+  ANTHROPIC_API_KEY=user_provided
+  # Or use specific key:
+  ANTHROPIC_API_KEY=sk-ant-xxx
+  ```
+</ParamField>
+
+<ParamField path="ANTHROPIC_MODELS" type="string">
+  Comma-separated list of available Anthropic models
+  
+  ```bash
+  ANTHROPIC_MODELS=claude-sonnet-4-6,claude-opus-4-6,claude-opus-4-20250514,claude-sonnet-4-20250514,claude-3-7-sonnet-20250219,claude-3-5-sonnet-20241022,claude-3-5-haiku-20241022
+  ```
+</ParamField>
+
+<ParamField path="ANTHROPIC_REVERSE_PROXY" type="string">
+  Reverse proxy URL for Anthropic API
+  
+  ```bash
+  ANTHROPIC_REVERSE_PROXY=https://your-proxy.com/v1
+  ```
+</ParamField>
+
+### Anthropic via Google Vertex AI
+
+<ParamField path="ANTHROPIC_USE_VERTEX" type="boolean" default="false">
+  Use Anthropic models through Google Vertex AI
+  
+  ```bash
+  ANTHROPIC_USE_VERTEX=true
+  ```
+</ParamField>
+
+<ParamField path="ANTHROPIC_VERTEX_REGION" type="string" default="us-east5">
+  Vertex AI region for Anthropic models
+  
+  ```bash
+  ANTHROPIC_VERTEX_REGION=us-east5
+  ```
+</ParamField>
+
+### Anthropic Configuration (YAML)
+
+```yaml librechat.yaml
+endpoints:
+  anthropic:
+    streamRate: 20                # Stream rate limiting (ms)
+    titleModel: claude-3.5-haiku  # Model for titles
+    
+    # Vertex AI Configuration
+    vertex:
+      region: "us-east5"          # Vertex region
+      # serviceKeyFile: "/path/to/service-account.json"
+      # projectId: "${VERTEX_PROJECT_ID}"
+      
+      # Model mappings
+      models:
+        claude-opus-4.5:
+          deploymentName: claude-opus-4-5@20251101
+        claude-sonnet-4:
+          deploymentName: claude-sonnet-4-20250514
+        claude-3.7-sonnet:
+          deploymentName: claude-3-7-sonnet-20250219
+```
+
+## Google
+
+<ParamField path="GOOGLE_KEY" type="string">
+  Google API key (for Gemini API / AI Studio)
+  
+  ```bash
+  GOOGLE_KEY=user_provided
+  # Or use specific key:
+  GOOGLE_KEY=AIzaSyXXX
+  ```
+</ParamField>
+
+<ParamField path="GOOGLE_REVERSE_PROXY" type="string">
+  Reverse proxy URL for Google API
+  
+  ```bash
+  GOOGLE_REVERSE_PROXY=https://your-proxy.com/v1
+  ```
+</ParamField>
+
+<ParamField path="GOOGLE_AUTH_HEADER" type="boolean" default="false">
+  Pass API key in Authorization header instead of X-goog-api-key
+  
+  <Note>Use this if your reverse proxy doesn't support X-goog-api-key header</Note>
+  
+  ```bash
+  GOOGLE_AUTH_HEADER=true
+  ```
+</ParamField>
+
+<ParamField path="GOOGLE_MODELS" type="string">
+  Comma-separated list of available Google models
+  
+  ```bash
+  # Gemini API (AI Studio):
+  GOOGLE_MODELS=gemini-3.1-pro-preview,gemini-3.1-pro-preview-customtools,gemini-2.5-pro,gemini-2.5-flash,gemini-2.5-flash-lite,gemini-2.0-flash,gemini-2.0-flash-lite
+  
+  # Vertex AI:
+  GOOGLE_MODELS=gemini-3.1-pro-preview,gemini-2.5-pro,gemini-2.5-flash,gemini-2.0-flash-001,gemini-2.0-flash-lite-001
+  ```
+</ParamField>
+
+<ParamField path="GOOGLE_TITLE_MODEL" type="string" default="gemini-2.0-flash-lite-001">
+  Model to use for title generation
+  
+  ```bash
+  GOOGLE_TITLE_MODEL=gemini-2.0-flash-lite-001
+  ```
+</ParamField>
+
+### Vertex AI Configuration
+
+<ParamField path="GOOGLE_LOC" type="string" default="us-central1">
+  Google Cloud region for Vertex AI
+  
+  ```bash
+  GOOGLE_LOC=us-central1
+  ```
+</ParamField>
+
+<ParamField path="GOOGLE_CLOUD_LOCATION" type="string" default="global">
+  Alternative region for Gemini Image Generation
+  
+  ```bash
+  GOOGLE_CLOUD_LOCATION=global
+  ```
+</ParamField>
+
+<ParamField path="GOOGLE_SERVICE_KEY_FILE" type="string">
+  Path to Google Cloud service account JSON file
+  
+  ```bash
+  GOOGLE_SERVICE_KEY_FILE=/path/to/service-account.json
+  ```
+</ParamField>
+
+### Google Safety Settings
+
+<ParamField path="GOOGLE_SAFETY_*" type="string">
+  Safety settings for both Vertex AI and Gemini API
+  
+  Options: `BLOCK_NONE`, `BLOCK_ONLY_HIGH`, `BLOCK_MEDIUM_AND_ABOVE`, `BLOCK_LOW_AND_ABOVE`
+  
+  <Note>
+    **For Vertex AI**: BLOCK_NONE requires either allowlist access or monthly invoiced billing
+    
+    **For Gemini API**: BLOCK_NONE is available by default
+  </Note>
+  
+  ```bash
+  GOOGLE_SAFETY_SEXUALLY_EXPLICIT=BLOCK_ONLY_HIGH
+  GOOGLE_SAFETY_HATE_SPEECH=BLOCK_ONLY_HIGH
+  GOOGLE_SAFETY_HARASSMENT=BLOCK_ONLY_HIGH
+  GOOGLE_SAFETY_DANGEROUS_CONTENT=BLOCK_ONLY_HIGH
+  GOOGLE_SAFETY_CIVIC_INTEGRITY=BLOCK_ONLY_HIGH
+  ```
+</ParamField>
+
+### Gemini Image Generation
+
+<ParamField path="GEMINI_API_KEY" type="string">
+  Dedicated Gemini API key for image generation (falls back to GOOGLE_KEY)
+  
+  ```bash
+  GEMINI_API_KEY=AIzaSyXXX
+  ```
+</ParamField>
+
+<ParamField path="GEMINI_IMAGE_MODEL" type="string" default="gemini-2.5-flash-image">
+  Vertex AI model for image generation
+  
+  ```bash
+  GEMINI_IMAGE_MODEL=gemini-2.5-flash-image
+  ```
+</ParamField>
+
+## AWS Bedrock
+
+<ParamField path="BEDROCK_AWS_DEFAULT_REGION" type="string" required>
+  Default AWS region for Bedrock
+  
+  ```bash
+  BEDROCK_AWS_DEFAULT_REGION=us-east-1
+  ```
+</ParamField>
+
+<ParamField path="BEDROCK_AWS_ACCESS_KEY_ID" type="string">
+  AWS access key ID
+  
+  ```bash
+  BEDROCK_AWS_ACCESS_KEY_ID=AKIAXXXXX
+  ```
+</ParamField>
+
+<ParamField path="BEDROCK_AWS_SECRET_ACCESS_KEY" type="string">
+  AWS secret access key
+  
+  ```bash
+  BEDROCK_AWS_SECRET_ACCESS_KEY=xxxxx
+  ```
+</ParamField>
+
+<ParamField path="BEDROCK_AWS_SESSION_TOKEN" type="string">
+  AWS session token (for temporary credentials)
+  
+  ```bash
+  BEDROCK_AWS_SESSION_TOKEN=xxxxx
+  ```
+</ParamField>
+
+<ParamField path="BEDROCK_AWS_MODELS" type="string">
+  Comma-separated list of Bedrock model IDs
+  
+  <Note>If omitted, all supported model IDs will be included</Note>
+  
+  ```bash
+  BEDROCK_AWS_MODELS=anthropic.claude-sonnet-4-6,anthropic.claude-opus-4-6-v1,anthropic.claude-3-5-sonnet-20240620-v1:0,meta.llama3-1-8b-instruct-v1:0
+  
+  # Cross-region inference:
+  BEDROCK_AWS_MODELS=us.anthropic.claude-sonnet-4-6,global.anthropic.claude-opus-4-6-v1
+  ```
+</ParamField>
+
+### Bedrock Configuration (YAML)
+
+```yaml librechat.yaml
+endpoints:
+  bedrock:
+    # Model configuration
+    models:
+      - "anthropic.claude-3-7-sonnet-20250219-v1:0"
+      - "anthropic.claude-3-5-sonnet-20241022-v2:0"
+    
+    # Inference profiles
+    inferenceProfiles:
+      "us.anthropic.claude-sonnet-4-20250514-v1:0": "${BEDROCK_INFERENCE_PROFILE_CLAUDE_SONNET}"
+      "anthropic.claude-3-7-sonnet-20250219-v1:0": "arn:aws:bedrock:us-west-2:123456789012:application-inference-profile/abc123"
+    
+    # Guardrails
+    guardrailConfig:
+      guardrailIdentifier: "your-guardrail-id"
+      guardrailVersion: "1"
+      trace: "enabled"  # enabled, enabled_full, or disabled
+```
+
+<Warning>
+  **Unsupported Bedrock Models**:
+  - `ai21.j2-mid-v1` (no streaming support)
+  - `ai21.j2-ultra-v1`, `cohere.command-text-v14`, `cohere.command-light-text-v14` (no conversation history support)
+</Warning>
+
+## Azure OpenAI
+
+<Warning>
+  Azure OpenAI environment variables are **DEPRECATED**. Use `librechat.yaml` configuration instead.
+</Warning>
+
+```yaml librechat.yaml
+endpoints:
+  azureOpenAI:
+    # Configuration goes here
+    # See librechat.yaml documentation
+```
+
+## Custom Endpoints
+
+Define custom OpenAI-compatible endpoints in `librechat.yaml`:
+
+### Groq Example
+
+```yaml librechat.yaml
+endpoints:
+  custom:
+    - name: 'groq'
+      apiKey: '${GROQ_API_KEY}'
+      baseURL: 'https://api.groq.com/openai/v1/'
+      models:
+        default:
+          - 'llama3-70b-8192'
+          - 'llama3-8b-8192'
+          - 'mixtral-8x7b-32768'
+          - 'gemma-7b-it'
+        fetch: false
+      titleConvo: true
+      titleModel: 'mixtral-8x7b-32768'
+      modelDisplayLabel: 'groq'
+```
+
+### Mistral AI Example
+
+```yaml librechat.yaml
+endpoints:
+  custom:
+    - name: 'Mistral'
+      apiKey: '${MISTRAL_API_KEY}'
+      baseURL: 'https://api.mistral.ai/v1'
+      models:
+        default: ['mistral-tiny', 'mistral-small', 'mistral-medium']
+        fetch: true
+      titleConvo: true
+      titleModel: 'mistral-tiny'
+      modelDisplayLabel: 'Mistral'
+      dropParams: ['stop', 'user', 'frequency_penalty', 'presence_penalty']
+```
+
+### OpenRouter Example
+
+```yaml librechat.yaml
+endpoints:
+  custom:
+    - name: 'OpenRouter'
+      apiKey: '${OPENROUTER_KEY}'
+      baseURL: 'https://openrouter.ai/api/v1'
+      headers:
+        x-librechat-body-parentmessageid: '{{LIBRECHAT_BODY_PARENTMESSAGEID}}'
+      models:
+        default: ['meta-llama/llama-3-70b-instruct']
+        fetch: true
+      titleConvo: true
+      titleModel: 'meta-llama/llama-3-70b-instruct'
+      dropParams: ['stop']
+      modelDisplayLabel: 'OpenRouter'
+```
+
+## Known Endpoints (API Keys Only)
+
+These endpoints can be configured with just API keys:
+
+<CodeGroup>
+```bash Anyscale
+ANYSCALE_API_KEY=xxxxx
+```
+
+```bash APIPie
+APIPIE_API_KEY=xxxxx
+```
+
+```bash Cohere
+COHERE_API_KEY=xxxxx
+```
+
+```bash DeepSeek
+DEEPSEEK_API_KEY=xxxxx
+```
+
+```bash Databricks
+DATABRICKS_API_KEY=xxxxx
+```
+
+```bash Fireworks
+FIREWORKS_API_KEY=xxxxx
+```
+
+```bash Groq
+GROQ_API_KEY=xxxxx
+```
+
+```bash HuggingFace
+HUGGINGFACE_TOKEN=xxxxx
+```
+
+```bash Mistral
+MISTRAL_API_KEY=xxxxx
+```
+
+```bash OpenRouter
+OPENROUTER_KEY=xxxxx
+```
+
+```bash Perplexity
+PERPLEXITY_API_KEY=xxxxx
+```
+
+```bash ShuttleAI
+SHUTTLEAI_API_KEY=xxxxx
+```
+
+```bash Together AI
+TOGETHERAI_API_KEY=xxxxx
+```
+
+```bash Unify
+UNIFY_API_KEY=xxxxx
+```
+
+```bash xAI
+XAI_API_KEY=xxxxx
+```
+</CodeGroup>
+
+## Agents Endpoint
+
+```yaml librechat.yaml
+endpoints:
+  agents:
+    recursionLimit: 50              # Default recursion depth
+    maxRecursionLimit: 100          # Maximum recursion depth
+    disableBuilder: false           # Disable builder interface
+    maxCitations: 30                # Max total citations
+    maxCitationsPerFile: 7          # Max citations per file
+    minRelevanceScore: 0.45         # Minimum relevance threshold
+    
+    # Available capabilities
+    capabilities:
+      - "deferred_tools"
+      - "execute_code"
+      - "file_search"
+      - "actions"
+      - "tools"
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="librechat.yaml" icon="file-code" href="/configuration/librechat-yaml">
+    Complete YAML configuration reference
+  </Card>
+  <Card title="Environment Variables" icon="terminal" href="/configuration/environment-variables">
+    All environment variables
+  </Card>
+  <Card title="Authentication" icon="shield" href="/configuration/authentication">
+    Set up OAuth and SSO
+  </Card>
+  <Card title="File Storage" icon="database" href="/configuration/file-storage">
+    Configure file storage
+  </Card>
+</CardGroup>

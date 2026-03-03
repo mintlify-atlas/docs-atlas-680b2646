@@ -1,0 +1,459 @@
+---
+title: Controller Architecture
+description: Understanding LibreChat's controller patterns and business logic organization
+---
+
+# Controller Architecture
+
+Controllers in LibreChat handle business logic, coordinate between services and models, and manage request/response flow. They keep routes thin and maintainable.
+
+## Controller Organization
+
+Controllers are organized in `api/server/controllers/`:
+
+```
+api/server/controllers/
+├── AuthController.js
+├── UserController.js
+├── ModelController.js
+├── EndpointController.js
+├── PluginController.js
+├── PermissionsController.js
+├── auth/
+│   ├── LoginController.js
+│   └── LogoutController.js
+└── ...
+```
+
+## Controller Patterns
+
+### Basic Controller Structure
+
+Controllers are exported functions that handle specific actions:
+
+```javascript
+const { logger } = require('@librechat/data-schemas');
+const { findUser, updateUser } = require('~/models');
+
+const getUserController = async (req, res) => {
+  try {
+    const userData = req.user.toObject();
+    
+    // Remove sensitive fields
+    delete userData.password;
+    delete userData.totpSecret;
+    
+    res.status(200).send(userData);
+  } catch (error) {
+    logger.error('[getUserController]', error);
+    res.status(500).json({ message: 'Error fetching user data' });
+  }
+};
+
+module.exports = { getUserController };
+```
+
+## Authentication Controllers
+
+### Registration Controller
+
+**File:** `api/server/controllers/AuthController.js`
+
+```javascript
+const bcrypt = require('bcryptjs');
+const { registerUser } = require('~/server/services/AuthService');
+const { logger } = require('@librechat/data-schemas');
+
+const registrationController = async (req, res) => {
+  try {
+    const response = await registerUser(req.body);
+    const { status, message } = response;
+    res.status(status).send({ message });
+  } catch (err) {
+    logger.error('[registrationController]', err);
+    return res.status(500).json({ message: err.message });
+  }
+};
+```
+
+### Login Controller
+
+Handles authentication with session management:
+
+```javascript
+const { setAuthTokens } = require('~/server/services/AuthService');
+
+const loginController = async (req, res) => {
+  try {
+    const user = req.user;
+    const token = await setAuthTokens(user._id, res);
+    
+    res.status(200).send({ token, user });
+  } catch (error) {
+    logger.error('[loginController]', error);
+    res.status(500).json({ message: 'Login failed' });
+  }
+};
+```
+
+### Password Reset Controllers
+
+```javascript
+const { requestPasswordReset, resetPassword } = require('~/server/services/AuthService');
+
+const resetPasswordRequestController = async (req, res) => {
+  try {
+    const resetService = await requestPasswordReset(req);
+    if (resetService instanceof Error) {
+      return res.status(400).json(resetService);
+    }
+    return res.status(200).json(resetService);
+  } catch (e) {
+    logger.error('[resetPasswordRequestController]', e);
+    return res.status(400).json({ message: e.message });
+  }
+};
+
+const resetPasswordController = async (req, res) => {
+  try {
+    const resetPasswordService = await resetPassword(
+      req.body.userId,
+      req.body.token,
+      req.body.password,
+    );
+    
+    if (resetPasswordService instanceof Error) {
+      return res.status(400).json(resetPasswordService);
+    }
+    
+    return res.status(200).json(resetPasswordService);
+  } catch (e) {
+    logger.error('[resetPasswordController]', e);
+    return res.status(400).json({ message: e.message });
+  }
+};
+```
+
+### Token Refresh Controller
+
+```javascript
+const jwt = require('jsonwebtoken');
+const { getUserById, findSession } = require('~/models');
+
+const refreshController = async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  
+  if (!refreshToken) {
+    return res.status(200).send('Refresh token not provided');
+  }
+  
+  try {
+    const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const user = await getUserById(payload.id, '-password -__v');
+    
+    if (!user) {
+      return res.status(401).redirect('/login');
+    }
+    
+    const session = await findSession({ userId: payload.id, refreshToken });
+    
+    if (session && session.expiration > new Date()) {
+      const token = await setAuthTokens(payload.id, res, session);
+      res.status(200).send({ token, user });
+    } else {
+      res.status(401).send('Refresh token expired');
+    }
+  } catch (err) {
+    logger.error('[refreshController] Invalid refresh token:', err);
+    res.status(403).send('Invalid refresh token');
+  }
+};
+```
+
+## User Controllers
+
+### Get User Controller
+
+**File:** `api/server/controllers/UserController.js`
+
+```javascript
+const { getAppConfig } = require('~/server/services/Config');
+const { needsRefresh, getNewS3URL } = require('~/server/services/Files/S3/crud');
+
+const getUserController = async (req, res) => {
+  const appConfig = await getAppConfig({ role: req.user?.role });
+  const userData = req.user.toObject();
+  
+  // Remove sensitive fields
+  delete userData.password;
+  delete userData.totpSecret;
+  delete userData.backupCodes;
+  
+  // Handle S3 avatar refresh
+  if (appConfig.fileStrategy === 's3' && userData.avatar) {
+    const avatarNeedsRefresh = needsRefresh(userData.avatar, 3600);
+    if (avatarNeedsRefresh) {
+      try {
+        userData.avatar = await getNewS3URL(userData.avatar);
+        await updateUser(userData.id, { avatar: userData.avatar });
+      } catch (error) {
+        logger.error('Error refreshing avatar URL:', error);
+      }
+    }
+  }
+  
+  res.status(200).send(userData);
+};
+```
+
+### Update User Plugins Controller
+
+```javascript
+const { updateUserPlugins } = require('~/models');
+const { updateUserPluginAuth, deleteUserPluginAuth } = require('~/server/services/PluginService');
+
+const updateUserPluginsController = async (req, res) => {
+  const { user } = req;
+  const { pluginKey, action, auth } = req.body;
+  
+  try {
+    // Update plugin installation status
+    await updateUserPlugins(user._id, user.plugins, pluginKey, action);
+    
+    if (!auth) {
+      return res.status(200).send();
+    }
+    
+    const keys = Object.keys(auth);
+    const values = Object.values(auth);
+    
+    if (action === 'install') {
+      // Store plugin credentials
+      for (let i = 0; i < keys.length; i++) {
+        await updateUserPluginAuth(user.id, keys[i], pluginKey, values[i]);
+      }
+    } else if (action === 'uninstall') {
+      // Remove plugin credentials
+      for (let i = 0; i < keys.length; i++) {
+        await deleteUserPluginAuth(user.id, keys[i]);
+      }
+    }
+    
+    return res.status(200).send();
+  } catch (err) {
+    logger.error('[updateUserPluginsController]', err);
+    return res.status(500).json({ message: 'Something went wrong.' });
+  }
+};
+```
+
+### Delete User Controller
+
+Handles complete user account deletion:
+
+```javascript
+const {
+  deleteMessages,
+  deletePresets,
+  deleteConvos,
+  deleteFiles,
+} = require('~/models');
+const { Transaction, Balance, Assistant } = require('~/db/models');
+
+const deleteUserController = async (req, res) => {
+  const { user } = req;
+  
+  try {
+    await deleteMessages({ user: user.id });
+    await Transaction.deleteMany({ user: user.id });
+    await Balance.deleteMany({ user: user._id });
+    await deletePresets(user.id);
+    await deleteConvos(user.id);
+    await deleteFiles(null, user.id);
+    await Assistant.deleteMany({ user: user.id });
+    await deleteUserById(user.id);
+    
+    logger.info(`User deleted account. Email: ${user.email} ID: ${user.id}`);
+    res.status(200).send({ message: 'User deleted' });
+  } catch (err) {
+    logger.error('[deleteUserController]', err);
+    return res.status(500).json({ message: 'Something went wrong.' });
+  }
+};
+```
+
+## Model Controllers
+
+### Model Configuration Controller
+
+**File:** `api/server/controllers/ModelController.js`
+
+```javascript
+const { CacheKeys } = require('librechat-data-provider');
+const { loadDefaultModels, loadConfigModels } = require('~/server/services/Config');
+const { getLogStores } = require('~/cache');
+
+const getModelsConfig = async (req) => {
+  const cache = getLogStores(CacheKeys.CONFIG_STORE);
+  let modelsConfig = await cache.get(CacheKeys.MODELS_CONFIG);
+  
+  if (!modelsConfig) {
+    modelsConfig = await loadModels(req);
+  }
+  
+  return modelsConfig;
+};
+
+async function loadModels(req) {
+  const cache = getLogStores(CacheKeys.CONFIG_STORE);
+  const cachedModelsConfig = await cache.get(CacheKeys.MODELS_CONFIG);
+  
+  if (cachedModelsConfig) {
+    return cachedModelsConfig;
+  }
+  
+  const defaultModelsConfig = await loadDefaultModels(req);
+  const customModelsConfig = await loadConfigModels(req);
+  const modelConfig = { ...defaultModelsConfig, ...customModelsConfig };
+  
+  await cache.set(CacheKeys.MODELS_CONFIG, modelConfig);
+  return modelConfig;
+}
+
+async function modelController(req, res) {
+  try {
+    const modelConfig = await loadModels(req);
+    res.send(modelConfig);
+  } catch (error) {
+    logger.error('Error fetching models:', error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+module.exports = { modelController, loadModels, getModelsConfig };
+```
+
+## Controller Best Practices
+
+### 1. Error Handling Pattern
+
+```javascript
+const controllerFunction = async (req, res) => {
+  try {
+    // Business logic
+    const result = await someOperation();
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error('[controllerFunction]', error);
+    res.status(500).json({ message: 'Error message' });
+  }
+};
+```
+
+### 2. Input Validation
+
+```javascript
+const updateController = async (req, res) => {
+  const { id, name } = req.body;
+  
+  if (!id || !name) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  
+  try {
+    const result = await updateItem(id, { name });
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error('[updateController]', error);
+    res.status(500).json({ error: 'Update failed' });
+  }
+};
+```
+
+### 3. Service Layer Delegation
+
+```javascript
+// Good: Delegate to service
+const controller = async (req, res) => {
+  try {
+    const result = await authService.register(req.body);
+    res.status(200).json(result);
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// Avoid: Business logic in controller
+const controller = async (req, res) => {
+  // Don't put complex business logic here
+  const hash = bcrypt.hashSync(password, 10);
+  const user = await createUser({ ...data, password: hash });
+  // ...
+};
+```
+
+### 4. Consistent Response Format
+
+```javascript
+const standardResponse = (res, status, data, message) => {
+  return res.status(status).json({
+    success: status < 400,
+    data,
+    message,
+  });
+};
+
+const controller = async (req, res) => {
+  try {
+    const result = await operation();
+    return standardResponse(res, 200, result, 'Success');
+  } catch (error) {
+    return standardResponse(res, 500, null, 'Error');
+  }
+};
+```
+
+### 5. Logging
+
+```javascript
+const controller = async (req, res) => {
+  try {
+    logger.debug(`[controller] Processing request for user: ${req.user.id}`);
+    const result = await operation();
+    logger.info(`[controller] Operation successful for user: ${req.user.id}`);
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error('[controller] Operation failed:', error);
+    res.status(500).json({ error: 'Operation failed' });
+  }
+};
+```
+
+## Testing Controllers
+
+```javascript
+const { getUserController } = require('~/server/controllers/UserController');
+
+describe('UserController', () => {
+  it('should return user data', async () => {
+    const req = {
+      user: { id: '123', email: 'test@example.com', toObject: () => ({}) },
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn(),
+    };
+    
+    await getUserController(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalled();
+  });
+});
+```
+
+## Related Documentation
+
+- [Routes](/development/backend/routes) - Route structure
+- [Services](/development/backend/services) - Service layer
+- [Models](/development/backend/models) - Database models

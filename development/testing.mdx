@@ -1,0 +1,513 @@
+---
+title: Testing Guidelines
+description: Testing framework, commands, and best practices for LibreChat
+---
+
+LibreChat uses Jest as its primary testing framework, with Playwright for end-to-end (E2E) testing. Tests are run per workspace to ensure modular, maintainable test coverage.
+
+## Testing Framework
+
+<CardGroup cols={2}>
+  <Card title="Jest" icon="vial">
+    Unit and integration testing for frontend and backend
+  </Card>
+  
+  <Card title="Playwright" icon="robot">
+    End-to-end testing for complete user flows
+  </Card>
+</CardGroup>
+
+## Test Commands
+
+### Unit Tests
+
+<Tabs>
+  <Tab title="Backend (API)">
+    ```bash
+    # Run backend unit tests
+    npm run test:api
+    
+    # Run tests from api directory
+    cd api && npx jest <pattern>
+    ```
+  </Tab>
+  
+  <Tab title="Frontend (Client)">
+    ```bash
+    # Run frontend unit tests
+    npm run test:client
+    
+    # Run tests from client directory
+    cd client && npx jest <pattern>
+    ```
+  </Tab>
+  
+  <Tab title="Packages">
+    ```bash
+    # Test packages/api
+    npm run test:packages:api
+    cd packages/api && npx jest <pattern>
+    
+    # Test packages/data-provider
+    npm run test:packages:data-provider
+    cd packages/data-provider && npx jest <pattern>
+    
+    # Test packages/data-schemas
+    npm run test:packages:data-schemas
+    cd packages/data-schemas && npx jest <pattern>
+    ```
+  </Tab>
+  
+  <Tab title="All Tests">
+    ```bash
+    # Run all unit tests across all workspaces
+    npm run test:all
+    ```
+    
+    This runs:
+    - `test:client`
+    - `test:api`
+    - `test:packages:api`
+    - `test:packages:data-provider`
+    - `test:packages:data-schemas`
+  </Tab>
+</Tabs>
+
+### End-to-End Tests
+
+<Tabs>
+  <Tab title="Basic E2E">
+    ```bash
+    # Run E2E tests (headless)
+    npm run e2e
+    
+    # Run E2E tests with browser visible
+    npm run e2e:headed
+    
+    # Run E2E tests in debug mode
+    npm run e2e:debug
+    ```
+  </Tab>
+  
+  <Tab title="CI/CD">
+    ```bash
+    # Run E2E tests in CI environment
+    npm run e2e:ci
+    
+    # Run E2E tests using GitHub Actions locally
+    npm run e2e:github
+    ```
+  </Tab>
+  
+  <Tab title="Accessibility">
+    ```bash
+    # Run accessibility tests with visible browser
+    npm run e2e:a11y
+    ```
+  </Tab>
+  
+  <Tab title="Utilities">
+    ```bash
+    # Generate test code with Playwright
+    npm run e2e:codegen
+    
+    # Generate login authentication
+    npm run e2e:login
+    
+    # Update snapshots
+    npm run e2e:update
+    
+    # View test report
+    npm run e2e:report
+    ```
+  </Tab>
+</Tabs>
+
+## Test Setup
+
+### Unit Test Setup
+
+<Steps>
+  <Step title="Copy Test Environment File">
+    ```bash
+    cp api/test/.env.test.example api/test/.env.test
+    ```
+  </Step>
+  
+  <Step title="Run Backend Tests">
+    ```bash
+    npm run test:api
+    ```
+  </Step>
+  
+  <Step title="Run Frontend Tests">
+    ```bash
+    npm run test:client
+    ```
+  </Step>
+</Steps>
+
+### E2E Test Setup
+
+<Steps>
+  <Step title="Create Environment File">
+    ```bash
+    cp .env.example .env
+    ```
+  </Step>
+  
+  <Step title="Install MongoDB">
+    Install [MongoDB Community Edition](https://www.mongodb.com/docs/manual/administration/install-community/) and ensure `mongosh` connects to your local instance.
+  </Step>
+  
+  <Step title="Install Playwright">
+    ```bash
+    npx install playwright
+    npx playwright install
+    ```
+  </Step>
+  
+  <Step title="Copy Config Files">
+    ```bash
+    cp e2e/config.local.example.ts e2e/config.local.ts
+    cp librechat.example.yaml librechat.yaml
+    ```
+  </Step>
+  
+  <Step title="Run E2E Tests">
+    ```bash
+    npm run e2e
+    ```
+  </Step>
+</Steps>
+
+## Jest Configuration
+
+### Backend Configuration
+
+The backend uses Jest with Node.js environment and custom module mappings.
+
+**Configuration** (`api/jest.config.js`):
+
+```javascript
+module.exports = {
+  testEnvironment: 'node',
+  clearMocks: true,
+  roots: ['<rootDir>'],
+  coverageDirectory: 'coverage',
+  testTimeout: 30000, // 30 seconds timeout
+  setupFiles: ['./test/jestSetup.js', './test/__mocks__/logger.js'],
+  moduleNameMapper: {
+    '~/(.*)': '<rootDir>/$1',
+    '~/data/auth.json': '<rootDir>/__mocks__/auth.mock.json',
+    '^openid-client/passport$': '<rootDir>/test/__mocks__/openid-client-passport.js',
+    '^openid-client$': '<rootDir>/test/__mocks__/openid-client.js',
+  },
+  transformIgnorePatterns: ['/node_modules/(?!(openid-client|oauth4webapi|jose)/).*/'],
+};
+```
+
+**Key Settings:**
+
+- **Test Environment:** Node.js
+- **Test Timeout:** 30 seconds for all tests
+- **Setup Files:** Custom setup for Jest and logger mocks
+- **Module Name Mapper:** Resolves `~` alias and mocks for dependencies
+- **Transform Ignore Patterns:** Transforms specific node_modules for ESM compatibility
+
+### Frontend Configuration
+
+Frontend tests are located in `__tests__` directories alongside components.
+
+**Best Practices:**
+
+- Use `test/layout-test-utils` for rendering components
+- Test loading, success, and error states for UI/data flows
+- Mock data-provider hooks and external dependencies
+
+## Writing Tests
+
+### Test Structure
+
+Tests should be organized by workspace and follow consistent patterns:
+
+```
+project-root/
+├── api/
+│   ├── test/
+│   │   ├── .env.test
+│   │   ├── jestSetup.js
+│   │   └── __mocks__/
+│   └── [feature].test.js
+├── client/
+│   └── src/
+│       └── components/
+│           └── __tests__/
+│               └── Component.test.tsx
+├── packages/
+│   ├── api/
+│   │   └── specs/
+│   ├── data-provider/
+│   │   └── specs/
+│   └── data-schemas/
+│       └── specs/
+└── e2e/
+    ├── config.local.ts
+    └── tests/
+```
+
+### Backend Tests
+
+Run tests from their workspace directory:
+
+```bash
+# From api directory
+cd api && npx jest <pattern>
+
+# From packages/api directory
+cd packages/api && npx jest <pattern>
+```
+
+**Example Test:**
+
+```javascript
+const { functionToTest } = require('~/utils/helpers');
+
+describe('functionToTest', () => {
+  it('should return expected result', () => {
+    const result = functionToTest('input');
+    expect(result).toBe('expected');
+  });
+  
+  it('should handle errors gracefully', () => {
+    expect(() => functionToTest(null)).toThrow();
+  });
+});
+```
+
+### Frontend Tests
+
+Frontend tests should cover:
+
+- **Loading states:** Skeleton loaders, spinners
+- **Success states:** Properly rendered data
+- **Error states:** Error messages, fallbacks
+
+**Example Test:**
+
+```typescript
+import { render, screen } from 'test/layout-test-utils';
+import { MyComponent } from '../MyComponent';
+import type { MyComponentProps } from '../types';
+
+describe('MyComponent', () => {
+  it('renders loading state', () => {
+    render(<MyComponent loading />);
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
+  
+  it('renders data successfully', () => {
+    const props: MyComponentProps = { data: 'test data' };
+    render(<MyComponent {...props} />);
+    expect(screen.getByText('test data')).toBeInTheDocument();
+  });
+  
+  it('renders error state', () => {
+    render(<MyComponent error="Failed to load" />);
+    expect(screen.getByText(/Failed to load/i)).toBeInTheDocument();
+  });
+});
+```
+
+### Mocking Dependencies
+
+Mock data-provider hooks and external dependencies:
+
+```typescript
+import { useQuery } from '@tanstack/react-query';
+
+jest.mock('@tanstack/react-query', () => ({
+  useQuery: jest.fn(),
+}));
+
+describe('Component with data fetching', () => {
+  it('handles loading state', () => {
+    (useQuery as jest.Mock).mockReturnValue({
+      data: null,
+      isLoading: true,
+      error: null,
+    });
+    
+    render(<MyComponent />);
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
+});
+```
+
+## Playwright E2E Testing
+
+### Playwright Configuration
+
+Playwright tests use different configurations for different environments:
+
+- **Local:** `e2e/playwright.config.local.ts`
+- **CI:** `e2e/playwright.config.ts`
+- **Accessibility:** `e2e/playwright.config.a11y.ts`
+
+### Writing E2E Tests
+
+<Warning>
+  Do not use interactive git commands like `git rebase -i` or `git add -i` in E2E tests.
+</Warning>
+
+**Example E2E Test:**
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('user can log in and create conversation', async ({ page }) => {
+  await page.goto('http://localhost:3080/login');
+  
+  // Login
+  await page.fill('[name="email"]', 'test@example.com');
+  await page.fill('[name="password"]', 'password123');
+  await page.click('button[type="submit"]');
+  
+  // Wait for navigation
+  await expect(page).toHaveURL(/\/c\/new/);
+  
+  // Create conversation
+  await page.fill('[aria-label="Message input"]', 'Hello, LibreChat!');
+  await page.click('[aria-label="Send message"]');
+  
+  // Verify response
+  await expect(page.locator('.message-content').first()).toBeVisible();
+});
+```
+
+### Generating Tests
+
+Use Playwright's codegen to generate test code:
+
+```bash
+# Generate code for new conversation
+npm run e2e:codegen
+
+# Generate login authentication
+npm run e2e:login
+```
+
+## Test Coverage
+
+While coverage metrics aren't strictly enforced, aim to cover:
+
+<Accordion title="Critical Paths">
+  - User authentication and authorization
+  - Message sending and receiving
+  - File uploads and downloads
+  - API endpoint interactions
+  - Error handling and recovery
+</Accordion>
+
+<Accordion title="UI Components">
+  - Loading states
+  - Success states with data
+  - Error states with proper messaging
+  - Accessibility features (ARIA labels, keyboard navigation)
+</Accordion>
+
+<Accordion title="Data Flows">
+  - React Query hooks
+  - API service calls
+  - State management
+  - Cache invalidation
+</Accordion>
+
+## Best Practices
+
+<Check>
+  **Do:**
+  - Run tests from their workspace directory
+  - Test loading, success, and error states
+  - Mock external dependencies and API calls
+  - Use descriptive test names
+  - Cover edge cases and error scenarios
+  - Run tests before submitting PR
+  - Keep tests isolated and independent
+</Check>
+
+<Warning>
+  **Don't:**
+  - Use interactive git commands in tests
+  - Leave tests failing in the codebase
+  - Test implementation details
+  - Create tests with external dependencies without mocking
+  - Skip accessibility testing
+  - Commit without running tests
+</Warning>
+
+## Continuous Integration
+
+Tests run automatically in CI/CD pipelines:
+
+```bash
+# CI test commands
+npm run test:client      # Frontend unit tests
+npm run test:api         # Backend unit tests
+npm run e2e:ci          # E2E tests in CI environment
+```
+
+Ensure all tests pass locally before pushing to prevent CI failures.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Jest tests timing out">
+    Increase the timeout in Jest configuration:
+    
+    ```javascript
+    // jest.config.js
+    module.exports = {
+      testTimeout: 30000, // 30 seconds
+    };
+    ```
+    
+    Or for individual tests:
+    
+    ```javascript
+    test('long running test', async () => {
+      // ...
+    }, 60000); // 60 seconds
+    ```
+  </Accordion>
+  
+  <Accordion title="Module not found errors">
+    - Ensure `npm run build` has been run
+    - Check `moduleNameMapper` in `jest.config.js`
+    - Verify import paths match project structure
+    - Restart ESLint server after changes
+  </Accordion>
+  
+  <Accordion title="Playwright tests failing">
+    - Ensure backend is running on `http://localhost:3080`
+    - Verify MongoDB is running and accessible
+    - Check `e2e/config.local.ts` configuration
+    - Update Playwright browsers: `npx playwright install`
+    - Clear browser state and localStorage
+  </Accordion>
+  
+  <Accordion title="Mock not working">
+    - Ensure mocks are defined before imports
+    - Use `jest.clearAllMocks()` in `beforeEach`
+    - Verify mock implementation matches actual API
+    - Check mock is imported in correct scope
+  </Accordion>
+</AccordionGroup>
+
+## Additional Resources
+
+- [Jest Documentation](https://jestjs.io/docs/getting-started)
+- [Playwright Documentation](https://playwright.dev/docs/intro)
+- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
+- [Contributing Guide](/development/contributing)
+- [Code Style Guide](/development/code-style)

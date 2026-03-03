@@ -1,0 +1,334 @@
+---
+title: Presets
+description: Create and manage conversation presets to quickly start chats with your preferred settings
+---
+
+# Presets
+
+Presets in LibreChat allow you to save and reuse conversation configurations, including model selection, endpoint settings, and parameters. This saves time when starting new conversations with frequently used settings.
+
+## What Are Presets?
+
+A preset is a saved configuration that includes:
+
+- **Endpoint** - The AI service provider (OpenAI, Anthropic, Google, etc.)
+- **Model** - The specific AI model to use
+- **Model Parameters** - Temperature, top P, frequency penalty, presence penalty, etc.
+- **Endpoint Options** - Provider-specific settings and features
+- **Conversation Settings** - Additional configuration based on the endpoint
+
+## Accessing Presets
+
+### Opening the Presets Menu
+
+1. Look for the **book icon** (BookCopy) in the chat header
+2. Click to open the presets menu
+3. A popover displays your saved presets and options
+
+The presets button is always visible at the top of your chat interface for quick access.
+
+## Creating Presets
+
+### Save Current Conversation as Preset
+
+1. Configure your conversation settings:
+   - Select your preferred endpoint
+   - Choose a model
+   - Adjust parameters (temperature, max tokens, etc.)
+   - Configure any endpoint-specific options
+
+2. Click the presets menu icon
+3. Select **Save as Preset** or use the save option in the menu
+4. Enter a descriptive name for your preset
+5. Click **Save**
+
+Your preset is now saved and can be reused in future conversations.
+
+### Preset Naming Best Practices
+
+- **Be descriptive** - "GPT-4 Creative Writing" vs "Preset 1"
+- **Include key settings** - "Claude Code Review (Temp 0.3)"
+- **Use categories** - "[Work] Analysis" or "[Personal] Brainstorm"
+- **Note special configs** - "Gemini Long Context" or "GPT-4 Vision Enabled"
+
+## Using Presets
+
+### Applying a Preset to New Conversation
+
+1. Start a new conversation or open an existing one
+2. Click the presets menu icon
+3. Browse your available presets
+4. Click on a preset name to apply it
+5. The conversation updates with all saved settings
+
+### Applying a Preset to Existing Conversation
+
+You can change the settings of an active conversation:
+
+1. Open the presets menu
+2. Select a different preset
+3. All settings update immediately
+4. Your conversation continues with the new configuration
+
+**Note:** Changing presets mid-conversation affects future messages but doesn't modify previous responses.
+
+## Editing Presets
+
+### Modifying Preset Settings
+
+1. Open the presets menu
+2. Click on the preset you want to edit
+3. The preset edit dialog opens with current settings
+4. Modify any settings:
+   - **Preset Name** - Update the title
+   - **Endpoint** - Change the AI provider
+   - **Model** - Select a different model
+   - **Parameters** - Adjust temperature, tokens, penalties, etc.
+   - **Advanced Options** - Configure endpoint-specific features
+5. Click **Save** to update the preset
+
+### Preset Edit Dialog
+
+The edit dialog shows:
+
+- **Preset name field** - Edit the display name
+- **Endpoint selector** - Dropdown to change provider
+- **Model settings** - Based on selected endpoint
+- **Parameter controls** - Sliders and inputs for model parameters
+- **Action buttons** - Export or Save changes
+
+### Auto-Validation
+
+When you change endpoints in a preset:
+- LibreChat automatically validates the model selection
+- If the current model isn't available on the new endpoint, it selects the first available model
+- Settings incompatible with the new endpoint are adjusted or hidden
+
+## Managing Presets
+
+### Setting a Default Preset
+
+Designate a preset as your default to automatically apply it to new conversations:
+
+1. Open the presets menu
+2. Find the preset you want as default
+3. Click the options menu (three dots) for that preset
+4. Select **Set as Default**
+
+New conversations will automatically use your default preset settings.
+
+### Deleting Presets
+
+1. Open the presets menu
+2. Hover over the preset you want to delete
+3. Click the options menu (three dots)
+4. Select **Delete**
+5. Confirm the deletion in the dialog
+
+Deleted presets cannot be recovered. Consider exporting important presets before deleting.
+
+### Clearing All Presets
+
+To remove all saved presets at once:
+
+1. Open the presets menu
+2. Look for the **Clear All Presets** option (usually at the bottom)
+3. Confirm you want to delete all presets
+
+**Warning:** This action cannot be undone. Export presets you want to keep before clearing.
+
+## Importing and Exporting Presets
+
+### Exporting a Preset
+
+Save a preset as a JSON file for backup or sharing:
+
+1. Open the presets menu
+2. Click on the preset you want to export
+3. In the edit dialog, click **Export**
+4. A JSON file downloads with the preset configuration
+
+Exported presets include all settings and can be shared with other LibreChat users.
+
+### Importing a Preset
+
+Load a preset from a JSON file:
+
+1. Open the presets menu
+2. Click **Import** or use the file upload option
+3. Select the preset JSON file from your computer
+4. The preset is added to your presets list
+5. Verify the imported settings are correct
+
+### Sharing Presets
+
+Preset JSON files are portable and can be:
+- Shared with team members for consistent settings
+- Backed up to cloud storage
+- Version controlled for different use cases
+- Distributed in documentation or tutorials
+
+## Preset Configuration Details
+
+### Endpoint-Specific Settings
+
+Different endpoints have unique configuration options:
+
+#### OpenAI
+- Model selection (GPT-3.5, GPT-4, etc.)
+- Temperature
+- Top P
+- Frequency Penalty
+- Presence Penalty
+- Max Tokens
+
+#### Anthropic (Claude)
+- Model selection (Claude 3 variants)
+- Temperature
+- Top P
+- Top K
+- Max Tokens
+
+#### Google (Gemini)
+- Model selection
+- Temperature
+- Top P
+- Top K
+- Max Output Tokens
+
+### Model Parameters Explained
+
+#### Temperature (0.0 - 2.0)
+
+Controls randomness in responses:
+- **0.0-0.3** - Focused, deterministic (good for code, factual answers)
+- **0.4-0.7** - Balanced creativity and coherence
+- **0.8-1.0** - Creative, varied (good for brainstorming, writing)
+- **1.1-2.0** - Very creative, potentially chaotic
+
+#### Top P (0.0 - 1.0)
+
+Controls diversity via nucleus sampling:
+- **Lower values** - More focused, predictable
+- **Higher values** - More diverse, creative
+- **Common setting:** 1.0 (disabled) or 0.9
+
+#### Frequency Penalty (-2.0 - 2.0)
+
+Reduces repetition of token sequences:
+- **Positive values** - Discourage repetition
+- **Negative values** - Allow more repetition
+- **Common setting:** 0.0 to 0.5
+
+#### Presence Penalty (-2.0 - 2.0)
+
+Encourages topic diversity:
+- **Positive values** - Encourage new topics
+- **Negative values** - Stay focused on current topics
+- **Common setting:** 0.0 to 0.5
+
+## Common Preset Use Cases
+
+### Code Assistant
+
+**Configuration:**
+- Model: GPT-4 or Claude 3 Opus
+- Temperature: 0.2-0.3
+- Top P: 0.9
+- Purpose: Accurate, focused code generation and debugging
+
+### Creative Writing
+
+**Configuration:**
+- Model: GPT-4 or Claude 3 Sonnet
+- Temperature: 0.8-1.0
+- Top P: 0.95
+- Purpose: Imaginative storytelling and content creation
+
+### Technical Analysis
+
+**Configuration:**
+- Model: GPT-4
+- Temperature: 0.3-0.5
+- Frequency Penalty: 0.2
+- Purpose: Detailed technical documentation and analysis
+
+### Brainstorming
+
+**Configuration:**
+- Model: Claude 3 Sonnet or GPT-4
+- Temperature: 0.9-1.2
+- Top P: 0.95
+- Presence Penalty: 0.3
+- Purpose: Diverse ideas and creative problem-solving
+
+### Research Assistant
+
+**Configuration:**
+- Model: GPT-4 with browsing or Claude with extended context
+- Temperature: 0.4-0.6
+- Max Tokens: High (for comprehensive responses)
+- Purpose: In-depth research and information synthesis
+
+## Tips and Best Practices
+
+### Creating Effective Presets
+
+- **Start with defaults** - Begin with standard settings and adjust based on results
+- **Test thoroughly** - Verify preset behavior with sample prompts before regular use
+- **Document your presets** - Add notes about optimal use cases in the preset name or externally
+- **Update regularly** - Refine presets as you learn what works best
+
+### Organizing Presets
+
+- **Use naming conventions** - Consistent prefixes or categories
+- **Limit total presets** - Keep only actively used presets (export others for backup)
+- **Group by purpose** - Work, personal, creative, technical, etc.
+- **Archive old versions** - Export outdated presets before deleting
+
+### Performance Considerations
+
+- **Higher temperature = more variability** - Results may be less consistent
+- **Max tokens affects cost** - Higher limits use more credits per response
+- **Model selection impacts speed** - Larger models are typically slower
+
+### Security and Privacy
+
+- **Review before sharing** - Exported presets may contain metadata
+- **Don't include sensitive data** - Presets shouldn't contain personal information
+- **Verify imported presets** - Check settings before using presets from others
+
+## Troubleshooting
+
+### Preset Not Loading
+
+- Verify the endpoint is available
+- Check that the model exists and you have access
+- Try re-importing if it's an imported preset
+
+### Settings Not Saving
+
+- Ensure all required fields are filled
+- Check for validation errors in the edit dialog
+- Try refreshing the page and saving again
+
+### Import Failed
+
+- Verify the JSON file is valid and not corrupted
+- Check the file was exported from a compatible LibreChat version
+- Ensure the file format matches expected preset structure
+
+### Model Not Available
+
+- Confirm your account has access to the selected model
+- Check if the model has been deprecated or renamed
+- Try selecting a different model for the same endpoint
+
+## Keyboard Accessibility
+
+Preset management is fully keyboard accessible:
+
+- **Tab** - Navigate through preset options and menu items
+- **Enter/Space** - Select preset or activate buttons
+- **Escape** - Close preset menu or dialogs
+- **Arrow keys** - Navigate dropdowns and select options

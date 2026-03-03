@@ -1,0 +1,539 @@
+---
+title: Model Context Protocol (MCP)
+description: Extend LibreChat with MCP servers for custom tools and integrations
+icon: "plug"
+---
+
+LibreChat supports the [Model Context Protocol (MCP)](https://modelcontextprotocol.io), allowing you to extend agents with standardized tool servers.
+
+## What is MCP?
+
+The Model Context Protocol is an open standard that enables AI applications to integrate with external tools and data sources through a unified interface.
+
+<CardGroup cols={2}>
+  <Card title="Standard Protocol" icon="file-contract">
+    Open specification for tool integration
+  </Card>
+  <Card title="Multiple Transports" icon="network-wired">
+    Support for stdio, SSE, and HTTP connections
+  </Card>
+  <Card title="OAuth Support" icon="key">
+    Secure authentication for external services
+  </Card>
+  <Card title="Tool Discovery" icon="magnifying-glass">
+    Automatic tool and prompt discovery
+  </Card>
+</CardGroup>
+
+## MCP Server Configuration
+
+Configure MCP servers in your `librechat.yaml`:
+
+### stdio Transport
+
+For local command-line MCP servers:
+
+```yaml librechat.yaml
+mcpServers:
+  # Filesystem access server
+  filesystem:
+    type: stdio
+    command: npx
+    args:
+      - -y
+      - "@modelcontextprotocol/server-filesystem"
+      - /home/user/LibreChat/
+    iconPath: /home/user/LibreChat/client/public/assets/logo.svg
+  
+  # Puppeteer automation server
+  puppeteer:
+    type: stdio
+    command: npx
+    args:
+      - -y
+      - "@modelcontextprotocol/server-puppeteer"
+    timeout: 300000  # 5 minutes
+  
+  # Obsidian vault access
+  mcp-obsidian:
+    command: npx
+    args:
+      - -y
+      - "mcp-obsidian"
+      - /path/to/obsidian/vault
+```
+
+### SSE Transport
+
+For Server-Sent Events connections:
+
+```yaml librechat.yaml
+mcpServers:
+  everything:
+    type: sse
+    url: http://localhost:3001/sse
+    timeout: 60000  # 1 minute
+```
+
+### HTTP Transport
+
+For HTTP-based MCP servers:
+
+```yaml librechat.yaml
+mcpServers:
+  api-server:
+    type: http
+    url: https://api.example.com/mcp
+    headers:
+      Authorization: "Bearer ${MCP_API_TOKEN}"
+```
+
+## Security Configuration
+
+### SSRF Protection
+
+MCP servers include SSRF (Server-Side Request Forgery) protection:
+
+```yaml librechat.yaml
+mcpSettings:
+  allowedDomains:
+    - 'host.docker.internal'    # Docker host access
+    - 'localhost'               # Local development
+    - '*.example.com'           # Wildcard subdomain
+    - 'https://secure.api.com'  # Protocol-restricted
+    - 'http://internal:8080'    # Protocol and port restricted
+```
+
+<Warning>
+  **Default Behavior**: If `allowedDomains` is not configured, SSRF targets (localhost, private IPs, `.internal`/`.local` TLDs) are blocked. To allow internal targets, explicitly add them.
+</Warning>
+
+### OAuth Authentication
+
+MCP supports OAuth 2.0 for secure external service authentication:
+
+```typescript
+// OAuth configuration is detected automatically
+// from MCP server metadata
+{
+  requiresOAuth: true,
+  oauthMetadata: {
+    authorizationUrl: 'https://example.com/oauth/authorize',
+    tokenUrl: 'https://example.com/oauth/token',
+    scopes: ['read', 'write']
+  }
+}
+```
+
+<Steps>
+  <Step title="User Initiates">
+    Agent attempts to use an OAuth-protected tool
+  </Step>
+  
+  <Step title="OAuth Flow Starts">
+    LibreChat redirects to authorization URL
+  </Step>
+  
+  <Step title="User Authorizes">
+    User grants permissions to the application
+  </Step>
+  
+  <Step title="Token Exchange">
+    Authorization code exchanged for access token
+  </Step>
+  
+  <Step title="Tool Execution">
+    MCP server receives authenticated request
+  </Step>
+</Steps>
+
+## User Permissions
+
+Control user access to MCP servers:
+
+```yaml librechat.yaml
+interface:
+  mcpServers:
+    use: true      # Allow users to use MCP servers
+    create: false  # Allow users to create MCP servers
+    share: false   # Allow sharing MCP servers
+    public: false  # Allow public sharing
+    
+    # Trust checkbox configuration
+    trustCheckbox:
+      label:
+        en: 'I understand and I want to continue'
+        de: 'Ich verstehe und möchte fortfahren'
+      subLabel:
+        en: |
+          LibreChat hasn't reviewed this MCP server. Attackers may attempt
+          to steal your data or trick the model into taking unintended actions.
+          <a href="https://docs.librechat.ai/mcp" target="_blank"><strong>Learn more.</strong></a>
+```
+
+## MCP Connection Types
+
+### App-Level Connections
+
+Shared across all users, configured in `librechat.yaml`:
+
+```yaml librechat.yaml
+mcpServers:
+  shared-filesystem:
+    type: stdio
+    command: npx
+    args:
+      - -y
+      - "@modelcontextprotocol/server-filesystem"
+      - /shared/documents
+```
+
+### User-Level Connections
+
+User-specific servers with personal authentication:
+
+```typescript
+// Created through UI or API
+{
+  serverName: 'my-personal-server',
+  userId: 'user-123',
+  config: {
+    type: 'sse',
+    url: 'https://my-mcp-server.com/sse',
+    headers: {
+      'Authorization': 'Bearer user-token'
+    }
+  }
+}
+```
+
+## Tool Discovery
+
+MCP servers automatically expose their capabilities:
+
+```typescript
+// Server provides tool list
+{
+  tools: [
+    {
+      name: 'read_file',
+      description: 'Read contents of a file',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string' }
+        },
+        required: ['path']
+      }
+    },
+    {
+      name: 'write_file',
+      description: 'Write contents to a file',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string' },
+          content: { type: 'string' }
+        },
+        required: ['path', 'content']
+      }
+    }
+  ]
+}
+```
+
+## Using MCP Tools in Agents
+
+MCP tools are automatically available to agents:
+
+```typescript
+// Agent configuration
+{
+  name: 'File Manager Agent',
+  provider: 'openAI',
+  model: 'gpt-4o',
+  instructions: 'You can read and write files using the filesystem tools.',
+  tools: ['filesystem::read_file', 'filesystem::write_file']
+}
+```
+
+Tool names follow the format: `{server_name}::{tool_name}`
+
+## Environment Variables
+
+MCP supports environment variable substitution:
+
+```yaml librechat.yaml
+mcpServers:
+  secure-api:
+    type: http
+    url: '${MCP_API_URL}'
+    headers:
+      Authorization: 'Bearer ${MCP_API_TOKEN}'
+      X-Custom-Header: '${CUSTOM_VALUE}'
+```
+
+Supported variable formats:
+- `${VAR_NAME}` - Environment variable
+- `{{LIBRECHAT_GRAPH_ACCESS_TOKEN}}` - Graph API token (with OBO flow)
+- Custom user variables passed through request context
+
+## Server Instructions
+
+Provide context-specific instructions for MCP servers:
+
+```yaml librechat.yaml
+mcpServers:
+  filesystem:
+    command: npx
+    args:
+      - -y
+      - "@modelcontextprotocol/server-filesystem"
+      - /workspace
+    serverInstructions: |
+      When using filesystem tools:
+      - Always check if file exists before reading
+      - Use absolute paths when possible
+      - Handle errors gracefully
+```
+
+Instructions are automatically injected into agent context.
+
+## Advanced Features
+
+### Connection Management
+
+<Tabs>
+  <Tab title="Connection Pooling">
+    ```typescript
+    // LibreChat manages connections automatically
+    // - App connections: Persistent, shared
+    // - User connections: Created on-demand, cached
+    // - Idle timeout: Configurable cleanup
+    ```
+  </Tab>
+  
+  <Tab title="Reconnection">
+    ```typescript
+    // Automatic reconnection for OAuth flows
+    // - Detects OAuth requirements
+    // - Initiates auth flow
+    // - Reconnects with tokens
+    ```
+  </Tab>
+  
+  <Tab title="Error Handling">
+    ```typescript
+    // Graceful error handling
+    try {
+      const result = await mcpManager.callTool({
+        serverName: 'filesystem',
+        toolName: 'read_file',
+        toolArguments: { path: '/file.txt' }
+      });
+    } catch (error) {
+      // Connection errors, auth failures, tool errors
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Timeout Configuration
+
+<ParamField path="timeout" type="number" default="60000">
+  Timeout in milliseconds for MCP operations
+</ParamField>
+
+```yaml librechat.yaml
+mcpServers:
+  long-running:
+    type: stdio
+    command: npx
+    args: ['-y', 'long-task-server']
+    timeout: 300000  # 5 minutes
+```
+
+### Custom Headers
+
+Add custom headers for HTTP/SSE transports:
+
+```yaml librechat.yaml
+mcpServers:
+  custom-api:
+    type: sse
+    url: https://api.example.com/sse
+    headers:
+      X-API-Version: '2024-01'
+      X-Request-ID: '${REQUEST_ID}'
+      Authorization: 'Bearer ${API_TOKEN}'
+```
+
+## Popular MCP Servers
+
+<AccordionGroup>
+  <Accordion title="Filesystem Server">
+    ```yaml
+    filesystem:
+      command: npx
+      args:
+        - -y
+        - "@modelcontextprotocol/server-filesystem"
+        - /workspace
+    ```
+    Provides file read/write operations
+  </Accordion>
+  
+  <Accordion title="Puppeteer Server">
+    ```yaml
+    puppeteer:
+      type: stdio
+      command: npx
+      args:
+        - -y
+        - "@modelcontextprotocol/server-puppeteer"
+      timeout: 300000
+    ```
+    Browser automation and web scraping
+  </Accordion>
+  
+  <Accordion title="GitHub Server">
+    ```yaml
+    github:
+      type: sse
+      url: https://github-mcp.example.com/sse
+      headers:
+        Authorization: 'token ${GITHUB_TOKEN}'
+    ```
+    GitHub API integration
+  </Accordion>
+  
+  <Accordion title="Database Server">
+    ```yaml
+    postgres:
+      type: stdio
+      command: npx
+      args:
+        - -y
+        - "mcp-server-postgres"
+        - '${DATABASE_URL}'
+    ```
+    Database query execution
+  </Accordion>
+</AccordionGroup>
+
+## Building Custom MCP Servers
+
+Create your own MCP server using the SDK:
+
+```typescript custom-server.ts
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+
+const server = new Server(
+  {
+    name: 'my-custom-server',
+    version: '1.0.0',
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  },
+);
+
+// Register a tool
+server.setRequestHandler('tools/list', async () => {
+  return {
+    tools: [
+      {
+        name: 'custom_tool',
+        description: 'My custom tool',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            input: { type: 'string' },
+          },
+          required: ['input'],
+        },
+      },
+    ],
+  };
+});
+
+server.setRequestHandler('tools/call', async (request) => {
+  if (request.params.name === 'custom_tool') {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Processed: ${request.params.arguments.input}`,
+        },
+      ],
+    };
+  }
+  throw new Error('Unknown tool');
+});
+
+const transport = new StdioServerTransport();
+await server.connect(transport);
+```
+
+## Best Practices
+
+<Tip>
+  **Security First**: Always use SSRF protection and validate inputs in custom servers
+</Tip>
+
+<Tip>
+  **Timeout Configuration**: Set appropriate timeouts based on expected operation duration
+</Tip>
+
+<Warning>
+  **OAuth Tokens**: Store OAuth tokens securely and implement proper token refresh
+</Warning>
+
+<Info>
+  **Connection Pooling**: LibreChat manages connections automatically—avoid creating duplicate connections
+</Info>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection Fails">
+    - Check server is running and accessible
+    - Verify `allowedDomains` configuration
+    - Check firewall/network settings
+    - Review server logs for errors
+  </Accordion>
+  
+  <Accordion title="OAuth Not Working">
+    - Ensure OAuth metadata is provided by server
+    - Check redirect URLs in OAuth app settings
+    - Verify token endpoint is accessible
+    - Review OAuth scope requirements
+  </Accordion>
+  
+  <Accordion title="Tools Not Appearing">
+    - Verify MCP server is connected
+    - Check tool discovery endpoint
+    - Review agent tool configuration
+    - Check for tool name conflicts
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Agents" icon="robot" href="/features/agents">
+    Use MCP tools with autonomous agents
+  </Card>
+  <Card title="Actions" icon="bolt" href="/features/agents#actions-api-calls">
+    Alternative API integration method
+  </Card>
+  <Card title="Code Interpreter" icon="code" href="/features/code-interpreter">
+    Built-in code execution capability
+  </Card>
+  <Card title="Web Search" icon="globe" href="/features/web-search">
+    Web search tool integration
+  </Card>
+</CardGroup>

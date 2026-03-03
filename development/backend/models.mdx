@@ -1,0 +1,512 @@
+---
+title: Database Models
+description: Understanding LibreChat's Mongoose models and database schema patterns
+---
+
+# Database Models (Mongoose)
+
+LibreChat uses Mongoose for MongoDB modeling. Models define the data structure, validation, and business logic for database operations.
+
+## Model Organization
+
+Models are organized in `api/models/` and `api/db/models.js`:
+
+```
+api/models/
+├── index.js              # Model exports
+├── Conversation.js       # Conversation operations
+├── Message.js            # Message operations
+├── Prompt.js             # Prompt operations
+├── User.js               # User methods
+├── Preset.js             # Preset operations
+└── ...
+
+api/db/
+└── models.js             # Mongoose model definitions
+```
+
+## Model Definition
+
+Models are created using `@librechat/data-schemas`:
+
+**File:** `api/db/models.js`
+
+```javascript
+const mongoose = require('mongoose');
+const { createModels } = require('@librechat/data-schemas');
+
+const models = createModels(mongoose);
+
+module.exports = { ...models };
+```
+
+Available models include:
+- `User` - User accounts
+- `Conversation` - Chat conversations
+- `Message` - Chat messages
+- `Prompt` - Prompt templates
+- `PromptGroup` - Prompt collections
+- `Assistant` - AI assistants
+- `Agent` - AI agents
+- `File` - File metadata
+- `Transaction` - Token transactions
+- `Balance` - User balances
+- `Role` - User roles
+- `AclEntry` - Access control
+
+## Model Operations
+
+### Conversation Model
+
+**File:** `api/models/Conversation.js`
+
+#### Get Single Conversation
+
+```javascript
+const { Conversation } = require('~/db/models');
+
+const getConvo = async (user, conversationId) => {
+  try {
+    return await Conversation.findOne({ user, conversationId }).lean();
+  } catch (error) {
+    logger.error('[getConvo] Error getting conversation', error);
+    throw new Error('Error getting conversation');
+  }
+};
+```
+
+#### Save Conversation
+
+```javascript
+const { getMessages } = require('./Message');
+
+const saveConvo = async (req, { conversationId, newConversationId, ...convo }, metadata) => {
+  try {
+    const messages = await getMessages({ conversationId }, '_id');
+    const update = { ...convo, messages, user: req.user.id };
+    
+    if (newConversationId) {
+      update.conversationId = newConversationId;
+    }
+    
+    const conversation = await Conversation.findOneAndUpdate(
+      { conversationId, user: req.user.id },
+      { $set: update },
+      { new: true, upsert: true },
+    );
+    
+    return conversation.toObject();
+  } catch (error) {
+    logger.error('[saveConvo] Error saving conversation', error);
+    return { message: 'Error saving conversation' };
+  }
+};
+```
+
+#### Get Conversations with Cursor Pagination
+
+```javascript
+const getConvosByCursor = async (
+  user,
+  { cursor, limit = 25, isArchived = false, tags, search } = {},
+) => {
+  const filters = [{ user }];
+  
+  // Archive filter
+  if (isArchived) {
+    filters.push({ isArchived: true });
+  } else {
+    filters.push({ $or: [{ isArchived: false }, { isArchived: { $exists: false } }] });
+  }
+  
+  // Tag filter
+  if (Array.isArray(tags) && tags.length > 0) {
+    filters.push({ tags: { $in: tags } });
+  }
+  
+  // Search filter
+  if (search) {
+    const meiliResults = await Conversation.meiliSearch(search, {
+      filter: `user = "${user}"`,
+    });
+    const matchingIds = meiliResults.hits.map((result) => result.conversationId);
+    filters.push({ conversationId: { $in: matchingIds } });
+  }
+  
+  // Cursor pagination
+  let cursorFilter = null;
+  if (cursor) {
+    const decoded = JSON.parse(Buffer.from(cursor, 'base64').toString());
+    cursorFilter = {
+      $or: [
+        { updatedAt: { $lt: new Date(decoded.updatedAt) } },
+        { updatedAt: new Date(decoded.updatedAt), _id: { $lt: decoded._id } },
+      ],
+    };
+    filters.push(cursorFilter);
+  }
+  
+  const query = { $and: filters };
+  
+  const convos = await Conversation.find(query)
+    .select('conversationId endpoint title createdAt updatedAt')
+    .sort({ updatedAt: -1 })
+    .limit(limit + 1)
+    .lean();
+  
+  let nextCursor = null;
+  if (convos.length > limit) {
+    const lastItem = convos[limit - 1];
+    const composite = {
+      updatedAt: lastItem.updatedAt.toISOString(),
+      _id: lastItem._id.toString(),
+    };
+    nextCursor = Buffer.from(JSON.stringify(composite)).toString('base64');
+    convos.pop();
+  }
+  
+  return { conversations: convos, nextCursor };
+};
+```
+
+#### Delete Conversations
+
+```javascript
+const { deleteMessages } = require('./Message');
+
+const deleteConvos = async (user, filter) => {
+  try {
+    const userFilter = { ...filter, user };
+    const conversations = await Conversation.find(userFilter).select('conversationId');
+    const conversationIds = conversations.map((c) => c.conversationId);
+    
+    if (!conversationIds.length) {
+      throw new Error('Conversation not found or already deleted.');
+    }
+    
+    const deleteConvoResult = await Conversation.deleteMany(userFilter);
+    const deleteMessagesResult = await deleteMessages({
+      conversationId: { $in: conversationIds },
+    });
+    
+    return { ...deleteConvoResult, messages: deleteMessagesResult };
+  } catch (error) {
+    logger.error('[deleteConvos] Error deleting conversations', error);
+    throw error;
+  }
+};
+```
+
+### Message Model
+
+**File:** `api/models/Message.js`
+
+#### Save Message
+
+```javascript
+const { z } = require('zod');
+const { Message } = require('~/db/models');
+
+const idSchema = z.string().uuid();
+
+async function saveMessage(req, params, metadata) {
+  if (!req?.user?.id) {
+    throw new Error('User not authenticated');
+  }
+  
+  const validConvoId = idSchema.safeParse(params.conversationId);
+  if (!validConvoId.success) {
+    logger.warn(`Invalid conversation ID: ${params.conversationId}`);
+    return;
+  }
+  
+  try {
+    const update = {
+      ...params,
+      user: req.user.id,
+      messageId: params.newMessageId || params.messageId,
+    };
+    
+    const message = await Message.findOneAndUpdate(
+      { messageId: params.messageId, user: req.user.id },
+      update,
+      { upsert: true, new: true },
+    );
+    
+    return message.toObject();
+  } catch (err) {
+    logger.error('Error saving message:', err);
+    throw err;
+  }
+}
+```
+
+#### Get Messages
+
+```javascript
+async function getMessages(filter, select) {
+  try {
+    if (select) {
+      return await Message.find(filter)
+        .select(select)
+        .sort({ createdAt: 1 })
+        .lean();
+    }
+    
+    return await Message.find(filter).sort({ createdAt: 1 }).lean();
+  } catch (err) {
+    logger.error('Error getting messages:', err);
+    throw err;
+  }
+}
+```
+
+#### Bulk Save Messages
+
+```javascript
+async function bulkSaveMessages(messages, overrideTimestamp = false) {
+  try {
+    const bulkOps = messages.map((message) => ({
+      updateOne: {
+        filter: { messageId: message.messageId },
+        update: message,
+        timestamps: !overrideTimestamp,
+        upsert: true,
+      },
+    }));
+    
+    const result = await Message.bulkWrite(bulkOps);
+    return result;
+  } catch (err) {
+    logger.error('Error saving messages in bulk:', err);
+    throw err;
+  }
+}
+```
+
+### Prompt Model
+
+**File:** `api/models/Prompt.js`
+
+#### Create Prompt Group
+
+```javascript
+const { PromptGroup, Prompt } = require('~/db/models');
+
+const createPromptGroup = async (saveData) => {
+  try {
+    const { prompt, group, author, authorName } = saveData;
+    
+    // Create or get prompt group
+    let newPromptGroup = await PromptGroup.findOneAndUpdate(
+      { ...group, author, authorName, productionId: null },
+      { $setOnInsert: { ...group, author, authorName, productionId: null } },
+      { new: true, upsert: true },
+    )
+      .lean()
+      .select('-__v')
+      .exec();
+    
+    // Create prompt
+    const newPrompt = await Prompt.findOneAndUpdate(
+      { ...prompt, author, groupId: newPromptGroup._id },
+      { $setOnInsert: { ...prompt, author, groupId: newPromptGroup._id } },
+      { new: true, upsert: true },
+    )
+      .lean()
+      .select('-__v')
+      .exec();
+    
+    // Set as production prompt
+    newPromptGroup = await PromptGroup.findByIdAndUpdate(
+      newPromptGroup._id,
+      { productionId: newPrompt._id },
+      { new: true },
+    )
+      .lean()
+      .select('-__v')
+      .exec();
+    
+    return {
+      prompt: newPrompt,
+      group: {
+        ...newPromptGroup,
+        productionPrompt: { prompt: newPrompt.prompt },
+      },
+    };
+  } catch (error) {
+    logger.error('Error saving prompt group', error);
+    throw new Error('Error saving prompt group');
+  }
+};
+```
+
+#### Get Prompt Groups with ACL
+
+```javascript
+const { ObjectId } = require('mongodb');
+
+async function getListPromptGroupsByAccess({
+  accessibleIds = [],
+  otherParams = {},
+  limit = null,
+  after = null,
+}) {
+  const isPaginated = limit !== null;
+  const normalizedLimit = isPaginated ? Math.min(Math.max(1, parseInt(limit) || 20), 100) : null;
+  
+  // Build query with ACL filter
+  const baseQuery = { ...otherParams, _id: { $in: accessibleIds } };
+  
+  // Add cursor condition
+  if (after) {
+    const cursor = JSON.parse(Buffer.from(after, 'base64').toString('utf8'));
+    const cursorCondition = {
+      $or: [
+        { updatedAt: { $lt: new Date(cursor.updatedAt) } },
+        { updatedAt: new Date(cursor.updatedAt), _id: { $gt: new ObjectId(cursor._id) } },
+      ],
+    };
+    Object.assign(baseQuery, cursorCondition);
+  }
+  
+  // Build aggregation pipeline
+  const pipeline = [
+    { $match: baseQuery },
+    { $sort: { updatedAt: -1, _id: 1 } },
+  ];
+  
+  if (isPaginated) {
+    pipeline.push({ $limit: normalizedLimit + 1 });
+  }
+  
+  // Lookup production prompt
+  pipeline.push(
+    {
+      $lookup: {
+        from: 'prompts',
+        localField: 'productionId',
+        foreignField: '_id',
+        as: 'productionPrompt',
+      },
+    },
+    { $unwind: { path: '$productionPrompt', preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        name: 1,
+        oneliner: 1,
+        category: 1,
+        author: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        'productionPrompt.prompt': 1,
+      },
+    },
+  );
+  
+  const promptGroups = await PromptGroup.aggregate(pipeline).exec();
+  
+  const hasMore = isPaginated ? promptGroups.length > normalizedLimit : false;
+  const data = isPaginated ? promptGroups.slice(0, normalizedLimit) : promptGroups;
+  
+  let nextCursor = null;
+  if (isPaginated && hasMore && data.length > 0) {
+    const lastGroup = promptGroups[normalizedLimit - 1];
+    nextCursor = Buffer.from(
+      JSON.stringify({
+        updatedAt: lastGroup.updatedAt.toISOString(),
+        _id: lastGroup._id.toString(),
+      }),
+    ).toString('base64');
+  }
+  
+  return {
+    object: 'list',
+    data,
+    has_more: hasMore,
+    after: nextCursor,
+  };
+}
+```
+
+## Model Best Practices
+
+### 1. Always Use Try-Catch
+
+```javascript
+const getItem = async (id) => {
+  try {
+    return await Model.findById(id).lean();
+  } catch (error) {
+    logger.error('[getItem]', error);
+    throw new Error('Error fetching item');
+  }
+};
+```
+
+### 2. Use Lean for Read-Only Operations
+
+```javascript
+// Good: Use lean() for read-only queries
+const items = await Model.find(filter).lean();
+
+// Only skip lean() when you need document methods
+const doc = await Model.findById(id);
+await doc.save();
+```
+
+### 3. Select Only Required Fields
+
+```javascript
+// Select specific fields
+const user = await User.findById(id).select('name email').lean();
+
+// Exclude sensitive fields
+const user = await User.findById(id).select('-password -totpSecret').lean();
+```
+
+### 4. Use Indexes for Queries
+
+```javascript
+// Compound index for common queries
+conversationSchema.index({ user: 1, updatedAt: -1 });
+messageSchema.index({ conversationId: 1, createdAt: 1 });
+```
+
+### 5. Validate Input
+
+```javascript
+const { z } = require('zod');
+
+const idSchema = z.string().uuid();
+
+const saveItem = async (data) => {
+  const valid = idSchema.safeParse(data.id);
+  if (!valid.success) {
+    throw new Error('Invalid ID format');
+  }
+  // Continue with save...
+};
+```
+
+### 6. Handle Duplicate Key Errors
+
+```javascript
+try {
+  await Model.create(data);
+} catch (err) {
+  if (err.code === 11000) {
+    // Duplicate key error
+    logger.warn('Duplicate entry detected');
+    // Handle gracefully
+  } else {
+    throw err;
+  }
+}
+```
+
+## Related Documentation
+
+- [Controllers](/development/backend/controllers) - Controller patterns
+- [Services](/development/backend/services) - Service layer
+- [Routes](/development/backend/routes) - Route structure

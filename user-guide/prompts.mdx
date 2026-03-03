@@ -1,0 +1,403 @@
+---
+title: Prompt Management
+description: Create, organize, and reuse prompts with variables and versioning
+---
+
+# Prompt Management
+
+LibreChat's prompt management system allows you to create reusable prompt templates with variables, manage versions, organize prompts into groups, and quickly access them during conversations.
+
+## Overview
+
+Prompts in LibreChat are organized into **Prompt Groups**, with each group containing:
+
+- **Multiple prompt versions** - Track iterations and changes
+- **Variables** - Placeholders for dynamic content
+- **Metadata** - Category, description, and command shortcuts
+- **Production version** - The current "live" version for quick access
+
+## Accessing Prompts
+
+Navigate to the Prompts section from your dashboard to view, create, and manage prompt groups.
+
+### Prompt Groups List
+
+The main prompts view displays:
+- All your prompt groups organized by category
+- Quick preview of each prompt
+- Filtering and search capabilities
+- Options to create new prompt groups
+
+### Prompt Editor Modes
+
+LibreChat offers two editing modes:
+
+#### Simple Mode
+
+Focused interface showing:
+- Single prompt editor
+- Basic metadata (name, description, command)
+- Variable management
+- Category selection
+
+Best for: Quick edits, single prompts, straightforward use cases
+
+#### Advanced Mode
+
+Full-featured interface with:
+- Version history and management
+- Production version selection
+- All versions visible in sidebar
+- Advanced versioning controls
+
+Best for: Complex prompts, version tracking, team collaboration
+
+## Creating Prompts
+
+### Creating a New Prompt Group
+
+1. Navigate to the Prompts section
+2. Click **Create New Prompt** or similar action button
+3. The prompt editor opens with empty fields
+4. Fill in the prompt details:
+   - **Name** - A descriptive title for your prompt group
+   - **Category** - Organize prompts by type or purpose
+   - **Description** - Brief explanation of what the prompt does
+   - **Command** - Optional slash command shortcut (e.g., `/analyze`)
+   - **Prompt Text** - The actual prompt content
+
+5. Add variables if needed (see Variables section below)
+6. Click outside the editor or navigate away to auto-save
+
+### Prompt Name
+
+The prompt name appears in lists and is editable inline:
+
+1. Click on the prompt name in the editor header
+2. Edit the text
+3. Press Enter or click away to save
+
+Prompt names should be concise but descriptive enough to identify the purpose at a glance.
+
+## Prompt Editor
+
+### Writing Prompts
+
+The main editor is a rich text area where you write your prompt content:
+
+- **Markdown supported** - Format with headers, lists, code blocks, etc.
+- **Variable syntax** - Use `{{variableName}}` for placeholders
+- **Multi-line** - Write detailed, structured prompts
+- **Auto-save** - Changes save automatically when you stop editing
+
+### Prompt Description
+
+Add a description to explain:
+- Purpose of the prompt
+- Best use cases
+- Expected inputs or outputs
+- Any special instructions
+
+Descriptions help you and others understand when to use each prompt.
+
+### Command Shortcuts
+
+Assign a command to invoke your prompt quickly:
+
+1. Enter a command in the **Command** field (e.g., `analyze`, `summarize`)
+2. In conversations, type `/` followed by your command
+3. The prompt is inserted with placeholders for variables
+
+Commands make frequently-used prompts instantly accessible.
+
+## Variables
+
+Variables are placeholders in your prompts that can be filled with dynamic content.
+
+### Adding Variables
+
+1. In your prompt text, use double curly braces: `{{variableName}}`
+2. LibreChat automatically detects variables in your prompt
+3. The Variables section displays all detected variables
+4. Click on a variable to edit its properties
+
+### Variable Configuration
+
+For each variable, you can set:
+
+- **Name** - The identifier used in the prompt (`{{name}}`)
+- **Label** - Display name shown to users
+- **Type** - Text, number, or other input types
+- **Default Value** - Pre-filled value when the prompt is used
+- **Required** - Whether the variable must be filled
+
+### Using Variables in Prompts
+
+Example prompt with variables:
+
+```
+Analyze the following {{documentType}} and provide insights on {{focusArea}}.
+
+Document: {{documentContent}}
+
+Please focus on:
+1. {{aspect1}}
+2. {{aspect2}}
+3. {{aspect3}}
+
+Provide your analysis in {{outputFormat}} format.
+```
+
+When you use this prompt:
+1. A dialog appears with fields for each variable
+2. Fill in the values
+3. The prompt is inserted with variables replaced
+
+### Variable Best Practices
+
+- **Use descriptive names** - `{{userGoal}}` vs `{{var1}}`
+- **Provide defaults** - Helpful starting points for common values
+- **Mark required fields** - Prevent incomplete prompt submissions
+- **Limit variables** - Too many makes prompts cumbersome (aim for 3-7)
+
+## Prompt Versions
+
+### Creating New Versions
+
+Every time you edit and save a prompt, a new version is created:
+
+1. Make changes to your prompt text
+2. The changes auto-save
+3. A new version appears in the versions list (Advanced Mode)
+
+Versions are sequential and timestamped.
+
+### Version History
+
+In Advanced Mode, the right sidebar shows:
+- All versions of the current prompt group
+- Each version's timestamp
+- The production version indicator
+- Options to select different versions
+
+### Viewing Different Versions
+
+1. Switch to Advanced Mode if needed
+2. In the versions sidebar, click on any version
+3. The editor loads that version's content
+4. You can view, edit, or set it as production
+
+### Setting Production Version
+
+The **production version** is the "official" current version:
+
+1. Open the prompt in Advanced Mode
+2. Select the version you want to make production
+3. Click the **rocket icon** (Make Production button)
+4. The version is now marked as production
+
+Production versions are used when you invoke the prompt via command or quick access.
+
+### Deleting Versions
+
+1. Select the version you want to delete
+2. Click the delete button
+3. Confirm the deletion
+
+**Note:** You cannot delete the production version. Set a different version as production first.
+
+## Categories
+
+Organize your prompts with categories for easier navigation and filtering.
+
+### Selecting a Category
+
+1. In the prompt editor, find the Category Selector (usually in the header or sidebar)
+2. Click to open the category dropdown
+3. Select a category from the list
+4. The prompt group is automatically recategorized
+
+### Available Categories
+
+Common categories include:
+- **Writing** - Content creation, copywriting, creative writing
+- **Code** - Programming, debugging, code review
+- **Analysis** - Data analysis, research, evaluation
+- **Education** - Learning, tutoring, explanations
+- **Business** - Strategy, planning, reporting
+- **Custom** - Create your own categories
+
+### Category Icons
+
+Each category has an associated icon for visual identification in lists and views.
+
+## Sharing Prompts
+
+Share prompt groups with team members or the community (if your instance has sharing enabled).
+
+### How to Share a Prompt
+
+1. Open the prompt you want to share
+2. Click the **Share** button in the editor header
+3. Configure sharing options:
+   - Share with specific users
+   - Share with groups
+   - Make publicly accessible
+4. Generate a share link or send invitations
+5. Recipients can view and optionally import your prompt
+
+### Shared Prompt Permissions
+
+When you share a prompt, you can grant:
+- **View only** - Others can see but not edit
+- **Edit** - Collaborators can modify the prompt
+- **Share** - Recipients can share with others
+
+### Importing Shared Prompts
+
+1. Open a shared prompt link
+2. Review the prompt content
+3. Click **Import** or **Add to My Prompts**
+4. The prompt is copied to your prompt library
+5. You can edit your copy independently
+
+## Using Prompts in Conversations
+
+### Inserting Prompts via Command
+
+1. In any conversation, type `/`
+2. Start typing your command name
+3. Select the prompt from the autocomplete list
+4. If the prompt has variables, a dialog appears
+5. Fill in the variable values
+6. Click **Insert** to add the prompt to your message
+
+### Quick Access from Prompt List
+
+1. Navigate to Prompts section
+2. Click on a prompt to preview
+3. Click **Use in Chat** or similar action
+4. A new conversation opens with the prompt ready
+
+### Auto-Send Prompts
+
+Configure prompts to auto-send immediately after variable input:
+
+1. Edit the prompt settings
+2. Enable **Auto-send** option
+3. When you use the prompt and fill variables, it sends automatically
+
+Useful for prompts that don't need additional user input.
+
+## Advanced Features
+
+### Always Make Production
+
+Enable this setting to automatically set new versions as production:
+
+1. Open prompt group settings
+2. Toggle **Always Make Production**
+3. Every new save becomes the production version immediately
+
+Useful for prompts you're actively iterating on.
+
+### Prompt Templates
+
+Create templates for common prompt structures:
+
+1. Design a prompt with placeholder structure
+2. Use descriptive variables for all customizable parts
+3. Save with a template-like name (e.g., "[Template] Analysis Framework")
+4. Duplicate and modify for specific use cases
+
+## Admin Settings (For Admins)
+
+Administrators can:
+- Set global prompt access policies
+- Create organization-wide prompt libraries
+- Manage sharing permissions
+- Configure default categories
+
+## Managing Your Prompts
+
+### Organizing Prompts
+
+- **Use categories consistently** - Helps with filtering and discovery
+- **Name clearly** - Prompt names should indicate purpose
+- **Archive unused prompts** - Keep your active list focused
+- **Document complex prompts** - Add detailed descriptions
+
+### Prompt Maintenance
+
+- **Review periodically** - Update prompts as best practices evolve
+- **Test variations** - Use versions to A/B test different approaches
+- **Gather feedback** - Note which prompts work well
+- **Clean up versions** - Delete experimental or broken versions
+
+### Filtering Prompts
+
+Use the filter controls in the prompts list:
+- Filter by category
+- Search by name or content
+- Sort by created date, updated date, or name
+- Show only your prompts or shared prompts
+
+## Tips and Best Practices
+
+### Writing Effective Prompts
+
+- **Be specific** - Clear instructions yield better results
+- **Structure with sections** - Use headers and lists for complex prompts
+- **Provide context** - Include background information when needed
+- **Use examples** - Show the AI what you're looking for
+- **Iterate** - Test and refine prompts over time
+
+### Variable Design
+
+- **Logical grouping** - Related variables should flow naturally
+- **Clear labels** - Users should understand what to input
+- **Sensible defaults** - Save time with common values pre-filled
+- **Validation** - Mark required fields appropriately
+
+### Version Control
+
+- **Meaningful changes** - Don't create versions for trivial edits
+- **Production discipline** - Only promote well-tested versions
+- **Keep history** - Versions show evolution of your prompt
+- **Document major versions** - Note what changed in descriptions
+
+## Troubleshooting
+
+### Prompt Not Saving
+
+- Check your internet connection
+- Verify you have edit permissions
+- Try refreshing the page and re-entering changes
+
+### Variables Not Detected
+
+- Ensure you're using double curly braces: `{{variable}}`
+- Check for typos in variable names
+- Variables should be one word or use underscores: `{{my_variable}}`
+
+### Command Not Working
+
+- Verify the command is set in prompt settings
+- Commands should be unique (no duplicates)
+- Try typing the full command name
+- Check that the prompt is saved and production version is set
+
+### Can't Share Prompt
+
+- Sharing may be disabled by your administrator
+- You may not have share permissions for this prompt
+- Check that you're the owner or have been granted share rights
+
+## Keyboard Accessibility
+
+Prompt management is fully keyboard accessible:
+
+- **Tab** - Navigate between fields and controls
+- **Enter** - Save inline edits, confirm actions
+- **Escape** - Cancel edits, close dialogs
+- **Arrow keys** - Navigate lists and dropdowns

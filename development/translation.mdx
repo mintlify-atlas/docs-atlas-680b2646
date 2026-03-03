@@ -1,0 +1,433 @@
+---
+title: Translation Contribution
+description: Guide for contributing translations to LibreChat
+---
+
+LibreChat is available in multiple languages and welcomes translation contributions from the community. Translations help make LibreChat more accessible to users around the world.
+
+## Supported Languages
+
+LibreChat currently supports the following languages:
+
+<CardGroup cols={3}>
+  <Card title="Western Europe">
+    - English (en)
+    - Deutsch (de)
+    - Español (es)
+    - Français (fr)
+    - Italiano (it)
+    - Nederlands (nl)
+    - Português PT (pt-PT)
+    - Português BR (pt-BR)
+    - Català (ca)
+  </Card>
+  
+  <Card title="Northern & Eastern Europe">
+    - Polski (pl)
+    - Русский (ru)
+    - Svenska (sv)
+    - Čeština (cs)
+    - Dansk (da)
+    - Eesti (et)
+    - Suomi (fi)
+    - Magyar (hu)
+    - Latviešu (lv)
+    - Lietuvių (lt)
+    - Norsk (nn, nb)
+    - Slovenčina (sk)
+    - Slovenščina (sl)
+    - Українська (uk)
+    - Bosanski (bs)
+    - Íslenska (is)
+  </Card>
+  
+  <Card title="Asia & Middle East">
+    - 中文 (简体) (zh-Hans)
+    - 中文 (繁體) (zh-Hant)
+    - 日本語 (ja)
+    - 한국어 (ko)
+    - ไทย (th)
+    - Tiếng Việt (vi)
+    - Bahasa Indonesia (id)
+    - العربية (ar)
+    - עברית (he)
+    - فارسی (fa)
+    - ქართული (ka)
+    - Հայերեն (hy)
+    - Türkçe (tr)
+    - ئۇيغۇرچە (ug)
+    - བོད་ཡིག (bo)
+  </Card>
+</CardGroup>
+
+## Translation Management
+
+LibreChat uses **Locize** for translation management, which provides:
+
+- Professional translation management tools
+- Automated translation workflows
+- Real-time translation updates
+- Quality assurance for translations
+
+<Note>
+  We thank [Locize](https://locize.com) for their translation management tools that support multiple languages in LibreChat.
+</Note>
+
+## Translation Progress
+
+You can track the current translation progress for all languages:
+
+![Translation Progress](https://img.shields.io/badge/dynamic/json.svg?style=for-the-badge&color=2096F3&label=locize&query=%24.translatedPercentage&url=https://api.locize.app/badgedata/4cb2598b-ed4d-469c-9b04-2ed531a8cb45&suffix=%+translated)
+
+Visit the [Translation Guide](https://www.librechat.ai/docs/translation) for detailed progress information.
+
+## How to Contribute Translations
+
+<Steps>
+  <Step title="Check Current Progress">
+    Review the [Translation Guide](https://www.librechat.ai/docs/translation) to see which languages need improvement.
+  </Step>
+  
+  <Step title="Join the Community">
+    Join the [Discord community](https://discord.librechat.ai) to discuss translations and get guidance.
+  </Step>
+  
+  <Step title="Access Locize Platform">
+    Contact the maintainers through Discord to get access to the Locize translation platform.
+  </Step>
+  
+  <Step title="Start Translating">
+    Use the Locize interface to add or improve translations for your language.
+  </Step>
+</Steps>
+
+## Translation Files
+
+Translation files are stored in JSON format in the following locations:
+
+```
+client/src/locales/
+├── en/translation.json          # English (source)
+├── ar/translation.json          # Arabic
+├── zh-Hans/translation.json     # Chinese (Simplified)
+├── zh-Hant/translation.json     # Chinese (Traditional)
+├── de/translation.json          # German
+├── es/translation.json          # Spanish
+├── fr/translation.json          # French
+└── [other languages]/translation.json
+```
+
+<Warning>
+  **Only update English keys** in `client/src/locales/en/translation.json`.
+  
+  Other languages are managed externally through Locize and will be overwritten during automated syncs.
+</Warning>
+
+## Translation Key Structure
+
+Translation keys use semantic prefixes to organize translations by feature:
+
+| Prefix | Purpose | Example |
+|--------|---------|----------|
+| `com_ui_` | General UI elements | `com_ui_submit`, `com_ui_cancel` |
+| `com_assistants_` | Assistants feature | `com_assistants_create`, `com_assistants_delete` |
+| `com_nav_` | Navigation elements | `com_nav_settings`, `com_nav_home` |
+| `com_auth_` | Authentication | `com_auth_login`, `com_auth_signup` |
+| `com_endpoint_` | API endpoints | `com_endpoint_openai`, `com_endpoint_anthropic` |
+| `com_error_` | Error messages | `com_error_invalid_input`, `com_error_network` |
+
+**Example Translation File:**
+
+```json
+{
+  "com_ui_submit": "Submit",
+  "com_ui_cancel": "Cancel",
+  "com_ui_save": "Save",
+  "com_nav_settings": "Settings",
+  "com_auth_login": "Log In",
+  "com_error_invalid_input": "Invalid input provided"
+}
+```
+
+## Using Translations in Code
+
+All user-facing text must be localized using the `useLocalize()` hook:
+
+### React Components
+
+```typescript
+import { useLocalize } from '~/hooks';
+
+function MyComponent() {
+  const localize = useLocalize();
+  
+  return (
+    <div>
+      <h1>{localize('com_ui_welcome')}</h1>
+      <button>{localize('com_ui_submit')}</button>
+      <p>{localize('com_error_invalid_input')}</p>
+    </div>
+  );
+}
+```
+
+### With Variables
+
+```typescript
+import { useLocalize } from '~/hooks';
+
+function UserGreeting({ userName }: { userName: string }) {
+  const localize = useLocalize();
+  
+  // Translation key: "com_ui_greeting": "Hello, {{name}}!"
+  return <h1>{localize('com_ui_greeting', { name: userName })}</h1>;
+}
+```
+
+## Adding New Translation Keys
+
+When adding new features that require user-facing text:
+
+<Steps>
+  <Step title="Add English Key">
+    Add the new key to `client/src/locales/en/translation.json`:
+    
+    ```json
+    {
+      "com_ui_new_feature": "New Feature",
+      "com_ui_new_feature_description": "Description of the new feature"
+    }
+    ```
+  </Step>
+  
+  <Step title="Use Appropriate Prefix">
+    Choose the correct semantic prefix for your key:
+    - UI elements: `com_ui_`
+    - Feature-specific: `com_[feature]_`
+    - Errors: `com_error_`
+  </Step>
+  
+  <Step title="Use in Code">
+    Implement the localization in your component:
+    
+    ```typescript
+    const title = localize('com_ui_new_feature');
+    const description = localize('com_ui_new_feature_description');
+    ```
+  </Step>
+  
+  <Step title="Sync Translations">
+    Locize will automatically sync new keys to other languages for translation.
+  </Step>
+</Steps>
+
+## i18n Configuration
+
+LibreChat uses `i18next` for internationalization with the following setup:
+
+**Configuration** (`client/src/locales/i18n.ts`):
+
+```typescript
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+
+i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    fallbackLng: {
+      'zh-TW': ['zh-Hant', 'en'],
+      'zh-HK': ['zh-Hant', 'en'],
+      zh: ['zh-Hans', 'en'],
+      default: ['en'],
+    },
+    fallbackNS: 'translation',
+    ns: ['translation'],
+    debug: false,
+    defaultNS: 'translation',
+    resources,
+    interpolation: { escapeValue: false },
+  });
+```
+
+**Features:**
+
+- **Language Detection:** Automatically detects user's preferred language from browser settings
+- **Fallback Languages:** Falls back to English if translation is missing
+- **Chinese Variants:** Handles Traditional (zh-Hant) and Simplified (zh-Hans) Chinese
+- **Interpolation:** Supports variables in translation strings
+
+## Translation Best Practices
+
+<Check>
+  **Do:**
+  - Use semantic key prefixes consistently
+  - Keep translations concise and user-friendly
+  - Maintain consistent terminology across the app
+  - Test translations in context before submitting
+  - Consider cultural nuances and regional differences
+  - Use gender-neutral language when possible
+  - Preserve formatting placeholders (e.g., `{{variable}}`)
+</Check>
+
+<Warning>
+  **Don't:**
+  - Directly edit non-English translation files (they're auto-synced)
+  - Use hardcoded strings in components
+  - Translate technical terms that should remain in English (e.g., API names)
+  - Remove or modify placeholder variables in translations
+  - Use informal language in professional contexts
+  - Include code or HTML in translation strings
+</Warning>
+
+## ESLint i18n Rules
+
+The project enforces localization through ESLint rules:
+
+**Configuration** (in `eslint.config.mjs`):
+
+```javascript
+rules: {
+  'i18next/no-literal-string': [
+    'error',
+    {
+      mode: 'jsx-text-only',
+      'should-validate-template': true,
+    },
+  ],
+}
+```
+
+This rule ensures:
+- All JSX text content is localized
+- Template literals are validated
+- Prevents hardcoded strings in user-facing text
+
+**Fix ESLint errors:**
+
+```bash
+npm run lint:fix
+```
+
+## Language-Specific Considerations
+
+### Right-to-Left (RTL) Languages
+
+For RTL languages like Arabic (`ar`), Hebrew (`he`), and Persian (`fa`):
+
+- UI automatically adjusts text direction
+- Icons and layouts mirror appropriately
+- Test thoroughly in RTL mode
+
+### Chinese Variants
+
+LibreChat supports both Chinese variants:
+
+- **Simplified Chinese** (`zh-Hans`): Used in mainland China, Singapore
+- **Traditional Chinese** (`zh-Hant`): Used in Taiwan, Hong Kong, Macau
+
+Fallback chain:
+- `zh-TW`, `zh-HK` → `zh-Hant` → `en`
+- `zh` → `zh-Hans` → `en`
+
+### Pluralization
+
+Use i18next pluralization for count-dependent translations:
+
+```json
+{
+  "com_ui_message_one": "{{count}} message",
+  "com_ui_message_other": "{{count}} messages"
+}
+```
+
+```typescript
+localize('com_ui_message', { count: messageCount });
+```
+
+## Testing Translations
+
+### Local Testing
+
+1. **Change language** in browser settings or app settings
+2. **Verify translations** appear correctly
+3. **Check layout** doesn't break with longer/shorter text
+4. **Test RTL languages** if applicable
+
+### Testing Checklist
+
+<Accordion title="Translation Testing Checklist">
+  - [ ] Text displays in correct language
+  - [ ] No hardcoded English strings visible
+  - [ ] UI layout accommodates text length
+  - [ ] Special characters display correctly
+  - [ ] RTL languages display properly (if applicable)
+  - [ ] Placeholders are replaced with actual values
+  - [ ] Pluralization works correctly
+  - [ ] Fallback to English works for missing keys
+</Accordion>
+
+## Contributing New Languages
+
+To add support for a new language:
+
+<Steps>
+  <Step title="Propose Language Addition">
+    Open a discussion in the [GitHub Discussions](https://github.com/danny-avila/LibreChat/discussions) proposing the new language.
+  </Step>
+  
+  <Step title="Get Community Support">
+    Gather community support and potential translators for the language.
+  </Step>
+  
+  <Step title="Setup Language Files">
+    Work with maintainers to:
+    - Add language code to `i18n.ts`
+    - Create translation file structure
+    - Configure Locize for the new language
+  </Step>
+  
+  <Step title="Begin Translation">
+    Start translating the English source file to the new language.
+  </Step>
+  
+  <Step title="Test and Submit">
+    Test the translation thoroughly and submit for review.
+  </Step>
+</Steps>
+
+## Translation Resources
+
+<CardGroup cols={2}>
+  <Card title="Official Translation Guide" icon="book" href="https://www.librechat.ai/docs/translation">
+    Detailed guide with current translation status
+  </Card>
+  
+  <Card title="Discord Community" icon="discord" href="https://discord.librechat.ai">
+    Join to discuss translations and get help
+  </Card>
+  
+  <Card title="Locize Platform" icon="language" href="https://locize.com">
+    Translation management platform used by LibreChat
+  </Card>
+  
+  <Card title="i18next Documentation" icon="globe" href="https://www.i18next.com/">
+    Learn about the i18n framework used
+  </Card>
+</CardGroup>
+
+## Getting Help
+
+If you need assistance with translations:
+
+1. **Join Discord:** Ask in the translation channel on [Discord](https://discord.librechat.ai)
+2. **GitHub Discussions:** Post questions in [Discussions](https://github.com/danny-avila/LibreChat/discussions)
+3. **Review Documentation:** Check the [official translation guide](https://www.librechat.ai/docs/translation)
+
+## Additional Resources
+
+- [Contributing Guide](/development/contributing)
+- [Code Style Guide](/development/code-style)
+- [i18next Documentation](https://www.i18next.com/)
+- [Locize Platform](https://locize.com)

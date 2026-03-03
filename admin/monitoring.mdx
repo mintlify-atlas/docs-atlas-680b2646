@@ -1,0 +1,489 @@
+---
+title: Monitoring & Logging
+description: Monitor LibreChat system health, user activity, and logs for debugging and performance optimization
+---
+
+LibreChat provides comprehensive logging and monitoring capabilities to help you track system health, debug issues, and understand usage patterns.
+
+## Overview
+
+<CardGroup cols={2}>
+  <Card title="Application Logs" icon="file-lines" href="#application-logs">
+    View and manage application logs
+  </Card>
+  <Card title="Performance Monitoring" icon="chart-line" href="#performance-monitoring">
+    Track system performance metrics
+  </Card>
+  <Card title="User Activity" icon="users" href="#user-activity">
+    Monitor user actions and usage
+  </Card>
+  <Card title="Error Tracking" icon="triangle-exclamation" href="#error-tracking">
+    Track and debug errors
+  </Card>
+</CardGroup>
+
+## Application Logs
+
+LibreChat uses Winston for structured logging.
+
+### Log Locations
+
+Logs are stored in the `logs/` directory:
+
+- `logs/app.log` - General application logs
+- `logs/error.log` - Error logs only
+- `logs/debug.log` - Debug-level logs (if enabled)
+- `logs/moderation.log` - Content moderation events
+- `logs/meili.log` - Meilisearch sync logs
+
+### Log Levels
+
+Configure logging level with environment variables:
+
+<ParamField path="LOG_LEVEL" type="string" default="info">
+  Logging level: `error`, `warn`, `info`, `http`, `verbose`, `debug`, `silly`
+</ParamField>
+
+<ParamField path="DEBUG_LOGGING" type="boolean" default="false">
+  Enable debug-level logging
+</ParamField>
+
+<ParamField path="DEBUG_CONSOLE" type="boolean" default="false">
+  Output debug logs to console
+</ParamField>
+
+### Example Configuration
+
+```bash .env
+# Production: minimal logging
+LOG_LEVEL=warn
+DEBUG_LOGGING=false
+
+# Development: verbose logging
+LOG_LEVEL=debug
+DEBUG_LOGGING=true
+DEBUG_CONSOLE=true
+```
+
+### Viewing Logs
+
+<Tabs>
+  <Tab title="Docker">
+    View live logs:
+    ```bash
+    docker logs -f LibreChat
+    ```
+    
+    View last 100 lines:
+    ```bash
+    docker logs --tail 100 LibreChat
+    ```
+    
+    View logs from specific time:
+    ```bash
+    docker logs --since 2024-03-03T10:00:00 LibreChat
+    ```
+  </Tab>
+  
+  <Tab title="Local">
+    Tail application logs:
+    ```bash
+    tail -f logs/app.log
+    ```
+    
+    View error logs:
+    ```bash
+    tail -f logs/error.log
+    ```
+    
+    Search logs:
+    ```bash
+    grep "ERROR" logs/app.log
+    ```
+  </Tab>
+  
+  <Tab title="PM2">
+    View logs:
+    ```bash
+    pm2 logs LibreChat
+    ```
+    
+    Flush logs:
+    ```bash
+    pm2 flush
+    ```
+  </Tab>
+</Tabs>
+
+### Log Rotation
+
+LibreChat uses `winston-daily-rotate-file` for automatic log rotation:
+
+```javascript
+// Logs rotate daily
+// Maximum 14 days of logs kept
+// Maximum log file size: 20MB
+```
+
+Manual log rotation:
+
+```bash
+# Archive old logs
+mv logs/app.log logs/app.log.$(date +%Y%m%d)
+
+# Restart to create new log file
+npm run backend:stop && npm run backend
+```
+
+## Performance Monitoring
+
+### System Metrics
+
+Monitor key performance indicators:
+
+#### Response Times
+
+```javascript
+// Enable response time logging
+app.use(responseTime((req, res, time) => {
+  logger.http(`${req.method} ${req.url} - ${time}ms`);
+}));
+```
+
+#### Memory Usage
+
+Monitor Node.js memory:
+
+```bash
+# Run backend with memory inspection
+npm run backend:inspect
+```
+
+Access Chrome DevTools at `chrome://inspect` to analyze:
+- Heap snapshots
+- Memory allocation
+- Memory leaks
+
+### Database Performance
+
+Monitor MongoDB performance:
+
+<Steps>
+  <Step title="Enable MongoDB Profiling">
+    ```javascript
+    db.setProfilingLevel(1, { slowms: 100 })
+    ```
+  </Step>
+
+  <Step title="View Slow Queries">
+    ```javascript
+    db.system.profile.find({ millis: { $gt: 100 } }).sort({ ts: -1 })
+    ```
+  </Step>
+
+  <Step title="Analyze Query Plans">
+    ```javascript
+    db.conversations.find({ user: userId }).explain("executionStats")
+    ```
+  </Step>
+</Steps>
+
+### Meilisearch Monitoring
+
+Monitor search index health:
+
+```bash
+# Check Meilisearch stats
+curl http://localhost:7700/stats
+
+# Check index status
+curl http://localhost:7700/indexes/messages/stats
+```
+
+## User Activity
+
+Track user actions and usage patterns.
+
+### User Statistics
+
+View statistics for a specific user:
+
+```bash
+npm run user-stats user@example.com
+```
+
+Displays:
+- Total conversations
+- Messages sent
+- Tokens used
+- Files uploaded
+- Agents created
+- Last login
+- Registration date
+
+### Activity Logs
+
+Important user actions are logged:
+
+```json
+{
+  "timestamp": "2024-03-03T10:30:00Z",
+  "userId": "user123",
+  "action": "conversation_created",
+  "resource": "conv_abc123",
+  "metadata": {
+    "endpoint": "openai",
+    "model": "gpt-4"
+  }
+}
+```
+
+### Usage Analytics
+
+Query MongoDB for usage insights:
+
+<Accordion title="Most Active Users">
+  ```javascript
+  db.messages.aggregate([
+    { $group: { _id: "$user", count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 10 }
+  ])
+  ```
+</Accordion>
+
+<Accordion title="Popular Models">
+  ```javascript
+  db.conversations.aggregate([
+    { $group: { _id: "$model", count: { $sum: 1 } } },
+    { $sort: { count: -1 } }
+  ])
+  ```
+</Accordion>
+
+<Accordion title="Daily Message Volume">
+  ```javascript
+  db.messages.aggregate([
+    { $group: {
+      _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+      count: { $sum: 1 }
+    }},
+    { $sort: { _id: -1 } },
+    { $limit: 30 }
+  ])
+  ```
+</Accordion>
+
+## Error Tracking
+
+### Error Logs
+
+All errors are logged to `logs/error.log`:
+
+```json
+{
+  "level": "error",
+  "message": "Failed to generate response",
+  "timestamp": "2024-03-03T10:30:00Z",
+  "stack": "Error: API request failed...",
+  "context": {
+    "userId": "user123",
+    "conversationId": "conv_abc",
+    "endpoint": "openai"
+  }
+}
+```
+
+### Common Error Patterns
+
+Monitor for these common issues:
+
+<Accordion title="API Rate Limits">
+  ```bash
+  grep "rate limit" logs/error.log
+  ```
+  
+  **Solutions:**
+  - Implement request queuing
+  - Add API key rotation
+  - Use rate limiting middleware
+</Accordion>
+
+<Accordion title="Database Connection Issues">
+  ```bash
+  grep "MongoNetworkError" logs/error.log
+  ```
+  
+  **Solutions:**
+  - Check MongoDB is running
+  - Verify connection string
+  - Increase connection pool size
+</Accordion>
+
+<Accordion title="Memory Issues">
+  ```bash
+  grep "out of memory" logs/error.log
+  ```
+  
+  **Solutions:**
+  - Increase Node.js memory limit
+  - Optimize queries
+  - Implement pagination
+</Accordion>
+
+### Debugging Tools
+
+<Tabs>
+  <Tab title="Node.js Inspector">
+    Start with debugging enabled:
+    ```bash
+    npm run backend:inspect
+    ```
+    
+    Connect Chrome DevTools:
+    1. Open `chrome://inspect`
+    2. Click "inspect" under Remote Target
+    3. Set breakpoints and debug
+  </Tab>
+  
+  <Tab title="Debug Logging">
+    Enable verbose logging:
+    ```bash .env
+    DEBUG_LOGGING=true
+    DEBUG_CONSOLE=true
+    LOG_LEVEL=debug
+    ```
+  </Tab>
+  
+  <Tab title="Request Logging">
+    Log all HTTP requests:
+    ```bash .env
+    DEBUG_PLUGINS=true
+    ```
+  </Tab>
+</Tabs>
+
+## Health Checks
+
+Implement health check endpoints for monitoring:
+
+### Application Health
+
+```bash
+curl http://localhost:3080/health
+```
+
+Response:
+```json
+{
+  "status": "healthy",
+  "uptime": 3600,
+  "timestamp": "2024-03-03T10:30:00Z"
+}
+```
+
+### Database Health
+
+```bash
+curl http://localhost:3080/health/db
+```
+
+### Search Health
+
+```bash
+curl http://localhost:3080/health/search
+```
+
+## Monitoring Tools Integration
+
+### Prometheus
+
+Expose metrics for Prometheus:
+
+```javascript api/server/middleware/metrics.js
+const promClient = require('prom-client');
+
+// Create metrics
+const httpRequestDuration = new promClient.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'status_code'],
+});
+
+// Expose metrics endpoint
+app.get('/metrics', (req, res) => {
+  res.set('Content-Type', promClient.register.contentType);
+  res.end(promClient.register.metrics());
+});
+```
+
+### Grafana Dashboards
+
+Create dashboards for:
+- Request rates and latencies
+- Error rates
+- Database query performance
+- Memory and CPU usage
+- User activity
+
+## Best Practices
+
+<Steps>
+  <Step title="Use Appropriate Log Levels">
+    - Production: `warn` or `error`
+    - Development: `debug` or `info`
+    - Troubleshooting: `verbose` or `silly`
+  </Step>
+
+  <Step title="Implement Log Rotation">
+    Prevent disk space issues by rotating logs regularly.
+  </Step>
+
+  <Step title="Monitor Key Metrics">
+    Track:
+    - Response times
+    - Error rates
+    - Database performance
+    - Memory usage
+  </Step>
+
+  <Step title="Set Up Alerts">
+    Configure alerts for:
+    - High error rates
+    - Slow responses
+    - Database issues
+    - Disk space
+  </Step>
+
+  <Step title="Regular Log Review">
+    Review logs regularly to identify patterns and potential issues.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<Accordion title="Logs filling up disk space">
+  - Enable log rotation
+  - Reduce log level in production
+  - Archive or delete old logs
+  - Use external log aggregation
+</Accordion>
+
+<Accordion title="Missing log entries">
+  - Check log level configuration
+  - Verify write permissions on logs directory
+  - Ensure logger is properly configured
+  - Check disk space availability
+</Accordion>
+
+<Accordion title="Cannot access logs in Docker">
+  - Use `docker logs` command
+  - Mount logs directory as volume
+  - Configure Docker logging driver
+</Accordion>
+
+## Related Documentation
+
+- [Configuration](/configuration/environment-variables) - Logging configuration
+- [Deployment](/deployment/docker) - Production deployment
+- [User Management](/admin/user-management) - User statistics and management

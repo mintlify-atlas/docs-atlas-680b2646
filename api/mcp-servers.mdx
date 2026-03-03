@@ -1,0 +1,544 @@
+---
+title: MCP Servers
+description: Manage Model Context Protocol server integrations
+---
+
+## Overview
+
+The MCP (Model Context Protocol) Servers API allows you to manage server integrations that provide additional tools and capabilities to AI agents.
+
+All MCP endpoints are prefixed with `/api/mcp`.
+
+## List MCP Servers
+
+Retrieve accessible MCP servers:
+
+```http
+GET /api/mcp/servers?limit=25&after=cursor_abc
+Authorization: Bearer <token>
+```
+
+### Query Parameters
+
+<ParamField query="limit" type="number" default="25">
+  Maximum number of servers to return
+</ParamField>
+
+<ParamField query="after" type="string">
+  Cursor for pagination
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search query for title/description
+</ParamField>
+
+### Response
+
+```json
+{
+  "data": [
+    {
+      "name": "github-mcp",
+      "title": "GitHub MCP Server",
+      "description": "Access GitHub repositories and issues",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "author": "user123",
+      "createdAt": "2024-01-15T10:00:00Z"
+    }
+  ],
+  "has_more": false
+}
+```
+
+## Get MCP Server
+
+Retrieve a specific MCP server configuration:
+
+```http
+GET /api/mcp/servers/:serverName
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="serverName" type="string" required>
+  MCP server name/identifier
+</ParamField>
+
+### Response
+
+<ResponseField name="name" type="string">
+  Unique server identifier
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Display title
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Server description
+</ResponseField>
+
+<ResponseField name="command" type="string">
+  Command to execute (e.g., `node`, `python`, `npx`)
+</ResponseField>
+
+<ResponseField name="args" type="string[]">
+  Command line arguments
+</ResponseField>
+
+<ResponseField name="env" type="object">
+  Environment variables (values may reference user-provided vars)
+</ResponseField>
+
+<ResponseField name="author" type="string">
+  User ID of creator
+</ResponseField>
+
+<ResponseField name="oauth" type="object">
+  OAuth configuration (if applicable)
+</ResponseField>
+
+```json
+{
+  "name": "github-mcp",
+  "title": "GitHub MCP Server",
+  "description": "Access GitHub repositories, issues, and pull requests",
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-github"],
+  "env": {
+    "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+  },
+  "customUserVars": {
+    "GITHUB_TOKEN": "GitHub Personal Access Token"
+  },
+  "author": "user123",
+  "createdAt": "2024-01-15T10:00:00Z",
+  "updatedAt": "2024-01-16T09:00:00Z"
+}
+```
+
+## Create MCP Server
+
+Create a new MCP server configuration:
+
+```http
+POST /api/mcp/servers
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "my-custom-mcp",
+  "title": "My Custom MCP",
+  "description": "Custom MCP server for special tools",
+  "command": "node",
+  "args": ["/path/to/server.js"],
+  "env": {
+    "API_KEY": "${MY_API_KEY}"
+  }
+}
+```
+
+### Request Body
+
+<ParamField body="name" type="string" required>
+  Unique server identifier (lowercase, alphanumeric, hyphens)
+</ParamField>
+
+<ParamField body="title" type="string" required>
+  Display title
+</ParamField>
+
+<ParamField body="description" type="string">
+  Server description
+</ParamField>
+
+<ParamField body="command" type="string" required>
+  Command to execute (e.g., `node`, `python`, `npx`)
+</ParamField>
+
+<ParamField body="args" type="string[]" required>
+  Command line arguments
+</ParamField>
+
+<ParamField body="env" type="object">
+  Environment variables (can reference ${VARIABLE_NAME})
+</ParamField>
+
+<ParamField body="customUserVars" type="object">
+  User-provided variables with descriptions
+</ParamField>
+
+### Response
+
+Returns the created MCP server configuration with HTTP status 201.
+
+## Update MCP Server
+
+Update an existing MCP server:
+
+```http
+PATCH /api/mcp/servers/:serverName
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "Updated Title",
+  "description": "Updated description"
+}
+```
+
+### Path Parameters
+
+<ParamField path="serverName" type="string" required>
+  MCP server identifier
+</ParamField>
+
+### Request Body
+
+All fields are optional. Only include fields to update.
+
+Requires EDIT permission on the MCP server.
+
+## Delete MCP Server
+
+Delete an MCP server:
+
+```http
+DELETE /api/mcp/servers/:serverName
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="serverName" type="string" required>
+  MCP server identifier to delete
+</ParamField>
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "MCP server deleted successfully"
+}
+```
+
+Requires DELETE permission on the MCP server.
+
+## Get MCP Tools
+
+Retrieve all available MCP tools for the user:
+
+```http
+GET /api/mcp/tools
+Authorization: Bearer <token>
+```
+
+### Response
+
+Returns an array of tools from all connected MCP servers:
+
+```json
+[
+  {
+    "name": "github_create_issue",
+    "description": "Create a new GitHub issue",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "repo": {"type": "string"},
+        "title": {"type": "string"},
+        "body": {"type": "string"}
+      },
+      "required": ["repo", "title"]
+    },
+    "serverName": "github-mcp"
+  }
+]
+```
+
+## Reinitialize MCP Server
+
+Reconnect to an MCP server:
+
+```http
+POST /api/mcp/:serverName/reinitialize
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="serverName" type="string" required>
+  MCP server to reinitialize
+</ParamField>
+
+### Response
+
+<ResponseField name="success" type="boolean">
+  Whether reinitialization succeeded
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Status message
+</ResponseField>
+
+<ResponseField name="oauthRequired" type="boolean">
+  Whether OAuth authentication is required
+</ResponseField>
+
+<ResponseField name="oauthUrl" type="string">
+  OAuth authorization URL (if required)
+</ResponseField>
+
+```json
+{
+  "success": true,
+  "message": "MCP server reinitialized successfully",
+  "serverName": "github-mcp",
+  "oauthRequired": false
+}
+```
+
+Or if OAuth is required:
+
+```json
+{
+  "success": false,
+  "message": "OAuth authentication required",
+  "serverName": "github-mcp",
+  "oauthRequired": true,
+  "oauthUrl": "https://github.com/login/oauth/authorize?client_id=..."
+}
+```
+
+## Connection Status
+
+Get connection status for all MCP servers:
+
+```http
+GET /api/mcp/connection/status
+Authorization: Bearer <token>
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "connectionStatus": {
+    "github-mcp": {
+      "connectionState": "connected",
+      "requiresOAuth": true,
+      "error": null
+    },
+    "filesystem-mcp": {
+      "connectionState": "disconnected",
+      "requiresOAuth": false,
+      "error": "Connection timeout"
+    }
+  }
+}
+```
+
+### Connection States
+
+- `connected`: Server is connected and ready
+- `disconnected`: Server is not connected
+- `error`: Connection error occurred
+- `connecting`: Connection in progress
+
+## Get Single Server Status
+
+Get connection status for a specific server:
+
+```http
+GET /api/mcp/connection/status/:serverName
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="serverName" type="string" required>
+  MCP server name
+</ParamField>
+
+### Response
+
+```json
+{
+  "success": true,
+  "serverName": "github-mcp",
+  "connectionStatus": "connected",
+  "requiresOAuth": true
+}
+```
+
+## Check Auth Values
+
+Check which authentication values are configured:
+
+```http
+GET /api/mcp/:serverName/auth-values
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="serverName" type="string" required>
+  MCP server name
+</ParamField>
+
+### Response
+
+Returns boolean flags (not actual values):
+
+```json
+{
+  "success": true,
+  "serverName": "github-mcp",
+  "authValueFlags": {
+    "GITHUB_TOKEN": true,
+    "GITHUB_ORG": false
+  }
+}
+```
+
+## OAuth Flow
+
+### Bind OAuth Flow
+
+Set CSRF cookie before OAuth redirect:
+
+```http
+POST /api/mcp/:serverName/oauth/bind
+Authorization: Bearer <token>
+```
+
+### Initiate OAuth
+
+Start OAuth flow:
+
+```http
+GET /api/mcp/:serverName/oauth/initiate?userId=user123&flowId=flow_abc
+Authorization: Bearer <token>
+```
+
+Redirects to OAuth provider.
+
+### OAuth Callback
+
+OAuth callback endpoint (handled automatically):
+
+```http
+GET /api/mcp/:serverName/oauth/callback?code=abc&state=xyz
+```
+
+Redirects to success page after completion.
+
+### Cancel OAuth
+
+Cancel pending OAuth flow:
+
+```http
+POST /api/mcp/oauth/cancel/:serverName
+Authorization: Bearer <token>
+```
+
+## Popular MCP Servers
+
+### GitHub
+
+```json
+{
+  "name": "github",
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-github"],
+  "env": {
+    "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+  }
+}
+```
+
+### Filesystem
+
+```json
+{
+  "name": "filesystem",
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/dir"],
+  "env": {}
+}
+```
+
+### Google Drive
+
+```json
+{
+  "name": "gdrive",
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-gdrive"],
+  "oauth": {
+    "provider": "google",
+    "scopes": ["https://www.googleapis.com/auth/drive.readonly"]
+  }
+}
+```
+
+## Error Responses
+
+### Server Not Found
+
+```json
+{
+  "error": "MCP server 'server-name' not found in configuration"
+}
+```
+
+HTTP Status: 404
+
+### Connection Failed
+
+```json
+{
+  "error": "Failed to connect to MCP server",
+  "serverName": "github-mcp",
+  "details": "Connection timeout"
+}
+```
+
+HTTP Status: 500
+
+### OAuth Required
+
+```json
+{
+  "error": "OAuth authentication required",
+  "oauthUrl": "https://..."
+}
+```
+
+HTTP Status: 401
+
+## Permissions
+
+MCP server access is controlled by permissions:
+
+- **VIEW**: Can view server configuration
+- **EDIT**: Can modify server configuration
+- **DELETE**: Can delete server
+- **USE**: Can use server tools in conversations
+
+## Best Practices
+
+1. **Use environment variables** for sensitive data (API keys, tokens)
+2. **Test connections** after creating/updating servers
+3. **Monitor server status** to detect connection issues
+4. **Use OAuth** when possible for better security
+5. **Document custom variables** with clear descriptions
+6. **Set appropriate permissions** to control server access
+7. **Handle disconnections** gracefully in your application

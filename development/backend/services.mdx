@@ -1,0 +1,569 @@
+---
+title: Service Layer
+description: Understanding LibreChat's service architecture and business logic organization
+---
+
+# Service Layer
+
+Services in LibreChat encapsulate complex business logic, coordinate between models, and provide reusable functionality across the application. They keep controllers thin and promote code reuse.
+
+## Service Organization
+
+Services are organized in `api/server/services/`:
+
+```
+api/server/services/
+├── AuthService.js
+├── PermissionService.js
+├── ToolService.js
+├── PluginService.js
+├── ActionService.js
+├── GraphApiService.js
+├── Config/
+│   ├── getAppConfig.js
+│   └── loadModels.js
+├── Files/
+│   ├── process.js
+│   └── S3/
+└── ...
+```
+
+## Authentication Service
+
+**File:** `api/server/services/AuthService.js`
+
+### User Registration
+
+```javascript
+const bcrypt = require('bcryptjs');
+const { isEmailDomainAllowed } = require('@librechat/api');
+const { createUser, countUsers, findUser } = require('~/models');
+const { sendEmail } = require('~/server/utils');
+
+const registerUser = async (user, additionalData = {}) => {
+  const { email, password, name, username } = user;
+  
+  try {
+    const appConfig = await getAppConfig();
+    
+    // Validate email domain
+    if (!isEmailDomainAllowed(email, appConfig?.registration?.allowedDomains)) {
+      return { 
+        status: 403, 
+        message: 'Email address not allowed' 
+      };
+    }
+    
+    // Check if user exists
+    const existingUser = await findUser({ email }, 'email _id');
+    if (existingUser) {
+      return { status: 200, message: 'User already exists' };
+    }
+    
+    // Determine if first user (becomes admin)
+    const isFirstRegisteredUser = (await countUsers()) === 0;
+    
+    // Hash password
+    const salt = bcrypt.genSaltSync(10);
+    const newUserData = {
+      provider: 'local',
+      email,
+      username,
+      name,
+      role: isFirstRegisteredUser ? SystemRoles.ADMIN : SystemRoles.USER,
+      password: bcrypt.hashSync(password, salt),
+      ...additionalData,
+    };
+    
+    const newUser = await createUser(newUserData, appConfig.balance);
+    
+    // Send verification email
+    if (emailEnabled && !newUser.emailVerified) {
+      await sendVerificationEmail({ _id: newUser._id, email, name });
+    }
+    
+    return { status: 200, message: 'Registration successful' };
+  } catch (err) {
+    logger.error('[registerUser]', err);
+    return { status: 500, message: 'Something went wrong' };
+  }
+};
+```
+
+### Token Management
+
+```javascript
+const jwt = require('jsonwebtoken');
+const { DEFAULT_SESSION_EXPIRY, DEFAULT_REFRESH_TOKEN_EXPIRY } = require('@librechat/data-schemas');
+const { createSession, generateToken, generateRefreshToken } = require('~/models');
+
+const setAuthTokens = async (userId, res, _session = null) => {
+  try {
+    let session = _session;
+    let refreshToken;
+    let refreshTokenExpires;
+    
+    if (session && session._id) {
+      refreshTokenExpires = session.expiration.getTime();
+      refreshToken = await generateRefreshToken(session);
+    } else {
+      const result = await createSession(userId, {
+        expiresIn: DEFAULT_REFRESH_TOKEN_EXPIRY,
+      });
+      session = result.session;
+      refreshToken = result.refreshToken;
+      refreshTokenExpires = session.expiration.getTime();
+    }
+    
+    const user = await getUserById(userId);
+    const token = await generateToken(user, DEFAULT_SESSION_EXPIRY);
+    
+    // Set cookies
+    res.cookie('refreshToken', refreshToken, {
+      expires: new Date(refreshTokenExpires),
+      httpOnly: true,
+      secure: shouldUseSecureCookie(),
+      sameSite: 'strict',
+    });
+    
+    res.cookie('token_provider', 'librechat', {
+      expires: new Date(refreshTokenExpires),
+      httpOnly: true,
+      secure: shouldUseSecureCookie(),
+      sameSite: 'strict',
+    });
+    
+    return token;
+  } catch (error) {
+    logger.error('[setAuthTokens]', error);
+    throw error;
+  }
+};
+```
+
+### Password Reset
+
+```javascript
+const { webcrypto } = require('node:crypto');
+const { createToken, findToken, deleteTokens } = require('~/models');
+
+const createTokenHash = () => {
+  const token = Buffer.from(webcrypto.getRandomValues(new Uint8Array(32))).toString('hex');
+  const hash = bcrypt.hashSync(token, 10);
+  return [token, hash];
+};
+
+const requestPasswordReset = async (req) => {
+  const { email } = req.body;
+  const user = await findUser({ email }, 'email _id');
+  
+  if (!user) {
+    // Return generic message for security
+    return { message: 'If account exists, reset link has been sent.' };
+  }
+  
+  await deleteTokens({ userId: user._id });
+  
+  const [resetToken, hash] = createTokenHash();
+  
+  await createToken({
+    userId: user._id,
+    token: hash,
+    createdAt: Date.now(),
+    expiresIn: 900, // 15 minutes
+  });
+  
+  const link = `${process.env.DOMAIN_CLIENT}/reset-password?token=${resetToken}&userId=${user._id}`;
+  
+  await sendEmail({
+    email: user.email,
+    subject: 'Password Reset Request',
+    payload: { name: user.name, link },
+    template: 'requestPasswordReset.handlebars',
+  });
+  
+  return { message: 'Password reset link sent.' };
+};
+
+const resetPassword = async (userId, token, password) => {
+  const passwordResetToken = await findToken({ userId }, { sort: { createdAt: -1 } });
+  
+  if (!passwordResetToken) {
+    return new Error('Invalid or expired token');
+  }
+  
+  const isValid = bcrypt.compareSync(token, passwordResetToken.token);
+  
+  if (!isValid) {
+    return new Error('Invalid or expired token');
+  }
+  
+  const hash = bcrypt.hashSync(password, 10);
+  await updateUser(userId, { password: hash });
+  await deleteTokens({ token: passwordResetToken.token });
+  
+  return { message: 'Password reset successful' };
+};
+```
+
+## Permission Service
+
+**File:** `api/server/services/PermissionService.js`
+
+Handles Access Control Lists (ACL) for resources:
+
+### Grant Permission
+
+```javascript
+const mongoose = require('mongoose');
+const { PrincipalType, ResourceType } = require('librechat-data-provider');
+const { AclEntry, AccessRole } = require('~/db/models');
+
+const grantPermission = async ({
+  principalType,
+  principalId,
+  resourceType,
+  resourceId,
+  accessRoleId,
+  grantedBy,
+  session,
+}) => {
+  try {
+    // Validate principal type
+    if (!Object.values(PrincipalType).includes(principalType)) {
+      throw new Error(`Invalid principal type: ${principalType}`);
+    }
+    
+    // Validate resource
+    if (!resourceId || !mongoose.Types.ObjectId.isValid(resourceId)) {
+      throw new Error(`Invalid resource ID: ${resourceId}`);
+    }
+    
+    // Get role to determine permission bits
+    const role = await findRoleByIdentifier(accessRoleId);
+    if (!role) {
+      throw new Error(`Role ${accessRoleId} not found`);
+    }
+    
+    // Ensure role is for correct resource type
+    if (role.resourceType !== resourceType) {
+      throw new Error(
+        `Role ${accessRoleId} is for ${role.resourceType}, not ${resourceType}`,
+      );
+    }
+    
+    return await grantPermissionACL(
+      principalType,
+      principalId,
+      resourceType,
+      resourceId,
+      role.permBits,
+      grantedBy,
+      session,
+      role._id,
+    );
+  } catch (error) {
+    logger.error(`[PermissionService.grantPermission] ${error.message}`);
+    throw error;
+  }
+};
+```
+
+### Check Permission
+
+```javascript
+const checkPermission = async ({ 
+  userId, 
+  role, 
+  resourceType, 
+  resourceId, 
+  requiredPermission 
+}) => {
+  try {
+    if (typeof requiredPermission !== 'number' || requiredPermission < 1) {
+      throw new Error('requiredPermission must be a positive number');
+    }
+    
+    validateResourceType(resourceType);
+    
+    // Get all principals for user (user + groups + public)
+    const principals = await getUserPrincipals({ userId, role });
+    
+    if (principals.length === 0) {
+      return false;
+    }
+    
+    return await hasPermission(principals, resourceType, resourceId, requiredPermission);
+  } catch (error) {
+    logger.error(`[PermissionService.checkPermission] ${error.message}`);
+    return false;
+  }
+};
+```
+
+### Find Accessible Resources
+
+```javascript
+const findAccessibleResources = async ({ 
+  userId, 
+  role, 
+  resourceType, 
+  requiredPermissions 
+}) => {
+  try {
+    if (typeof requiredPermissions !== 'number' || requiredPermissions < 1) {
+      throw new Error('requiredPermissions must be a positive number');
+    }
+    
+    validateResourceType(resourceType);
+    
+    // Get all principals for the user
+    const principalsList = await getUserPrincipals({ userId, role });
+    
+    if (principalsList.length === 0) {
+      return [];
+    }
+    
+    return await findAccessibleResourcesACL(
+      principalsList, 
+      resourceType, 
+      requiredPermissions
+    );
+  } catch (error) {
+    logger.error(`[PermissionService.findAccessibleResources] ${error.message}`);
+    return [];
+  }
+};
+```
+
+## Tool Service
+
+**File:** `api/server/services/ToolService.js`
+
+Handles tool loading and management for AI agents:
+
+### Load Tool Definitions
+
+```javascript
+const { loadToolDefinitions } = require('@librechat/api');
+const { AgentCapabilities, Tools } = require('librechat-data-provider');
+
+async function loadToolDefinitionsWrapper({ req, res, agent, tool_resources }) {
+  if (!agent.tools || agent.tools.length === 0) {
+    return { toolDefinitions: [] };
+  }
+  
+  const appConfig = req.config;
+  const endpointsConfig = await getEndpointsConfig(req);
+  const enabledCapabilities = new Set(
+    endpointsConfig?.[EModelEndpoint.agents]?.capabilities ?? []
+  );
+  
+  const checkCapability = (capability) => enabledCapabilities.has(capability);
+  
+  // Filter tools based on enabled capabilities
+  const filteredTools = agent.tools?.filter((tool) => {
+    if (tool === Tools.file_search) {
+      return checkCapability(AgentCapabilities.file_search);
+    }
+    if (tool === Tools.execute_code) {
+      return checkCapability(AgentCapabilities.execute_code);
+    }
+    if (tool === Tools.web_search) {
+      return checkCapability(AgentCapabilities.web_search);
+    }
+    return true;
+  });
+  
+  if (!filteredTools || filteredTools.length === 0) {
+    return { toolDefinitions: [] };
+  }
+  
+  const { toolDefinitions, toolRegistry } = await loadToolDefinitions(
+    {
+      userId: req.user.id,
+      agentId: agent.id,
+      tools: filteredTools,
+    },
+    {
+      isBuiltInTool,
+      loadAuthValues,
+      getOrFetchMCPServerTools,
+    },
+  );
+  
+  return { toolDefinitions, toolRegistry };
+}
+```
+
+### Load Tools for Execution
+
+```javascript
+const { loadTools } = require('~/app/clients/tools/util');
+
+async function loadToolsForExecution({
+  req,
+  res,
+  agent,
+  toolNames,
+  toolRegistry,
+  userMCPAuthMap,
+}) {
+  const appConfig = req.config;
+  const allLoadedTools = [];
+  const configurable = { userMCPAuthMap };
+  
+  // Filter out special tools
+  const regularToolNames = toolNames.filter((name) => 
+    !name.includes('__TOOL_SEARCH__') && !name.includes('__PTC__')
+  );
+  
+  if (regularToolNames.length > 0) {
+    const { loadedTools } = await loadTools({
+      agent,
+      userMCPAuthMap,
+      tools: regularToolNames,
+      user: req.user.id,
+      options: {
+        req,
+        res,
+        processFileURL,
+        uploadImageBuffer,
+      },
+      webSearch: appConfig?.webSearch,
+      fileStrategy: appConfig?.fileStrategy,
+    });
+    
+    if (loadedTools) {
+      allLoadedTools.push(...loadedTools);
+    }
+  }
+  
+  return { configurable, loadedTools: allLoadedTools };
+}
+```
+
+## Service Best Practices
+
+### 1. Single Responsibility
+
+```javascript
+// Good: Focused service function
+const sendVerificationEmail = async (user) => {
+  const token = generateToken();
+  await saveToken(user._id, token);
+  await sendEmail({ to: user.email, token });
+};
+
+// Avoid: Doing too much
+const registerAndSendEmail = async (userData) => {
+  // Registration logic
+  // Email logic
+  // Token logic
+  // All mixed together
+};
+```
+
+### 2. Error Handling
+
+```javascript
+const serviceFunction = async (params) => {
+  try {
+    const result = await operation(params);
+    return result;
+  } catch (error) {
+    logger.error('[serviceFunction]', error);
+    throw new Error('Service operation failed');
+  }
+};
+```
+
+### 3. Return Consistent Types
+
+```javascript
+// Good: Always returns same type
+const getUser = async (id) => {
+  const user = await findUser(id);
+  if (!user) {
+    return null; // Or throw error
+  }
+  return user;
+};
+
+// Avoid: Mixed return types
+const getUser = async (id) => {
+  const user = await findUser(id);
+  if (!user) {
+    return { error: 'Not found' }; // Inconsistent
+  }
+  return user;
+};
+```
+
+### 4. Use Dependency Injection
+
+```javascript
+// Good: Dependencies passed in
+const createService = ({ emailService, tokenService }) => ({
+  register: async (user) => {
+    const token = await tokenService.generate();
+    await emailService.send(user.email, token);
+  },
+});
+
+// Avoid: Hard-coded dependencies
+const register = async (user) => {
+  const token = generateToken(); // Hard-coded
+  await sendEmail(user.email); // Hard-coded
+};
+```
+
+### 5. Validate Input
+
+```javascript
+const processData = async (data) => {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid input data');
+  }
+  
+  if (!data.userId || !data.resourceId) {
+    throw new Error('Missing required fields');
+  }
+  
+  // Process valid data
+};
+```
+
+## Testing Services
+
+```javascript
+const { registerUser } = require('~/server/services/AuthService');
+
+describe('AuthService', () => {
+  describe('registerUser', () => {
+    it('should create a new user', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'password123',
+        name: 'Test User',
+      };
+      
+      const result = await registerUser(userData);
+      
+      expect(result.status).toBe(200);
+      expect(result.message).toBe('Registration successful');
+    });
+    
+    it('should reject duplicate email', async () => {
+      const result = await registerUser({ email: 'existing@example.com' });
+      expect(result.status).toBe(200); // Generic response for security
+    });
+  });
+});
+```
+
+## Related Documentation
+
+- [Controllers](/development/backend/controllers) - Controller patterns
+- [Models](/development/backend/models) - Database models
+- [Routes](/development/backend/routes) - Route structure

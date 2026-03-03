@@ -1,0 +1,418 @@
+---
+title: Railway Deployment
+description: Deploy LibreChat on Railway with one click
+---
+
+# Railway Deployment
+
+Deploy LibreChat on [Railway](https://railway.com) with automatic builds, managed databases, and easy scaling.
+
+## Quick Deploy
+
+<Card title="Deploy to Railway" icon="train" href="https://railway.com/deploy/b5k2mn?referralCode=HI9hWz">
+  Click to deploy LibreChat with pre-configured MongoDB and environment
+</Card>
+
+## What Gets Deployed
+
+The Railway template includes:
+
+- **LibreChat Application** - Main web service
+- **MongoDB** - Database (Railway's MongoDB plugin)
+- **Meilisearch** - Search engine (optional)
+- **Automatic SSL** - HTTPS with custom domains
+- **Environment Variables** - Pre-configured settings
+
+## Manual Deployment
+
+If you prefer to deploy manually:
+
+<Steps>
+  <Step title="Create Railway Account">
+    1. Go to [railway.com](https://railway.com)
+    2. Sign up with GitHub account
+    3. Verify your email
+  </Step>
+
+  <Step title="Create New Project">
+    1. Click "New Project"
+    2. Select "Deploy from GitHub repo"
+    3. Connect your GitHub account
+    4. Select `danny-avila/LibreChat` or your fork
+  </Step>
+
+  <Step title="Add MongoDB">
+    1. Click "+ New" in your project
+    2. Select "Database" > "Add MongoDB"
+    3. Railway will automatically provision a MongoDB instance
+    4. Note the connection string from the "Connect" tab
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    In your LibreChat service settings, add these variables:
+
+    ```bash
+    # Automatically set by Railway
+    PORT=3080
+    
+    # MongoDB (use Railway's ${{MongoDB.MONGO_URL}} reference)
+    MONGO_URI=${{MongoDB.MONGO_URL}}
+    
+    # Domain (use your Railway domain)
+    DOMAIN_CLIENT=https://your-app.up.railway.app
+    DOMAIN_SERVER=https://your-app.up.railway.app
+    
+    # Security - Generate these!
+    CREDS_KEY=<generate-with-openssl-rand-hex-32>
+    CREDS_IV=<generate-with-openssl-rand-hex-16>
+    JWT_SECRET=<generate-with-openssl-rand-hex-32>
+    JWT_REFRESH_SECRET=<generate-with-openssl-rand-hex-32>
+    
+    # AI Provider Keys
+    OPENAI_API_KEY=user_provided
+    ANTHROPIC_API_KEY=user_provided
+    GOOGLE_KEY=user_provided
+    
+    # Search (if adding Meilisearch)
+    SEARCH=true
+    MEILI_HOST=${{Meilisearch.RAILWAY_PRIVATE_DOMAIN}}
+    MEILI_MASTER_KEY=<generate-secure-key>
+    
+    # Session
+    SESSION_EXPIRY=900000
+    REFRESH_TOKEN_EXPIRY=604800000
+    
+    # Registration
+    ALLOW_EMAIL_LOGIN=true
+    ALLOW_REGISTRATION=true
+    ALLOW_SOCIAL_LOGIN=false
+    ```
+
+    <Tip>
+      Generate secrets locally:
+      ```bash
+      openssl rand -hex 32  # For keys
+      openssl rand -hex 16  # For IV
+      ```
+    </Tip>
+  </Step>
+
+  <Step title="Configure Build Settings">
+    Railway should auto-detect these, but verify:
+
+    **Build Command:**
+    ```bash
+    npm ci && npm run build
+    ```
+
+    **Start Command:**
+    ```bash
+    npm run backend
+    ```
+
+    **Dockerfile (Alternative):**
+    Railway can also build from Dockerfile:
+    ```dockerfile
+    # Uses the included Dockerfile automatically
+    ```
+  </Step>
+
+  <Step title="Deploy">
+    1. Click "Deploy"
+    2. Wait for build to complete (5-10 minutes)
+    3. Access your app at the generated Railway URL
+  </Step>
+</Steps>
+
+## Configuration
+
+### Custom Domain
+
+<Steps>
+  <Step title="Add Domain in Railway">
+    1. Go to your LibreChat service
+    2. Click "Settings" > "Domains"
+    3. Click "Custom Domain"
+    4. Enter your domain (e.g., `chat.yourdomain.com`)
+  </Step>
+
+  <Step title="Configure DNS">
+    Add a CNAME record in your DNS provider:
+    
+    ```
+    Type: CNAME
+    Name: chat (or your subdomain)
+    Value: your-app.up.railway.app
+    ```
+  </Step>
+
+  <Step title="Update Environment Variables">
+    Update domains in Railway:
+    
+    ```bash
+    DOMAIN_CLIENT=https://chat.yourdomain.com
+    DOMAIN_SERVER=https://chat.yourdomain.com
+    ```
+  </Step>
+</Steps>
+
+### Adding Meilisearch
+
+<Steps>
+  <Step title="Create Meilisearch Service">
+    1. Click "+ New" > "Empty Service"
+    2. Name it "Meilisearch"
+    3. Go to "Settings" > "Deploy"
+  </Step>
+
+  <Step title="Configure Meilisearch">
+    **Source:**
+    ```
+    Image: getmeili/meilisearch:v1.35.1
+    ```
+
+    **Environment Variables:**
+    ```bash
+    MEILI_MASTER_KEY=your_secure_master_key
+    MEILI_NO_ANALYTICS=true
+    MEILI_ENV=production
+    ```
+  </Step>
+
+  <Step title="Update LibreChat Config">
+    Add to LibreChat service variables:
+    
+    ```bash
+    SEARCH=true
+    MEILI_HOST=http://${{Meilisearch.RAILWAY_PRIVATE_DOMAIN}}:7700
+    MEILI_MASTER_KEY=your_secure_master_key
+    ```
+  </Step>
+</Steps>
+
+### Volume Persistence
+
+Railway provides ephemeral storage by default. For persistent storage:
+
+<Steps>
+  <Step title="Add Volume">
+    1. Go to your service settings
+    2. Click "Volumes"
+    3. Click "+ New Volume"
+    4. Set mount path: `/app/uploads`
+  </Step>
+
+  <Step title="Add More Volumes">
+    Recommended volumes:
+    
+    ```
+    /app/uploads  - User file uploads
+    /app/logs     - Application logs
+    /app/images   - User images
+    ```
+  </Step>
+</Steps>
+
+## Environment Variables Reference
+
+### Required Variables
+
+| Variable | Description | Example |
+|----------|-------------|--------|
+| `MONGO_URI` | MongoDB connection string | `${{MongoDB.MONGO_URL}}` |
+| `CREDS_KEY` | Encryption key (hex 32) | `9e95d9894d...` |
+| `CREDS_IV` | Encryption IV (hex 16) | `ac028c86b...` |
+| `JWT_SECRET` | JWT signing key | `16f8c0ef4...` |
+| `JWT_REFRESH_SECRET` | Refresh token key | `eaa5191f2...` |
+
+### Optional Variables
+
+| Variable | Description | Default |
+|----------|-------------|--------|
+| `OPENAI_API_KEY` | OpenAI API key | `user_provided` |
+| `ANTHROPIC_API_KEY` | Anthropic API key | `user_provided` |
+| `GOOGLE_KEY` | Google API key | `user_provided` |
+| `ALLOW_REGISTRATION` | Allow new signups | `true` |
+| `ALLOW_EMAIL_LOGIN` | Email/password login | `true` |
+| `SEARCH` | Enable search | `false` |
+| `DEBUG_LOGGING` | Enable debug logs | `false` |
+
+### Railway-Specific Variables
+
+Railway provides these automatically:
+
+```bash
+RAILWAY_ENVIRONMENT=production
+RAILWAY_PROJECT_NAME=librechat
+RAILWAY_SERVICE_NAME=librechat
+RAILWAY_STATIC_URL=your-app.up.railway.app
+```
+
+## Monitoring & Logs
+
+### View Logs
+
+1. Go to your service
+2. Click "Deployments"
+3. Select active deployment
+4. View real-time logs
+
+### Metrics
+
+Railway provides:
+- CPU usage
+- Memory usage
+- Network traffic
+- Deployment history
+
+### Health Checks
+
+LibreChat exposes a health endpoint:
+```
+GET https://your-app.up.railway.app/health
+```
+
+## Scaling
+
+### Vertical Scaling
+
+1. Go to service "Settings"
+2. Adjust resources:
+   - **Starter**: 512 MB RAM, 1 vCPU
+   - **Developer**: 8 GB RAM, 8 vCPU
+   - **Team**: 32 GB RAM, 32 vCPU
+
+### Horizontal Scaling
+
+<Warning>
+  Horizontal scaling requires Redis for session sharing:
+</Warning>
+
+```bash
+# Add Redis service
+USE_REDIS=true
+REDIS_URI=${{Redis.REDIS_URL}}
+```
+
+Then enable replicas in service settings.
+
+## Cost Optimization
+
+### Free Tier
+
+Railway offers:
+- $5 free credit/month
+- Pay only for usage
+- No credit card required to start
+
+### Estimated Costs
+
+| Usage Level | Monthly Cost |
+|-------------|-------------|
+| Light (< 100 users) | $5-15 |
+| Medium (100-1000 users) | $15-50 |
+| Heavy (1000+ users) | $50+ |
+
+### Reduce Costs
+
+1. **Optimize Memory**: Adjust `NODE_MAX_OLD_SPACE_SIZE`
+2. **Use Sleep Mode**: Enable for development projects
+3. **Optimize Queries**: Add database indexes
+4. **CDN for Assets**: Use external CDN for images
+
+## Troubleshooting
+
+### Build Failures
+
+**Issue**: Build timeout or out of memory
+
+```bash
+# Increase build memory in railway.json
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "NODE_OPTIONS='--max-old-space-size=8192' npm ci && npm run build"
+  }
+}
+```
+
+### Database Connection Issues
+
+**Issue**: Cannot connect to MongoDB
+
+1. Check `MONGO_URI` uses `${{MongoDB.MONGO_URL}}`
+2. Verify MongoDB service is running
+3. Check MongoDB logs for errors
+
+### Domain Not Working
+
+**Issue**: Custom domain shows error
+
+1. Verify CNAME record is correct
+2. Wait for DNS propagation (up to 48 hours)
+3. Check SSL certificate is issued
+4. Update `DOMAIN_CLIENT` and `DOMAIN_SERVER`
+
+### High Memory Usage
+
+**Issue**: Service crashes with OOM errors
+
+```bash
+# Add to environment variables
+NODE_OPTIONS=--max-old-space-size=4096
+
+# Or adjust in Dockerfile build args
+NODE_MAX_OLD_SPACE_SIZE=4096
+```
+
+## Migration from Other Platforms
+
+### From Docker
+
+1. Export MongoDB data:
+   ```bash
+   mongodump --uri="mongodb://localhost:27017/LibreChat" --out=./backup
+   ```
+
+2. Import to Railway MongoDB:
+   ```bash
+   mongorestore --uri="$RAILWAY_MONGO_URI" ./backup
+   ```
+
+3. Deploy LibreChat on Railway
+
+### From Other Hosts
+
+1. Copy `.env` variables to Railway
+2. Migrate database to Railway MongoDB
+3. Update domain settings
+4. Test thoroughly before DNS cutover
+
+## Best Practices
+
+<Check>
+  - [ ] Use strong, unique secrets for all keys
+  - [ ] Enable automatic deployments from GitHub
+  - [ ] Set up custom domain with SSL
+  - [ ] Configure volumes for persistent storage
+  - [ ] Monitor logs and metrics regularly
+  - [ ] Set up health check alerts
+  - [ ] Keep dependencies updated
+  - [ ] Use environment-specific variables
+  - [ ] Test deployments in staging first
+  - [ ] Document your configuration
+</Check>
+
+## Support
+
+- **Railway Docs**: [docs.railway.app](https://docs.railway.app)
+- **Railway Discord**: [discord.gg/railway](https://discord.gg/railway)
+- **LibreChat Discord**: [discord.librechat.ai](https://discord.librechat.ai)
+
+## Next Steps
+
+- [Configure AI Endpoints](/configuration/ai-endpoints)
+- [Set up OAuth Authentication](/configuration/authentication)
+- [Enable RAG API](/features/web-search)
+- [Custom Domain Setup](/deployment/custom-domain)

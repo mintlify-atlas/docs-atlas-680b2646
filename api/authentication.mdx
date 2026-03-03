@@ -1,0 +1,494 @@
+---
+title: Authentication
+description: Authenticate with LibreChat's API using JWT tokens or API keys
+---
+
+## Overview
+
+LibreChat supports two authentication methods:
+
+1. **JWT Authentication**: Session-based authentication for web applications
+2. **API Keys**: Token-based authentication for programmatic access
+
+## JWT Authentication
+
+JWT (JSON Web Token) authentication is the primary method for web applications.
+
+### Login
+
+Obtain a JWT token by authenticating with credentials:
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "your-password"
+}
+```
+
+#### Request Body
+
+<ParamField body="email" type="string" required>
+  User's email address
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User's password
+</ParamField>
+
+#### Response
+
+<ResponseField name="token" type="string">
+  JWT access token
+</ResponseField>
+
+<ResponseField name="user" type="object">
+  User information including id, email, name, and role
+</ResponseField>
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "user123",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "role": "user"
+  }
+}
+```
+
+### Using JWT Tokens
+
+Include the JWT token in the `Authorization` header:
+
+```http
+GET /api/convos
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### Refresh Token
+
+Refresh an expired JWT token:
+
+```http
+POST /api/auth/refresh
+```
+
+<ParamField query="retry" type="boolean">
+  Set to `true` to retry refresh
+</ParamField>
+
+#### Response
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": { ... }
+}
+```
+
+### Logout
+
+Invalidate the current session:
+
+```http
+POST /api/auth/logout
+Authorization: Bearer <token>
+```
+
+## Registration
+
+Create a new user account:
+
+```http
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com",
+  "password": "secure-password",
+  "name": "John Doe",
+  "username": "johndoe"
+}
+```
+
+#### Request Body
+
+<ParamField body="email" type="string" required>
+  User's email address (must be unique)
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  Password (minimum 8 characters)
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  User's full name
+</ParamField>
+
+<ParamField body="username" type="string">
+  Username (optional)
+</ParamField>
+
+<ParamField body="confirm_password" type="string">
+  Password confirmation (if required by server configuration)
+</ParamField>
+
+## Password Reset
+
+### Request Password Reset
+
+Send a password reset email:
+
+```http
+POST /api/auth/requestPasswordReset
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+```
+
+<ParamField body="email" type="string" required>
+  Email address of the account to reset
+</ParamField>
+
+### Reset Password
+
+Reset password with token from email:
+
+```http
+POST /api/auth/resetPassword
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "token": "reset-token-from-email",
+  "password": "new-secure-password"
+}
+```
+
+<ParamField body="userId" type="string" required>
+  User ID from reset email
+</ParamField>
+
+<ParamField body="token" type="string" required>
+  Reset token from email
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  New password
+</ParamField>
+
+## Two-Factor Authentication (2FA)
+
+### Enable 2FA
+
+Enable two-factor authentication for your account:
+
+```http
+GET /api/auth/2fa/enable
+Authorization: Bearer <token>
+```
+
+#### Response
+
+<ResponseField name="qrCode" type="string">
+  QR code data URL for authenticator app
+</ResponseField>
+
+<ResponseField name="secret" type="string">
+  TOTP secret for manual entry
+</ResponseField>
+
+<ResponseField name="backupCodes" type="string[]">
+  One-time backup codes for account recovery
+</ResponseField>
+
+```json
+{
+  "qrCode": "data:image/png;base64,...",
+  "secret": "JBSWY3DPEHPK3PXP",
+  "backupCodes": [
+    "12345678",
+    "87654321",
+    "..."
+  ]
+}
+```
+
+### Verify 2FA Code
+
+Verify a TOTP code from authenticator app:
+
+```http
+POST /api/auth/2fa/verify
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "token": "123456"
+}
+```
+
+<ParamField body="token" type="string" required>
+  6-digit TOTP code from authenticator app
+</ParamField>
+
+### Confirm 2FA Setup
+
+Confirm and activate 2FA:
+
+```http
+POST /api/auth/2fa/confirm
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "token": "123456"
+}
+```
+
+### Disable 2FA
+
+Disable two-factor authentication:
+
+```http
+POST /api/auth/2fa/disable
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "token": "123456"
+}
+```
+
+### Regenerate Backup Codes
+
+Generate new backup codes:
+
+```http
+POST /api/auth/2fa/backup/regenerate
+Authorization: Bearer <token>
+```
+
+### Verify with Temp Token
+
+Verify 2FA during login flow:
+
+```http
+POST /api/auth/2fa/verify-temp
+Content-Type: application/json
+
+{
+  "tempToken": "temp-token-from-login",
+  "token": "123456"
+}
+```
+
+<ParamField body="tempToken" type="string" required>
+  Temporary token received during login
+</ParamField>
+
+<ParamField body="token" type="string" required>
+  6-digit TOTP code or backup code
+</ParamField>
+
+## API Keys
+
+API keys provide programmatic access to LibreChat for agents and integrations.
+
+### Create API Key
+
+Create a new API key for agent access:
+
+```http
+POST /api/api-keys
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "My Integration",
+  "expiresAt": "2024-12-31T23:59:59Z"
+}
+```
+
+<ParamField body="name" type="string" required>
+  Descriptive name for the API key
+</ParamField>
+
+<ParamField body="expiresAt" type="string">
+  ISO 8601 expiration date (optional)
+</ParamField>
+
+#### Response
+
+<ResponseField name="key" type="string">
+  The API key (only shown once)
+</ResponseField>
+
+<ResponseField name="id" type="string">
+  Unique identifier for this key
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Name of the API key
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Creation timestamp
+</ResponseField>
+
+```json
+{
+  "key": "lc_ak_1234567890abcdef",
+  "id": "key123",
+  "name": "My Integration",
+  "createdAt": "2024-01-01T00:00:00Z",
+  "expiresAt": "2024-12-31T23:59:59Z"
+}
+```
+
+### List API Keys
+
+Retrieve all API keys for your account:
+
+```http
+GET /api/api-keys
+Authorization: Bearer <token>
+```
+
+#### Response
+
+```json
+[
+  {
+    "id": "key123",
+    "name": "My Integration",
+    "createdAt": "2024-01-01T00:00:00Z",
+    "expiresAt": "2024-12-31T23:59:59Z",
+    "lastUsedAt": "2024-03-01T12:00:00Z"
+  }
+]
+```
+
+### Get API Key
+
+Retrieve details of a specific API key:
+
+```http
+GET /api/api-keys/:id
+Authorization: Bearer <token>
+```
+
+<ParamField path="id" type="string" required>
+  API key ID
+</ParamField>
+
+### Delete API Key
+
+Revoke an API key:
+
+```http
+DELETE /api/api-keys/:id
+Authorization: Bearer <token>
+```
+
+<ParamField path="id" type="string" required>
+  API key ID to delete
+</ParamField>
+
+### Using API Keys
+
+Include the API key in the `Authorization` header:
+
+```http
+GET /api/agents/v1/chat/completions
+Authorization: Bearer lc_ak_1234567890abcdef
+```
+
+## OAuth / Social Login
+
+LibreChat supports OAuth authentication providers:
+
+### Google OAuth
+
+Initiate Google OAuth flow:
+
+```http
+GET /api/auth/google
+```
+
+Redirects to Google OAuth consent screen.
+
+### Facebook OAuth
+
+Initiate Facebook OAuth flow:
+
+```http
+GET /api/auth/facebook
+```
+
+## Graph Token (Microsoft)
+
+Obtain Microsoft Graph API token:
+
+```http
+GET /api/auth/graph-token?scopes=Files.Read
+Authorization: Bearer <token>
+```
+
+<ParamField query="scopes" type="string" required>
+  Space-separated Microsoft Graph scopes
+</ParamField>
+
+#### Response
+
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGci...",
+  "expires_in": 3600
+}
+```
+
+## Security Best Practices
+
+1. **Never share your JWT tokens or API keys**
+2. **Use HTTPS in production** to prevent token interception
+3. **Rotate API keys regularly**
+4. **Enable 2FA** for additional account security
+5. **Set API key expiration dates** for temporary integrations
+6. **Store tokens securely** (use httpOnly cookies for web apps)
+7. **Validate all inputs** on the client side before sending
+
+## Error Responses
+
+### Invalid Credentials
+
+```json
+{
+  "error": "Invalid credentials",
+  "message": "Email or password is incorrect"
+}
+```
+
+### Token Expired
+
+```json
+{
+  "error": "Token expired",
+  "message": "Your session has expired. Please log in again."
+}
+```
+
+### Rate Limited
+
+```json
+{
+  "error": "Too many requests",
+  "message": "Too many login attempts. Please try again later."
+}
+```

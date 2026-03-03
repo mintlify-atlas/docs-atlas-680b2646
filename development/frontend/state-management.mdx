@@ -1,0 +1,523 @@
+---
+title: State Management
+description: React Query, Recoil, and Jotai state management patterns
+---
+
+## Overview
+
+LibreChat uses a layered state management approach:
+
+- **React Query** - Server state and API data caching
+- **Jotai** - Atomic local state with localStorage persistence
+- **Recoil** - Legacy atomic state (being phased out in favor of Jotai)
+- **React Context** - Feature-specific state sharing
+
+## React Query (Server State)
+
+React Query handles all API interactions, caching, and server state synchronization.
+
+### Setup
+
+From `client/src/App.jsx:1`:
+
+```typescript
+import { QueryClient, QueryClientProvider, QueryCache } from '@tanstack/react-query';
+import { useApiErrorBoundary } from './hooks';
+
+const App = () => {
+  const { setError } = useApiErrorBoundary();
+
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        networkMode: 'always',  // Attempt requests even offline (for localhost)
+      },
+      mutations: {
+        networkMode: 'always',
+      },
+    },
+    queryCache: new QueryCache({
+      onError: (error) => {
+        if (error?.response?.status === 401) {
+          setError(error);  // Global error handling
+        }
+      },
+    }),
+  });
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {/* App content */}
+    </QueryClientProvider>
+  );
+};
+```
+
+### Query Hooks
+
+Queries are defined in `client/src/data-provider/` organized by feature.
+
+#### Example: Agent Queries
+
+From `client/src/data-provider/Agents/queries.ts:1`:
+
+```typescript
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { QueryKeys, dataService } from 'librechat-data-provider';
+import type { UseQueryOptions, QueryObserverResult } from '@tanstack/react-query';
+import type t from 'librechat-data-provider';
+
+/**
+ * Hook for listing all Agents with pagination and sorting
+ */
+export const useListAgentsQuery = <TData = t.AgentListResponse>(
+  params: t.AgentListParams = defaultAgentParams,
+  config?: UseQueryOptions<t.AgentListResponse, unknown, TData>,
+): QueryObserverResult<TData> => {
+  const queryClient = useQueryClient();
+  const endpointsConfig = queryClient.getQueryData<t.TEndpointsConfig>([QueryKeys.endpoints]);
+
+  const enabled = !!endpointsConfig?.[EModelEndpoint.agents];
+  
+  return useQuery<t.AgentListResponse, unknown, TData>(
+    [QueryKeys.agents, params],
+    () => dataService.listAgents(params),
+    {
+      staleTime: 1000 * 5,              // Consider data stale after 5s
+      refetchOnWindowFocus: false,       // Don't refetch on window focus
+      refetchOnReconnect: false,         // Don't refetch on reconnect
+      refetchOnMount: false,             // Don't refetch on mount
+      retry: false,                      // Don't retry failed requests
+      enabled: config?.enabled !== undefined ? config.enabled && enabled : enabled,
+      ...config,
+    },
+  );
+};
+
+/**
+ * Hook for getting a single agent by ID
+ */
+export const useGetAgentByIdQuery = (
+  agent_id: string | null | undefined,
+  config?: UseQueryOptions<t.Agent>,
+): QueryObserverResult<t.Agent> => {
+  const isValidAgentId = !!agent_id && !isEphemeralAgent(agent_id);
+
+  return useQuery<t.Agent>(
+    [QueryKeys.agent, agent_id],
+    () => dataService.getAgentById({ agent_id: agent_id as string }),
+    {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      retry: false,
+      enabled: isValidAgentId && (config?.enabled ?? true),
+      ...config,
+    },
+  );
+};
+```
+
+#### Infinite Queries for Pagination
+
+From `client/src/data-provider/queries.ts:85`:
+
+```typescript
+export const useConversationsInfiniteQuery = (
+  params: ConversationListParams,
+  config?: UseInfiniteQueryOptions<ConversationListResponse, unknown>,
+) => {
+  const { isArchived, sortBy, sortDirection, tags, search } = params;
+
+  return useInfiniteQuery<ConversationListResponse>({
+    queryKey: [
+      isArchived ? QueryKeys.archivedConversations : QueryKeys.allConversations,
+      { isArchived, sortBy, sortDirection, tags, search },
+    ],
+    queryFn: ({ pageParam }) =>
+      dataService.listConversations({
+        isArchived,
+        sortBy,
+        sortDirection,
+        tags,
+        search,
+        cursor: pageParam?.toString(),  // Cursor-based pagination
+      }),
+    getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
+    keepPreviousData: true,
+    staleTime: 5 * 60 * 1000,    // 5 minutes
+    cacheTime: 30 * 60 * 1000,   // 30 minutes
+    ...config,
+  });
+};
+```
+
+**Infinite Query Pattern:**
+- Use cursor-based pagination for large datasets
+- `getNextPageParam` extracts next cursor from response
+- `keepPreviousData: true` prevents UI flickering during refetch
+
+### Mutation Hooks
+
+Mutations are defined in `client/src/data-provider/mutations.ts:1`.
+
+#### Example: Update Conversation
+
+```typescript
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { dataService, QueryKeys } from 'librechat-data-provider';
+import type { UseMutationResult } from '@tanstack/react-query';
+import type * as t from 'librechat-data-provider';
+import { updateConvoInAllQueries } from '~/utils';
+
+export const useUpdateConversationMutation = (
+  id: string,
+): UseMutationResult<
+  t.TUpdateConversationResponse,
+  unknown,
+  t.TUpdateConversationRequest,
+  unknown
+> => {
+  const queryClient = useQueryClient();
+  
+  return useMutation(
+    (payload: t.TUpdateConversationRequest) => dataService.updateConversation(payload),
+    {
+      onSuccess: (updatedConvo, payload) => {
+        const targetId = payload.conversationId || id;
+        
+        // Update single conversation cache
+        queryClient.setQueryData([QueryKeys.conversation, targetId], updatedConvo);
+        
+        // Update conversation in infinite query pages
+        updateConvoInAllQueries(queryClient, targetId, () => updatedConvo);
+      },
+    },
+  );
+};
+```
+
+#### Optimistic Updates
+
+From `client/src/data-provider/mutations.ts:455`:
+
+```typescript
+export const useDeleteConversationMutation = (
+  options?: t.DeleteConversationOptions,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    (payload: t.TDeleteConversationRequest) =>
+      dataService.deleteConversation(payload),
+    {
+      // Cancel outgoing queries
+      onMutate: async () => {
+        await queryClient.cancelQueries([QueryKeys.allConversations]);
+        await queryClient.cancelQueries([QueryKeys.archivedConversations]);
+      },
+      
+      // Update cache on success
+      onSuccess: (data, vars) => {
+        if (vars.conversationId) {
+          removeConvoFromAllQueries(queryClient, vars.conversationId);
+        }
+
+        // Remove from cache
+        queryClient.removeQueries({
+          queryKey: [QueryKeys.conversation, vars.conversationId],
+          exact: true,
+        });
+
+        // Invalidate list queries
+        queryClient.invalidateQueries({
+          queryKey: [QueryKeys.allConversations],
+          refetchPage: (_, index) => index === 0,  // Only refetch first page
+        });
+
+        options?.onSuccess?.(data, vars);
+      },
+    },
+  );
+};
+```
+
+### Query Keys
+
+All query keys are defined in `packages/data-provider/src/keys.ts:1`:
+
+```typescript
+export enum QueryKeys {
+  messages = 'messages',
+  conversation = 'conversation',
+  allConversations = 'allConversations',
+  agents = 'agents',
+  agent = 'agent',
+  assistants = 'assistants',
+  endpoints = 'endpoints',
+  files = 'files',
+  tools = 'tools',
+  // ... more keys
+}
+
+export enum MutationKeys {
+  fileUpload = 'fileUpload',
+  updatePreset = 'updatePreset',
+  avatarUpload = 'avatarUpload',
+  // ... more keys
+}
+```
+
+**Query Key Patterns:**
+- Use enum for type safety
+- Composite keys: `[QueryKeys.agent, agentId]`
+- Include relevant params: `[QueryKeys.agents, { limit, category }]`
+
+## Jotai (Local State)
+
+Jotai provides atomic state with localStorage persistence. Preferred over Recoil for new code.
+
+### Creating Atoms
+
+From `client/src/store/jotai-utils.ts:1`:
+
+```typescript
+import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
+
+/**
+ * Create a simple atom with localStorage persistence
+ */
+export function createStorageAtom<T>(key: string, defaultValue: T) {
+  return atomWithStorage<T>(key, defaultValue, undefined, {
+    getOnInit: true,  // Load from storage on initialization
+  });
+}
+
+/**
+ * Create an atom with localStorage persistence and side effects
+ */
+export function createStorageAtomWithEffect<T>(
+  key: string,
+  defaultValue: T,
+  onWrite: (value: T) => void,
+) {
+  const baseAtom = createStorageAtom(key, defaultValue);
+
+  return atom(
+    (get) => get(baseAtom),
+    (get, set, newValue: T) => {
+      set(baseAtom, newValue);
+      if (typeof window !== 'undefined') {
+        onWrite(newValue);  // Trigger side effect
+      }
+    },
+  );
+}
+```
+
+### Example: Font Size Store
+
+From `client/src/store/fontSize.ts:1`:
+
+```typescript
+import { createStorageAtomWithEffect, initializeFromStorage } from './jotai-utils';
+
+export const fontSizeAtom = createStorageAtomWithEffect(
+  'fontSize',
+  '16px',
+  (fontSize) => {
+    // Apply font size to DOM on change
+    document.documentElement.style.setProperty('--font-size', fontSize);
+  },
+);
+
+// Initialize on app startup
+export const initializeFontSize = () => {
+  initializeFromStorage('fontSize', '16px', (fontSize) => {
+    document.documentElement.style.setProperty('--font-size', fontSize);
+  });
+};
+```
+
+### Tab-Isolated Storage
+
+For state that should NOT sync across tabs:
+
+```typescript
+import { createTabIsolatedAtom } from '~/store/jotai-utils';
+
+// Each tab maintains independent state
+export const favoritesToggleAtom = createTabIsolatedAtom(
+  'favoritesToggle',
+  false
+);
+```
+
+## Recoil (Legacy)
+
+Recoil is being phased out in favor of Jotai. Used for conversation-specific state.
+
+### Atom Families
+
+From `client/src/store/agents.ts:1`:
+
+```typescript
+import { atomFamily, useRecoilCallback } from 'recoil';
+import type { TEphemeralAgent } from 'librechat-data-provider';
+
+export const ephemeralAgentByConvoId = atomFamily<TEphemeralAgent | null, string>({
+  key: 'ephemeralAgentByConvoId',
+  default: null,
+  effects: [
+    ({ onSet, node }) => {
+      onSet(async (newValue) => {
+        const conversationId = node.key.split('__')[1]?.replaceAll('"', '');
+        logger.log('agents', 'Setting ephemeral agent:', { conversationId, newValue });
+      });
+    },
+  ],
+});
+
+export function useUpdateEphemeralAgent() {
+  const updateEphemeralAgent = useRecoilCallback(
+    ({ set }) =>
+      (convoId: string, agent: TEphemeralAgent | null) => {
+        set(ephemeralAgentByConvoId(convoId), agent);
+      },
+    [],
+  );
+
+  return updateEphemeralAgent;
+}
+```
+
+**Atom Families:**
+- Create atoms dynamically based on parameters (e.g., conversation ID)
+- Useful for per-conversation state
+- Use `useRecoilCallback` for batch updates
+
+## Performance Best Practices
+
+### 1. Proper Dependency Arrays
+
+```typescript
+// Bad: Missing dependencies
+const memoizedValue = useMemo(() => {
+  return agent.name + agent.category;
+}, []); // Missing agent dependency!
+
+// Good: Complete dependencies
+const memoizedValue = useMemo(() => {
+  return agent.name + agent.category;
+}, [agent.name, agent.category]);
+```
+
+### 2. Query Invalidation
+
+```typescript
+// Invalidate specific queries only
+queryClient.invalidateQueries({
+  queryKey: [QueryKeys.allConversations],
+  refetchPage: (_, index) => index === 0,  // Only refetch first page
+});
+
+// Cancel in-flight queries before mutations
+await queryClient.cancelQueries([QueryKeys.allConversations]);
+```
+
+### 3. Selective Re-renders
+
+```typescript
+// Use selector to extract specific data
+const agentName = useRecoilValue(
+  ephemeralAgentByConvoId(convoId),
+  (agent) => agent?.name  // Only re-render when name changes
+);
+```
+
+### 4. Background Refetching
+
+```typescript
+const { data } = useQuery(
+  [QueryKeys.agents],
+  fetchAgents,
+  {
+    staleTime: 5 * 60 * 1000,     // Consider fresh for 5 minutes
+    cacheTime: 30 * 60 * 1000,    // Keep in cache for 30 minutes
+    refetchOnWindowFocus: false,  // Disable automatic refetch
+  }
+);
+```
+
+## Data Flow Architecture
+
+```
+┌─────────────────┐
+│   Component     │
+└────────┬────────┘
+         │
+         ├─ useQuery/useMutation (React Query)
+         │  └─ dataService (packages/data-provider)
+         │     └─ API endpoints
+         │
+         ├─ useRecoilValue/useSetRecoilState (Recoil)
+         │  └─ Atom families (per-conversation state)
+         │
+         ├─ useAtom (Jotai)
+         │  └─ Storage atoms (localStorage)
+         │
+         └─ useContext (React Context)
+            └─ Feature-specific state
+```
+
+## Common Patterns
+
+### Fetching Related Data
+
+```typescript
+function AgentDetail({ agentId }: Props) {
+  const { data: agent, isLoading: agentLoading } = useGetAgentByIdQuery(agentId);
+  const { data: tools, isLoading: toolsLoading } = useAvailableAgentToolsQuery({
+    enabled: !!agent,  // Only fetch tools when agent is loaded
+  });
+
+  if (agentLoading || toolsLoading) return <LoadingSpinner />;
+  
+  return <div>{/* Render agent with tools */}</div>;
+}
+```
+
+### Conditional Mutations
+
+```typescript
+function ConversationActions({ convoId }: Props) {
+  const deleteMutation = useDeleteConversationMutation({
+    onSuccess: () => {
+      // Navigate away after successful delete
+      navigate('/');
+    },
+  });
+
+  const handleDelete = () => {
+    if (confirm('Delete this conversation?')) {
+      deleteMutation.mutate({ conversationId: convoId });
+    }
+  };
+
+  return (
+    <button 
+      onClick={handleDelete}
+      disabled={deleteMutation.isLoading}
+    >
+      {deleteMutation.isLoading ? 'Deleting...' : 'Delete'}
+    </button>
+  );
+}
+```
+
+## Next Steps
+
+- [Data Provider](./data-provider) - Understanding the data-provider package
+- [Components](./components) - Component architecture and patterns
+- [Localization](./localization) - i18n and translation workflow

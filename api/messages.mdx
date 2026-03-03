@@ -1,0 +1,619 @@
+---
+title: Messages
+description: Send, retrieve, and manage messages within conversations
+---
+
+## Overview
+
+The Messages API allows you to create, retrieve, update, and delete messages within conversations. Messages are the core content of conversations and can include text, images, and other content types.
+
+All message endpoints are prefixed with `/api/messages`.
+
+## List Messages
+
+Retrieve messages with pagination and filtering:
+
+```http
+GET /api/messages
+Authorization: Bearer <token>
+```
+
+### Query Parameters
+
+<ParamField query="conversationId" type="string">
+  Filter by conversation ID
+</ParamField>
+
+<ParamField query="messageId" type="string">
+  Get specific message by ID
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search messages by content (uses MeiliSearch)
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor
+</ParamField>
+
+<ParamField query="pageSize" type="number" default="25">
+  Number of results per page
+</ParamField>
+
+<ParamField query="sortBy" type="string" default="createdAt">
+  Sort field: `endpoint`, `createdAt`, or `updatedAt`
+</ParamField>
+
+<ParamField query="sortDirection" type="string" default="desc">
+  Sort direction: `asc` or `desc`
+</ParamField>
+
+### Response
+
+<ResponseField name="messages" type="TMessage[]">
+  Array of message objects
+</ResponseField>
+
+<ResponseField name="nextCursor" type="string | null">
+  Cursor for next page (null if no more pages)
+</ResponseField>
+
+```json
+{
+  "messages": [
+    {
+      "messageId": "msg123",
+      "conversationId": "conv456",
+      "parentMessageId": "msg122",
+      "text": "What are the best practices for machine learning?",
+      "content": [
+        {
+          "type": "text",
+          "text": "What are the best practices for machine learning?"
+        }
+      ],
+      "sender": "User",
+      "isCreatedByUser": true,
+      "createdAt": "2024-01-15T10:00:00Z",
+      "endpoint": "openAI",
+      "model": "gpt-4"
+    }
+  ],
+  "nextCursor": "cursor_abc"
+}
+```
+
+## Get Messages by Conversation
+
+Retrieve all messages in a specific conversation:
+
+```http
+GET /api/messages/:conversationId
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="conversationId" type="string" required>
+  Conversation ID
+</ParamField>
+
+### Response
+
+Returns an array of messages ordered by creation time.
+
+```json
+[
+  {
+    "messageId": "msg123",
+    "conversationId": "conv456",
+    "text": "Hello!",
+    "isCreatedByUser": true,
+    "createdAt": "2024-01-15T10:00:00Z"
+  },
+  {
+    "messageId": "msg124",
+    "parentMessageId": "msg123",
+    "conversationId": "conv456",
+    "text": "Hi! How can I help you today?",
+    "isCreatedByUser": false,
+    "sender": "Assistant",
+    "createdAt": "2024-01-15T10:00:01Z"
+  }
+]
+```
+
+## Get Single Message
+
+Retrieve a specific message:
+
+```http
+GET /api/messages/:conversationId/:messageId
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="conversationId" type="string" required>
+  Conversation ID
+</ParamField>
+
+<ParamField path="messageId" type="string" required>
+  Message ID
+</ParamField>
+
+### Response
+
+<ResponseField name="messageId" type="string">
+  Unique message identifier
+</ResponseField>
+
+<ResponseField name="conversationId" type="string">
+  Parent conversation ID
+</ResponseField>
+
+<ResponseField name="parentMessageId" type="string">
+  ID of the previous message in the conversation thread
+</ResponseField>
+
+<ResponseField name="text" type="string">
+  Message text content (legacy field)
+</ResponseField>
+
+<ResponseField name="content" type="TMessageContentParts[]">
+  Array of content parts (text, images, artifacts, etc.)
+</ResponseField>
+
+<ResponseField name="sender" type="string">
+  Sender name or identifier
+</ResponseField>
+
+<ResponseField name="isCreatedByUser" type="boolean">
+  Whether the message was created by the user (vs AI)
+</ResponseField>
+
+<ResponseField name="endpoint" type="string">
+  AI endpoint used
+</ResponseField>
+
+<ResponseField name="model" type="string">
+  Model identifier
+</ResponseField>
+
+<ResponseField name="tokenCount" type="number">
+  Number of tokens in the message
+</ResponseField>
+
+<ResponseField name="attachments" type="TAttachment[]">
+  File attachments
+</ResponseField>
+
+<ResponseField name="unfinished" type="boolean">
+  Whether the message generation was interrupted
+</ResponseField>
+
+<ResponseField name="error" type="boolean">
+  Whether an error occurred during generation
+</ResponseField>
+
+## Create Message
+
+Create a new message in a conversation:
+
+```http
+POST /api/messages/:conversationId
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "messageId": "msg125",
+  "parentMessageId": "msg124",
+  "text": "Tell me more about neural networks",
+  "isCreatedByUser": true,
+  "sender": "User"
+}
+```
+
+### Path Parameters
+
+<ParamField path="conversationId" type="string" required>
+  Conversation ID
+</ParamField>
+
+### Request Body
+
+<ParamField body="messageId" type="string" required>
+  Unique message identifier (UUID)
+</ParamField>
+
+<ParamField body="parentMessageId" type="string">
+  ID of the parent message
+</ParamField>
+
+<ParamField body="text" type="string">
+  Message text content
+</ParamField>
+
+<ParamField body="content" type="TMessageContentParts[]">
+  Structured content parts
+</ParamField>
+
+<ParamField body="sender" type="string" required>
+  Sender identifier
+</ParamField>
+
+<ParamField body="isCreatedByUser" type="boolean" required>
+  Whether this is a user message
+</ParamField>
+
+<ParamField body="endpoint" type="string">
+  AI endpoint identifier
+</ParamField>
+
+<ParamField body="model" type="string">
+  Model identifier
+</ParamField>
+
+<ParamField body="attachments" type="TAttachment[]">
+  File attachments
+</ParamField>
+
+### Response
+
+Returns the created message object with HTTP status 201.
+
+## Update Message
+
+Update an existing message's text content:
+
+```http
+PUT /api/messages/:conversationId/:messageId
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "text": "Updated message text",
+  "model": "gpt-4"
+}
+```
+
+### Path Parameters
+
+<ParamField path="conversationId" type="string" required>
+  Conversation ID
+</ParamField>
+
+<ParamField path="messageId" type="string" required>
+  Message ID to update
+</ParamField>
+
+### Request Body
+
+<ParamField body="text" type="string" required>
+  New message text
+</ParamField>
+
+<ParamField body="model" type="string">
+  Model used (for token counting)
+</ParamField>
+
+<ParamField body="index" type="number">
+  Index of content part to update (for multi-part content)
+</ParamField>
+
+### Response
+
+Returns the updated message object.
+
+### Update Content Part
+
+To update a specific content part by index:
+
+```json
+{
+  "text": "Updated content part",
+  "index": 0,
+  "model": "gpt-4"
+}
+```
+
+Only `text` and `think` content types can be updated.
+
+## Update Message Feedback
+
+Add or update feedback (thumbs up/down) for a message:
+
+```http
+PUT /api/messages/:conversationId/:messageId/feedback
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "feedback": {
+    "rating": "thumbsUp",
+    "comment": "Very helpful response!"
+  }
+}
+```
+
+### Request Body
+
+<ParamField body="feedback" type="object">
+  Feedback object (or `null` to remove feedback)
+</ParamField>
+
+<ParamField body="feedback.rating" type="string">
+  Rating: `thumbsUp` or `thumbsDown`
+</ParamField>
+
+<ParamField body="feedback.comment" type="string">
+  Optional feedback comment
+</ParamField>
+
+### Response
+
+```json
+{
+  "messageId": "msg124",
+  "conversationId": "conv456",
+  "feedback": {
+    "rating": "thumbsUp",
+    "comment": "Very helpful response!"
+  }
+}
+```
+
+## Delete Message
+
+Delete a specific message:
+
+```http
+DELETE /api/messages/:conversationId/:messageId
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="conversationId" type="string" required>
+  Conversation ID
+</ParamField>
+
+<ParamField path="messageId" type="string" required>
+  Message ID to delete
+</ParamField>
+
+### Response
+
+HTTP 204 No Content on success.
+
+## Branch Message
+
+Create a new message branch from parallel agent responses:
+
+```http
+POST /api/messages/branch
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "messageId": "msg124",
+  "agentId": "agent_abc"
+}
+```
+
+### Request Body
+
+<ParamField body="messageId" type="string" required>
+  Source message ID containing parallel responses
+</ParamField>
+
+<ParamField body="agentId" type="string" required>
+  Agent ID to filter content by
+</ParamField>
+
+### Response
+
+Creates a new message containing only the content from the specified agent.
+
+```json
+{
+  "messageId": "msg125",
+  "parentMessageId": "msg123",
+  "conversationId": "conv456",
+  "content": [
+    {
+      "type": "text",
+      "text": "Content from agent_abc only"
+    }
+  ],
+  "sender": "Agent ABC",
+  "isCreatedByUser": false
+}
+```
+
+## Update Artifact
+
+Update code artifacts within a message:
+
+```http
+POST /api/messages/artifact/:messageId
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "index": 0,
+  "original": "console.log('Hello')",
+  "updated": "console.log('Hello, World!')"
+}
+```
+
+### Path Parameters
+
+<ParamField path="messageId" type="string" required>
+  Message ID containing the artifact
+</ParamField>
+
+### Request Body
+
+<ParamField body="index" type="number" required>
+  Index of the artifact to update (0-based)
+</ParamField>
+
+<ParamField body="original" type="string" required>
+  Original artifact content (for verification)
+</ParamField>
+
+<ParamField body="updated" type="string" required>
+  New artifact content
+</ParamField>
+
+### Response
+
+<ResponseField name="conversationId" type="string">
+  Conversation ID
+</ResponseField>
+
+<ResponseField name="content" type="TMessageContentParts[]">
+  Updated message content
+</ResponseField>
+
+<ResponseField name="text" type="string">
+  Updated message text
+</ResponseField>
+
+```json
+{
+  "conversationId": "conv456",
+  "content": [...],
+  "text": "Updated message with modified artifact"
+}
+```
+
+## Message Content Types
+
+Messages support multiple content types:
+
+### Text Content
+
+```json
+{
+  "type": "text",
+  "text": "Message content"
+}
+```
+
+### Image Content
+
+```json
+{
+  "type": "image_url",
+  "image_url": {
+    "url": "https://example.com/image.png"
+  }
+}
+```
+
+### Code Artifact
+
+```json
+{
+  "type": "code",
+  "code": "console.log('Hello, World!');",
+  "language": "javascript"
+}
+```
+
+### Thinking Process
+
+```json
+{
+  "type": "think",
+  "think": "Internal reasoning process..."
+}
+```
+
+## Message Attachments
+
+Messages can include file attachments:
+
+```json
+{
+  "attachments": [
+    {
+      "file_id": "file_abc123",
+      "filename": "document.pdf",
+      "type": "file",
+      "size": 102400,
+      "filepath": "/uploads/file_abc123.pdf"
+    }
+  ]
+}
+```
+
+## Search Messages
+
+Search across all messages (requires MeiliSearch):
+
+```http
+GET /api/messages?search=machine%20learning
+Authorization: Bearer <token>
+```
+
+Returns messages matching the search query with conversation context.
+
+## Error Responses
+
+### Message Not Found
+
+```json
+{
+  "error": "Message not found"
+}
+```
+
+HTTP Status: 404
+
+### Invalid Content Update
+
+```json
+{
+  "error": "Cannot update non-text content"
+}
+```
+
+HTTP Status: 400
+
+### Cannot Branch User Message
+
+```json
+{
+  "error": "Cannot branch from user messages"
+}
+```
+
+HTTP Status: 400
+
+## TypeScript Types
+
+```typescript
+import type { TMessage, TMessageContentParts } from 'librechat-data-provider';
+
+interface TMessage {
+  messageId: string;
+  conversationId: string;
+  parentMessageId?: string;
+  text?: string;
+  content?: TMessageContentParts[];
+  sender: string;
+  isCreatedByUser: boolean;
+  endpoint?: string;
+  model?: string;
+  tokenCount?: number;
+  attachments?: TAttachment[];
+  createdAt?: string;
+  updatedAt?: string;
+  unfinished?: boolean;
+  error?: boolean;
+  feedback?: TMessageFeedback;
+}
+```

@@ -1,0 +1,540 @@
+---
+title: Conversations
+description: Create, retrieve, and manage chat conversations
+---
+
+## Overview
+
+The Conversations API allows you to manage chat conversations, including creating, retrieving, updating, archiving, and deleting conversations.
+
+All conversation endpoints are prefixed with `/api/convos`.
+
+## List Conversations
+
+Retrieve a paginated list of conversations:
+
+```http
+GET /api/convos
+Authorization: Bearer <token>
+```
+
+### Query Parameters
+
+<ParamField query="limit" type="number" default="25">
+  Number of conversations to return (max 100)
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Cursor for pagination from previous response
+</ParamField>
+
+<ParamField query="isArchived" type="boolean">
+  Filter by archive status (`true` for archived, `false` for active)
+</ParamField>
+
+<ParamField query="tags" type="string | string[]">
+  Filter by conversation tags
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search conversations by title or content
+</ParamField>
+
+<ParamField query="sortBy" type="string" default="updatedAt">
+  Sort field: `updatedAt`, `createdAt`, or `title`
+</ParamField>
+
+<ParamField query="sortDirection" type="string" default="desc">
+  Sort direction: `asc` or `desc`
+</ParamField>
+
+### Response
+
+<ResponseField name="conversations" type="TConversation[]">
+  Array of conversation objects
+</ResponseField>
+
+<ResponseField name="pageNumber" type="number">
+  Current page number
+</ResponseField>
+
+<ResponseField name="pageSize" type="number">
+  Number of items per page
+</ResponseField>
+
+<ResponseField name="pages" type="number">
+  Total number of pages
+</ResponseField>
+
+```json
+{
+  "conversations": [
+    {
+      "conversationId": "abc123",
+      "title": "Machine Learning Discussion",
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T14:30:00Z",
+      "endpoint": "openAI",
+      "model": "gpt-4",
+      "isArchived": false,
+      "tags": ["ai", "technical"]
+    }
+  ],
+  "pageNumber": 1,
+  "pageSize": 25,
+  "pages": 3
+}
+```
+
+## Get Conversation
+
+Retrieve a specific conversation by ID:
+
+```http
+GET /api/convos/:conversationId
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="conversationId" type="string" required>
+  Unique identifier for the conversation
+</ParamField>
+
+### Response
+
+<ResponseField name="conversationId" type="string">
+  Unique conversation identifier
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Conversation title
+</ResponseField>
+
+<ResponseField name="endpoint" type="string">
+  AI endpoint used (e.g., `openAI`, `anthropic`, `google`)
+</ResponseField>
+
+<ResponseField name="model" type="string">
+  Model identifier (e.g., `gpt-4`, `claude-3-opus`)
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 timestamp of creation
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 timestamp of last update
+</ResponseField>
+
+<ResponseField name="isArchived" type="boolean">
+  Whether the conversation is archived
+</ResponseField>
+
+<ResponseField name="tags" type="string[]">
+  Array of tags associated with the conversation
+</ResponseField>
+
+```json
+{
+  "conversationId": "abc123",
+  "title": "Machine Learning Discussion",
+  "endpoint": "openAI",
+  "model": "gpt-4",
+  "modelLabel": "GPT-4",
+  "createdAt": "2024-01-15T10:00:00Z",
+  "updatedAt": "2024-01-15T14:30:00Z",
+  "isArchived": false,
+  "tags": ["ai", "technical"]
+}
+```
+
+## Update Conversation Title
+
+Update the title of a conversation:
+
+```http
+POST /api/convos/update
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "arg": {
+    "conversationId": "abc123",
+    "title": "New Title"
+  }
+}
+```
+
+### Request Body
+
+<ParamField body="arg.conversationId" type="string" required>
+  ID of the conversation to update
+</ParamField>
+
+<ParamField body="arg.title" type="string" required>
+  New title (max 1024 characters, will be trimmed)
+</ParamField>
+
+### Response
+
+Returns the updated conversation object.
+
+```json
+{
+  "conversationId": "abc123",
+  "title": "New Title",
+  "updatedAt": "2024-01-15T15:00:00Z"
+}
+```
+
+## Archive/Unarchive Conversation
+
+Archive or unarchive a conversation:
+
+```http
+POST /api/convos/archive
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "arg": {
+    "conversationId": "abc123",
+    "isArchived": true
+  }
+}
+```
+
+### Request Body
+
+<ParamField body="arg.conversationId" type="string" required>
+  ID of the conversation to archive/unarchive
+</ParamField>
+
+<ParamField body="arg.isArchived" type="boolean" required>
+  `true` to archive, `false` to unarchive
+</ParamField>
+
+### Response
+
+Returns the updated conversation object.
+
+## Delete Conversation
+
+Delete a specific conversation:
+
+```http
+DELETE /api/convos
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "arg": {
+    "conversationId": "abc123",
+    "source": "button"
+  }
+}
+```
+
+### Request Body
+
+<ParamField body="arg.conversationId" type="string" required>
+  ID of the conversation to delete
+</ParamField>
+
+<ParamField body="arg.source" type="string">
+  Source of the deletion request (e.g., `button`)
+</ParamField>
+
+<ParamField body="arg.thread_id" type="string">
+  OpenAI thread ID (for assistant endpoints)
+</ParamField>
+
+<ParamField body="arg.endpoint" type="string">
+  Endpoint type (e.g., `assistants`, `azureAssistants`)
+</ParamField>
+
+### Response
+
+```json
+{
+  "acknowledged": true,
+  "deletedCount": 1,
+  "messages": {
+    "deletedCount": 15
+  }
+}
+```
+
+## Delete All Conversations
+
+Delete all conversations for the authenticated user:
+
+```http
+DELETE /api/convos/all
+Authorization: Bearer <token>
+```
+
+### Response
+
+```json
+{
+  "acknowledged": true,
+  "deletedCount": 42,
+  "messages": {
+    "deletedCount": 523
+  }
+}
+```
+
+## Generate Title
+
+Generate or retrieve an AI-generated title for a conversation:
+
+```http
+GET /api/convos/gen_title/:conversationId
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+<ParamField path="conversationId" type="string" required>
+  Conversation ID to generate title for
+</ParamField>
+
+### Response
+
+<ResponseField name="title" type="string">
+  AI-generated title for the conversation
+</ResponseField>
+
+```json
+{
+  "title": "Machine Learning Best Practices"
+}
+```
+
+This endpoint uses exponential backoff to wait for title generation (500ms, 1s, 2s, 4s, 8s - max ~15.5s). If no title is generated within this time, returns 404.
+
+## Fork Conversation
+
+Create a new conversation branch from a specific message:
+
+```http
+POST /api/convos/fork
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "conversationId": "abc123",
+  "messageId": "msg456",
+  "option": "target",
+  "splitAtTarget": true,
+  "latestMessageId": "msg789"
+}
+```
+
+### Request Body
+
+<ParamField body="conversationId" type="string" required>
+  Original conversation ID
+</ParamField>
+
+<ParamField body="messageId" type="string" required>
+  Target message ID to fork from
+</ParamField>
+
+<ParamField body="option" type="string">
+  Fork option: `target` or `branch`
+</ParamField>
+
+<ParamField body="splitAtTarget" type="boolean">
+  Whether to split at the target message
+</ParamField>
+
+<ParamField body="latestMessageId" type="string">
+  Latest message ID in the conversation
+</ParamField>
+
+### Response
+
+<ResponseField name="conversation" type="TConversation">
+  New forked conversation
+</ResponseField>
+
+<ResponseField name="messages" type="TMessage[]">
+  Messages in the new conversation
+</ResponseField>
+
+```json
+{
+  "conversation": {
+    "conversationId": "fork_xyz",
+    "title": "Machine Learning Discussion (Fork)",
+    "endpoint": "openAI",
+    "model": "gpt-4"
+  },
+  "messages": [...]
+}
+```
+
+## Duplicate Conversation
+
+Create an exact copy of a conversation:
+
+```http
+POST /api/convos/duplicate
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "conversationId": "abc123",
+  "title": "Copy of Machine Learning Discussion"
+}
+```
+
+### Request Body
+
+<ParamField body="conversationId" type="string" required>
+  ID of conversation to duplicate
+</ParamField>
+
+<ParamField body="title" type="string">
+  Title for the duplicated conversation (optional)
+</ParamField>
+
+### Response
+
+Returns the new duplicated conversation object.
+
+## Import Conversations
+
+Import conversations from a JSON file:
+
+```http
+POST /api/convos/import
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="conversations.json"
+Content-Type: application/json
+
+[conversation data]
+--boundary--
+```
+
+### Request
+
+Multipart form data with a JSON file.
+
+<ParamField body="file" type="File" required>
+  JSON file containing conversation data
+</ParamField>
+
+### Response
+
+```json
+{
+  "message": "Conversation(s) imported successfully"
+}
+```
+
+### Rate Limits
+
+Import endpoint has special rate limiting:
+- IP-based limit
+- User-based limit
+
+## Conversation Tags
+
+### Add Tag to Conversation
+
+```http
+POST /api/tags/convo/:conversationId
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "tag": "important"
+}
+```
+
+<ParamField path="conversationId" type="string" required>
+  Conversation ID
+</ParamField>
+
+<ParamField body="tag" type="string" required>
+  Tag name to add
+</ParamField>
+
+### List Tags
+
+```http
+GET /api/tags/list?pageNumber=1&sort=name&order=asc
+Authorization: Bearer <token>
+```
+
+<ParamField query="pageNumber" type="string" required>
+  Page number for pagination
+</ParamField>
+
+<ParamField query="sort" type="string">
+  Sort field (e.g., `name`, `count`)
+</ParamField>
+
+<ParamField query="order" type="string">
+  Sort order: `asc` or `desc`
+</ParamField>
+
+## Error Responses
+
+### Conversation Not Found
+
+```json
+{
+  "error": "Conversation not found"
+}
+```
+
+HTTP Status: 404
+
+### Invalid Parameters
+
+```json
+{
+  "error": "conversationId is required"
+}
+```
+
+HTTP Status: 400
+
+### Unauthorized Access
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "You don't have access to this conversation"
+}
+```
+
+HTTP Status: 403
+
+## TypeScript Types
+
+```typescript
+import type { TConversation } from 'librechat-data-provider';
+
+interface TConversation {
+  conversationId: string;
+  title: string;
+  endpoint: string;
+  model: string;
+  modelLabel?: string;
+  createdAt: string;
+  updatedAt: string;
+  isArchived?: boolean;
+  tags?: string[];
+  // ... additional fields
+}
+```

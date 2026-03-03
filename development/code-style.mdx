@@ -1,0 +1,402 @@
+---
+title: Code Style Guide
+description: Coding standards and conventions for LibreChat development
+---
+
+LibreChat follows strict coding standards to maintain code quality, consistency, and performance across the codebase.
+
+## Project Structure
+
+LibreChat is a monorepo with the following workspaces:
+
+| Workspace | Language | Side | Purpose |
+|-----------|----------|------|----------|
+| `/api` | JS (legacy) | Backend | Express server — minimize changes here |
+| `/packages/api` | **TypeScript** | Backend | New backend code lives here (TS only) |
+| `/packages/data-schemas` | TypeScript | Backend | Database models/schemas |
+| `/packages/data-provider` | TypeScript | Shared | Shared API types, endpoints, data-service |
+| `/client` | TypeScript/React | Frontend | Frontend SPA |
+| `/packages/client` | TypeScript | Frontend | Shared frontend utilities |
+
+### Workspace Boundaries
+
+<Warning>
+  **All new backend code must be TypeScript** in `/packages/api`.
+</Warning>
+
+- Keep `/api` changes to the absolute minimum (thin JS wrappers calling into `/packages/api`)
+- Database-specific shared logic goes in `/packages/data-schemas`
+- Frontend/backend shared API logic goes in `/packages/data-provider`
+- Build data-provider from project root: `npm run build:data-provider`
+
+## Code Style Principles
+
+### Structure and Clarity
+
+<CardGroup cols={2}>
+  <Card title="Never-nesting">
+    Use early returns, flat code, minimal indentation. Break complex operations into well-named helpers.
+    
+    ```typescript
+    // Good
+    if (!user) return null;
+    if (!user.isActive) return null;
+    return user.name;
+    
+    // Bad
+    if (user) {
+      if (user.isActive) {
+        return user.name;
+      }
+    }
+    return null;
+    ```
+  </Card>
+  
+  <Card title="Functional First">
+    Prefer pure functions, immutable data, `map`/`filter`/`reduce` over imperative loops.
+    
+    Only use OOP when it clearly improves domain modeling or state encapsulation.
+  </Card>
+  
+  <Card title="No Dynamic Imports">
+    Avoid dynamic imports unless absolutely necessary.
+  </Card>
+  
+  <Card title="DRY Principle">
+    Don't Repeat Yourself:
+    - Extract repeated logic into utility functions
+    - Use reusable hooks/higher-order components
+    - Parameterize helpers instead of duplicating
+    - Centralize constants and configuration
+  </Card>
+</CardGroup>
+
+### Iteration and Performance
+
+<Warning>
+  **Minimize looping** — especially over shared data structures like message arrays, which are iterated frequently throughout the codebase.
+</Warning>
+
+**Performance Guidelines:**
+
+- Consolidate sequential O(n) operations into a single pass
+- Never loop over the same collection twice if work can be combined
+- Use `Map`/`Set` for lookups instead of `Array.find`/`Array.includes`
+- Avoid unnecessary object creation
+- Prevent memory leaks: careful with closures, dispose resources/event listeners, no circular references
+
+**Loop Preferences:**
+
+```typescript
+// Performance-critical or index-dependent
+for (let i = 0; i < array.length; i++) {
+  // ...
+}
+
+// Simple array iteration
+for (const item of array) {
+  // ...
+}
+
+// Object property enumeration only
+for (const key in object) {
+  // ...
+}
+```
+
+## Type Safety
+
+<CardGroup cols={2}>
+  <Card title="Never use `any`" icon="ban">
+    Explicit types for all parameters, return values, and variables.
+  </Card>
+  
+  <Card title="Limit `unknown`" icon="triangle-exclamation">
+    Avoid `unknown`, `Record<string, unknown>`, and `as unknown as T` assertions.
+    
+    A `Record<string, unknown>` almost always signals a missing explicit type definition.
+  </Card>
+  
+  <Card title="Don't duplicate types" icon="clone">
+    Before defining a new type, check if it exists in `packages/data-provider`.
+    
+    Reuse and extend existing types rather than creating redundant definitions.
+  </Card>
+  
+  <Card title="Use proper types" icon="check">
+    - Use union types, generics, and interfaces appropriately
+    - All TypeScript and ESLint warnings/errors must be addressed
+    - No unresolved diagnostics
+  </Card>
+</CardGroup>
+
+## Comments and Documentation
+
+**Philosophy:** Write self-documenting code.
+
+- **No inline comments** narrating what code does
+- **JSDoc only** for complex/non-obvious logic or intellisense on public APIs
+- **Single-line JSDoc** for brief docs: `/** Brief description */`
+- **Multi-line JSDoc** for complex cases with parameters and return types
+- **Avoid standalone `//` comments** unless absolutely necessary
+
+```typescript
+// Good - self-documenting
+function getUserFullName(user: User): string {
+  return `${user.firstName} ${user.lastName}`;
+}
+
+// Good - JSDoc for complex logic
+/**
+ * Merges conversation branches while preserving message order.
+ * Uses depth-first traversal to maintain temporal consistency.
+ */
+function mergeBranches(branches: Branch[]): Message[] {
+  // ...
+}
+
+// Bad - unnecessary comment
+function add(a: number, b: number): number {
+  // Add a and b together
+  return a + b;
+}
+```
+
+## Import Order
+
+Imports are organized into three sections:
+
+<Steps>
+  <Step title="Package imports">
+    Sorted shortest to longest line length.
+    
+    - `react` is **always first**
+    - Multi-line imports count total character length across all lines
+    
+    ```typescript
+    import react from 'react';
+    import axios from 'axios';
+    import { useState, useEffect } from 'react';
+    ```
+  </Step>
+  
+  <Step title="Type imports">
+    Sorted longest to shortest line length.
+    
+    - Package types first, then local types
+    - Length sorting resets between sub-groups
+    - Always use standalone `import type { ... }`
+    - Never inline `type` inside value imports
+    
+    ```typescript
+    import type { ReactNode, ComponentProps } from 'react';
+    import type { UserSettings } from '~/types';
+    import type { User } from './types';
+    ```
+  </Step>
+  
+  <Step title="Local/project imports">
+    Sorted longest to shortest line length.
+    
+    - Multi-line imports count total character length
+    - Imports with alias `~` treated same as relative imports
+    
+    ```typescript
+    import { helperFunction } from '~/utils/helpers';
+    import { ComponentA } from './ComponentA';
+    import './styles.css';
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  ESLint automatically enforces these conventions with `npm run lint --fix` or pre-commit hooks.
+</Note>
+
+## Frontend-Specific Rules
+
+### Localization
+
+<Warning>
+  All user-facing text must use `useLocalize()`.
+</Warning>
+
+- Only update English keys in `client/src/locales/en/translation.json`
+- Other languages are automated externally via Locize
+- Use semantic key prefixes: `com_ui_`, `com_assistants_`, etc.
+
+```typescript
+import { useLocalize } from '~/hooks';
+
+function MyComponent() {
+  const localize = useLocalize();
+  
+  return <button>{localize('com_ui_submit')}</button>;
+}
+```
+
+### React Components
+
+- **TypeScript** for all React components with proper type imports
+- **Semantic HTML** with ARIA labels (`role`, `aria-label`) for accessibility
+- **Group related components** in feature directories (e.g., `SidePanel/Memories/`)
+- **Use index files** for clean exports
+
+```typescript
+// Good component structure
+import React from 'react';
+import type { FC } from 'react';
+
+interface ButtonProps {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}
+
+export const Button: FC<ButtonProps> = ({ label, onClick, disabled }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    aria-label={label}
+    role="button"
+  >
+    {label}
+  </button>
+);
+```
+
+### Data Management
+
+- **React Query** (`@tanstack/react-query`) for all API interactions
+- Proper query invalidation on mutations
+- QueryKeys and MutationKeys in `packages/data-provider/src/keys.ts`
+- Feature hooks pattern: `client/src/data-provider/[Feature]/queries.ts`
+
+**Data-Provider Integration:**
+
+- Endpoints: `packages/data-provider/src/api-endpoints.ts`
+- Data service: `packages/data-provider/src/data-service.ts`
+- Types: `packages/data-provider/src/types/queries.ts`
+- Use `encodeURIComponent` for dynamic URL parameters
+
+### Performance Optimization
+
+- Prioritize memory and speed efficiency at scale
+- Cursor pagination for large datasets
+- Proper dependency arrays to avoid unnecessary re-renders
+- Leverage React Query caching and background refetching
+
+## ESLint Configuration
+
+The project uses a comprehensive ESLint configuration defined in `eslint.config.mjs`:
+
+### Key Rules
+
+<Accordion title="Common Rules">
+  - `prettier/prettier`: 'error' - Enforce Prettier formatting
+  - `no-nested-ternary`: 'warn' - Avoid complex nested ternaries
+  - `no-unused-vars`: Warns on unused variables (except those prefixed with `_`)
+  - `import/no-cycle`: 'error' - Prevent circular dependencies
+  - `import/no-self-import`: 'error' - Prevent self-imports
+</Accordion>
+
+<Accordion title="TypeScript Rules">
+  - `@typescript-eslint/no-explicit-any`: 'off' (but avoid `any` in practice)
+  - `@typescript-eslint/no-unused-vars`: Warns on unused variables
+  - `@typescript-eslint/no-unnecessary-condition`: 'off'
+  - `@typescript-eslint/strict-boolean-expressions`: 'off'
+</Accordion>
+
+<Accordion title="React Rules">
+  - `react/react-in-jsx-scope`: 'off' - Not needed in modern React
+  - `react-hooks/rules-of-hooks`: 'error' - Enforce hooks rules
+  - `react-hooks/exhaustive-deps`: 'warn' - Check hook dependencies
+  - `react/prop-types`: 'off' - Use TypeScript instead
+</Accordion>
+
+<Accordion title="i18n Rules (Client Only)">
+  - `i18next/no-literal-string`: 'error' - Enforce localization for all user-facing text (jsx-text-only mode)
+</Accordion>
+
+### Running Linting
+
+```bash
+# Check for errors
+npm run lint
+
+# Auto-fix errors
+npm run lint:fix
+
+# Format code with Prettier
+npm run format
+```
+
+### Pre-commit Hooks
+
+The project uses Husky and lint-staged to automatically lint and format code before commits:
+
+**Configuration** (`.husky/lint-staged.config.js`):
+
+```javascript
+module.exports = {
+  '*.{js,jsx,ts,tsx}': ['prettier --write', 'eslint --fix', 'eslint'],
+  '*.json': ['prettier --write'],
+};
+```
+
+## TypeScript Conversion
+
+LibreChat is transitioning from JavaScript to TypeScript:
+
+<Steps>
+  <Step title="Original State">
+    Initially developed entirely in JavaScript
+  </Step>
+  
+  <Step title="Frontend: Complete">
+    Fully transitioned to TypeScript
+  </Step>
+  
+  <Step title="Backend: In Progress">
+    - Legacy Express.js server remains in `/api` as JavaScript
+    - All new backend code written in TypeScript under `/packages/api`
+    - Shared database logic in `/packages/data-schemas` (TypeScript)
+    - Shared API types/services in `/packages/data-provider` (TypeScript)
+    - **Minimize direct changes to `/api`**; prefer adding TS code to `/packages/api`
+  </Step>
+</Steps>
+
+## Best Practices Summary
+
+<Check>
+  **Do:**
+  - Write TypeScript for all new code
+  - Use early returns and flat code structure
+  - Prefer functional programming patterns
+  - Consolidate loops and iterations
+  - Use explicit types everywhere
+  - Follow import ordering conventions
+  - Localize all user-facing text
+  - Write self-documenting code
+  - Run linting before commits
+</Check>
+
+<Warning>
+  **Don't:**
+  - Use `any` type
+  - Create duplicate types
+  - Loop over the same data multiple times
+  - Use dynamic imports unnecessarily
+  - Write inline comments explaining code
+  - Add code directly to `/api` (use `/packages/api` instead)
+  - Hardcode user-facing text (use i18n)
+  - Leave ESLint warnings unresolved
+</Warning>
+
+## Additional Resources
+
+- Full coding standards: [`AGENTS.md`](https://github.com/danny-avila/LibreChat/blob/main/AGENTS.md)
+- [Contributing Guide](/development/contributing)
+- [Testing Guidelines](/development/testing)
+- [Translation Guide](/development/translation)

@@ -1,0 +1,339 @@
+---
+title: Users
+description: User account management and settings
+---
+
+## Overview
+
+The Users API allows you to manage user accounts, preferences, plugins, and account deletion.
+
+All user endpoints are prefixed with `/api/user`.
+
+## Get User Info
+
+Retrieve current user information:
+
+```http
+GET /api/user
+Authorization: Bearer <token>
+```
+
+### Response
+
+<ResponseField name="id" type="string">
+  User ID
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  User email address
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  User display name
+</ResponseField>
+
+<ResponseField name="username" type="string">
+  Username
+</ResponseField>
+
+<ResponseField name="role" type="string">
+  User role (e.g., `user`, `admin`)
+</ResponseField>
+
+<ResponseField name="avatar" type="string">
+  Avatar URL or identifier
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Account creation timestamp
+</ResponseField>
+
+```json
+{
+  "id": "user123",
+  "email": "john@example.com",
+  "name": "John Doe",
+  "username": "johndoe",
+  "role": "user",
+  "avatar": "/avatars/user123.png",
+  "provider": "local",
+  "createdAt": "2024-01-01T00:00:00Z"
+}
+```
+
+## Update User Plugins
+
+Update user plugin preferences:
+
+```http
+POST /api/user/plugins
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "plugins": [
+    "web-search",
+    "calculator"
+  ]
+}
+```
+
+### Request Body
+
+<ParamField body="plugins" type="string[]" required>
+  Array of enabled plugin identifiers
+</ParamField>
+
+### Response
+
+Returns the updated user object with plugin preferences.
+
+## Delete User Account
+
+Permanently delete the user account and all associated data:
+
+```http
+DELETE /api/user/delete
+Authorization: Bearer <token>
+```
+
+### Response
+
+```json
+{
+  "message": "User account deleted successfully"
+}
+```
+
+This endpoint:
+- Requires the user to have account deletion permissions (configurable)
+- Deletes all conversations, messages, files, and settings
+- Cannot be undone
+
+## Email Verification
+
+### Verify Email
+
+Verify email address with token from verification email:
+
+```http
+POST /api/user/verify
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "token": "verification-token"
+}
+```
+
+<ParamField body="userId" type="string" required>
+  User ID from verification email
+</ParamField>
+
+<ParamField body="token" type="string" required>
+  Verification token from email
+</ParamField>
+
+### Response
+
+```json
+{
+  "message": "Email verified successfully"
+}
+```
+
+### Resend Verification Email
+
+Request a new verification email:
+
+```http
+POST /api/user/verify/resend
+Content-Type: application/json
+
+{
+  "email": "john@example.com"
+}
+```
+
+<ParamField body="email" type="string" required>
+  Email address to send verification to
+</ParamField>
+
+Note: This endpoint has rate limiting to prevent abuse.
+
+## Terms of Service
+
+### Get Terms Status
+
+Check if user has accepted current terms:
+
+```http
+GET /api/user/terms
+Authorization: Bearer <token>
+```
+
+### Response
+
+<ResponseField name="termsAccepted" type="boolean">
+  Whether user has accepted current terms
+</ResponseField>
+
+<ResponseField name="termsVersion" type="string">
+  Version of terms accepted
+</ResponseField>
+
+<ResponseField name="acceptedAt" type="string">
+  When terms were accepted
+</ResponseField>
+
+```json
+{
+  "termsAccepted": true,
+  "termsVersion": "1.0",
+  "acceptedAt": "2024-01-01T00:00:00Z"
+}
+```
+
+### Accept Terms
+
+Accept terms of service:
+
+```http
+POST /api/user/terms/accept
+Authorization: Bearer <token>
+```
+
+### Response
+
+```json
+{
+  "message": "Terms accepted",
+  "termsAccepted": true
+}
+```
+
+## User Settings
+
+User-specific settings are managed through the `/api/user/settings` endpoints.
+
+See the settings routes for detailed documentation on:
+- Theme preferences
+- Language settings
+- Notification preferences
+- Display options
+
+## Account Balance
+
+Get user account balance (for credit-based systems):
+
+```http
+GET /api/balance
+Authorization: Bearer <token>
+```
+
+### Response
+
+```json
+{
+  "balance": 100.00,
+  "currency": "USD",
+  "tokenBalance": 50000
+}
+```
+
+## User Avatar
+
+Upload or update user avatar:
+
+```http
+POST /api/files/images/avatar
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="avatar.png"
+Content-Type: image/png
+
+[binary image data]
+--boundary--
+```
+
+### Request
+
+<ParamField body="file" type="File" required>
+  Image file (PNG, JPEG, WebP)
+</ParamField>
+
+### Response
+
+```json
+{
+  "url": "/avatars/user123.png",
+  "filepath": "/uploads/avatars/user123.png"
+}
+```
+
+## Error Responses
+
+### Unauthorized
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "You must be logged in to access this resource"
+}
+```
+
+HTTP Status: 401
+
+### Account Deletion Disabled
+
+```json
+{
+  "error": "Forbidden",
+  "message": "Account deletion is disabled"
+}
+```
+
+HTTP Status: 403
+
+### Invalid Verification Token
+
+```json
+{
+  "error": "Invalid or expired verification token"
+}
+```
+
+HTTP Status: 400
+
+### Rate Limited
+
+```json
+{
+  "error": "Too many requests",
+  "message": "Please wait before requesting another verification email"
+}
+```
+
+HTTP Status: 429
+
+## TypeScript Types
+
+```typescript
+import type { TUser } from 'librechat-data-provider';
+
+interface TUser {
+  id: string;
+  email: string;
+  name: string;
+  username?: string;
+  role: string;
+  avatar?: string;
+  provider?: string;
+  plugins?: string[];
+  createdAt: string;
+  emailVerified?: boolean;
+  termsAccepted?: boolean;
+}
+```

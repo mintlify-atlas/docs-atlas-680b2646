@@ -1,0 +1,1003 @@
+---
+title: "Installation"
+description: "Complete guide to installing LibreChat with Docker or local development setup"
+---
+
+## Installation Methods
+
+Choose the installation method that best fits your needs:
+
+<CardGroup cols={2}>
+  <Card title="Docker (Recommended)" icon="docker">
+    Production-ready deployment with all dependencies managed
+  </Card>
+  <Card title="Local Development" icon="code">
+    For contributing or custom development work
+  </Card>
+</CardGroup>
+
+<Tabs>
+  <Tab title="Docker Installation">
+    ## Docker Installation
+
+    Docker is the recommended way to run LibreChat. It handles all dependencies and ensures consistent behavior across systems.
+
+    ### Prerequisites
+
+    <Steps>
+      <Step title="Install Docker">
+        You need Docker and Docker Compose installed:
+
+        <Tabs>
+          <Tab title="Windows">
+            1. Download [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/)
+            2. Run the installer
+            3. Restart your computer
+            4. Verify installation:
+            ```bash
+            docker --version
+            docker compose version
+            ```
+          </Tab>
+
+          <Tab title="macOS">
+            1. Download [Docker Desktop for Mac](https://docs.docker.com/desktop/install/mac-install/)
+            2. Drag Docker.app to Applications
+            3. Launch Docker Desktop
+            4. Verify installation:
+            ```bash
+            docker --version
+            docker compose version
+            ```
+          </Tab>
+
+          <Tab title="Linux">
+            Install Docker Engine and Docker Compose:
+
+            ```bash
+            # Ubuntu/Debian
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sudo sh get-docker.sh
+            sudo usermod -aG docker $USER
+
+            # Verify
+            docker --version
+            docker compose version
+            ```
+
+            <Note>
+            Log out and back in for group changes to take effect.
+            </Note>
+          </Tab>
+        </Tabs>
+
+        <Info>
+        **Minimum Requirements:**
+        - 4GB RAM (8GB+ recommended)
+        - 10GB disk space
+        - Docker Engine 20.10+ and Docker Compose 2.0+
+        </Info>
+      </Step>
+
+      <Step title="Clone the Repository">
+        Download LibreChat from GitHub:
+
+        ```bash
+        git clone https://github.com/danny-avila/LibreChat.git
+        cd LibreChat
+        ```
+
+        <Tip>
+        To install a specific version:
+        ```bash
+        git clone --branch v0.8.3 https://github.com/danny-avila/LibreChat.git
+        ```
+        </Tip>
+      </Step>
+    </Steps>
+
+    ### Configuration
+
+    <Steps>
+      <Step title="Create Environment File">
+        Copy the example environment file:
+
+        ```bash
+        cp .env.example .env
+        ```
+
+        The `.env` file contains all configuration options. Key settings:
+
+        ```bash
+        # Server Configuration
+        HOST=localhost
+        PORT=3080
+        MONGO_URI=mongodb://mongodb:27017/LibreChat
+
+        # Security (change these!)
+        JWT_SECRET=16f8c0ef4a5d391b26034086c628469d3f9f497f08163ab9b40137092f2909ef
+        JWT_REFRESH_SECRET=eaa5191f2914e30b9387fd84e254e4ba6fc51b4654968a9b0803b456a54b8418
+        CREDS_KEY=f34be427ebb29de8d88c107a71546019685ed8b241d8f2ed00c3df97ad2566f0
+        CREDS_IV=e2341419ec3dd3d19b13a1a87fafcbfb
+
+        # Meilisearch (for conversation search)
+        MEILI_MASTER_KEY=DrhYf7zENyR6AlUCKmnz0eYASOQdl6zxH7s7MKFSfFCt
+        ```
+
+        <Warning>
+        **Security**: Generate new secrets for production:
+        ```bash
+        # Generate secure random strings
+        openssl rand -hex 32
+        ```
+        Replace the default JWT_SECRET, JWT_REFRESH_SECRET, CREDS_KEY, CREDS_IV, and MEILI_MASTER_KEY values.
+        </Warning>
+      </Step>
+
+      <Step title="Configure AI Providers">
+        Add your API keys to `.env`:
+
+        <CodeGroup>
+        ```bash OpenAI
+        OPENAI_API_KEY=sk-proj-your-key-here
+        # Or allow users to provide their own:
+        OPENAI_API_KEY=user_provided
+        ```
+
+        ```bash Anthropic (Claude)
+        ANTHROPIC_API_KEY=sk-ant-your-key-here
+        # Or:
+        ANTHROPIC_API_KEY=user_provided
+        ```
+
+        ```bash Google (Gemini)
+        GOOGLE_KEY=your-google-ai-key
+        # Or:
+        GOOGLE_KEY=user_provided
+        ```
+
+        ```bash Azure OpenAI
+        # Azure requires librechat.yaml configuration
+        # See: /configuration/ai-endpoints#azure-openai
+        ```
+
+        ```bash AWS Bedrock
+        BEDROCK_AWS_DEFAULT_REGION=us-east-1
+        BEDROCK_AWS_ACCESS_KEY_ID=your-access-key
+        BEDROCK_AWS_SECRET_ACCESS_KEY=your-secret-key
+        ```
+        </CodeGroup>
+
+        <AccordionGroup>
+          <Accordion title="Where to get API keys">
+            - **OpenAI**: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+            - **Anthropic**: [console.anthropic.com](https://console.anthropic.com)
+            - **Google AI Studio**: [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+            - **Azure**: Requires Azure subscription and OpenAI resource deployment
+            - **AWS Bedrock**: Enable Bedrock in AWS Console and create IAM credentials
+          </Accordion>
+
+          <Accordion title="Using custom endpoints (Ollama, LM Studio, etc.)">
+            For local or custom AI providers, create `librechat.yaml`:
+
+            ```yaml
+            version: 1.3.4
+            cache: true
+
+            endpoints:
+              custom:
+                # Ollama
+                - name: "Ollama"
+                  apiKey: "ollama"
+                  baseURL: "http://host.docker.internal:11434/v1"
+                  models:
+                    default:
+                      - "llama3.1:latest"
+                      - "mistral:latest"
+                      - "qwen2.5:latest"
+                  titleConvo: true
+                  titleModel: "llama3.1:latest"
+
+                # LM Studio
+                - name: "LM Studio"
+                  apiKey: "lm-studio"
+                  baseURL: "http://host.docker.internal:1234/v1"
+                  models:
+                    default:
+                      - "local-model"
+
+                # Any OpenAI-compatible API
+                - name: "Custom API"
+                  apiKey: "${CUSTOM_API_KEY}"
+                  baseURL: "https://api.example.com/v1"
+                  models:
+                    default:
+                      - "custom-model-1"
+            ```
+
+            <Note>
+            `host.docker.internal` allows Docker containers to access services on your host machine.
+            </Note>
+          </Accordion>
+        </AccordionGroup>
+      </Step>
+
+      <Step title="Set User Permissions (Linux)">
+        On Linux, set the user ID and group ID for proper file permissions:
+
+        ```bash
+        # Add to .env
+        UID=1000
+        GID=1000
+        ```
+
+        To find your UID/GID:
+        ```bash
+        echo "UID=$(id -u)"
+        echo "GID=$(id -g)"
+        ```
+      </Step>
+    </Steps>
+
+    ### Launch LibreChat
+
+    <Steps>
+      <Step title="Start Services">
+        Launch all containers:
+
+        ```bash
+        docker compose up -d
+        ```
+
+        This command:
+        1. Downloads required Docker images (LibreChat, MongoDB, Meilisearch, RAG API)
+        2. Creates containers and networks
+        3. Initializes databases
+        4. Starts all services in the background
+
+        <Info>
+        First run takes 2-5 minutes to download ~2GB of images and initialize databases.
+        </Info>
+      </Step>
+
+      <Step title="Monitor Startup">
+        Watch the logs to confirm successful startup:
+
+        ```bash
+        docker compose logs -f
+        ```
+
+        Wait for:
+        ```
+        LibreChat | Server listening on port 3080
+        chat-mongodb | Waiting for connections
+        chat-meilisearch | MeiliSearch is ready
+        ```
+
+        Press `Ctrl+C` to exit logs (services continue running).
+      </Step>
+
+      <Step title="Access the Application">
+        Open your browser to:
+
+        ```
+        http://localhost:3080
+        ```
+
+        Create your admin account on first visit.
+
+        <Warning>
+        The first registered user becomes the admin. Secure your instance before making it publicly accessible.
+        </Warning>
+      </Step>
+    </Steps>
+
+    ### Docker Compose Services
+
+    The `docker-compose.yml` file defines these services:
+
+    <AccordionGroup>
+      <Accordion title="api (LibreChat)" icon="server">
+        Main application server:
+        - **Image**: `registry.librechat.ai/danny-avila/librechat-dev:latest`
+        - **Port**: 3080
+        - **Volumes**: `.env`, `images/`, `uploads/`, `logs/`
+        - **Depends on**: MongoDB, Meilisearch, RAG API
+
+        ```yaml
+        services:
+          api:
+            container_name: LibreChat
+            ports:
+              - "${PORT}:${PORT}"
+            image: registry.librechat.ai/danny-avila/librechat-dev:latest
+            restart: always
+            environment:
+              - MONGO_URI=mongodb://mongodb:27017/LibreChat
+              - MEILI_HOST=http://meilisearch:7700
+            volumes:
+              - ./.env:/app/.env
+              - ./images:/app/client/public/images
+              - ./uploads:/app/uploads
+              - ./logs:/app/logs
+        ```
+      </Accordion>
+
+      <Accordion title="mongodb" icon="database">
+        Database for conversations, users, and settings:
+        - **Image**: `mongo:8.0.17`
+        - **Port**: 27017 (internal)
+        - **Volume**: `./data-node`
+        - **Command**: `mongod --noauth`
+
+        Data persists in `./data-node/` directory.
+      </Accordion>
+
+      <Accordion title="meilisearch" icon="magnifying-glass">
+        Full-text search engine for conversations:
+        - **Image**: `getmeili/meilisearch:v1.35.1`
+        - **Port**: 7700 (internal)
+        - **Volume**: `./meili_data_v1.35.1`
+        - **Master Key**: From `MEILI_MASTER_KEY` in `.env`
+
+        Powers the conversation search feature (Ctrl+K).
+      </Accordion>
+
+      <Accordion title="rag_api" icon="brain">
+        RAG (Retrieval-Augmented Generation) API:
+        - **Image**: `registry.librechat.ai/danny-avila/librechat-rag-api-dev-lite:latest`
+        - **Port**: 8000
+        - **Depends on**: vectordb (PostgreSQL with pgvector)
+
+        Handles file processing, embeddings, and vector search for file-based conversations.
+      </Accordion>
+
+      <Accordion title="vectordb" icon="table">
+        Vector database for RAG:
+        - **Image**: `pgvector/pgvector:0.8.0-pg15-trixie`
+        - **Port**: 5432 (internal)
+        - **Volume**: `pgdata2`
+
+        Stores document embeddings for semantic search.
+      </Accordion>
+    </AccordionGroup>
+
+    ### Docker Management
+
+    <CodeGroup>
+    ```bash Stop all services
+    docker compose down
+    ```
+
+    ```bash Restart (apply config changes)
+    docker compose restart
+    ```
+
+    ```bash View logs
+    docker compose logs -f api
+    docker compose logs -f mongodb
+    ```
+
+    ```bash Update to latest version
+    docker compose pull
+    docker compose up -d
+    ```
+
+    ```bash Rebuild after code changes
+    docker compose build --no-cache
+    docker compose up -d
+    ```
+
+    ```bash Reset database (deletes all data)
+    docker compose down -v
+    sudo rm -rf data-node/ meili_data_v1.35.1/
+    docker compose up -d
+    ```
+    </CodeGroup>
+
+    ### Custom Docker Overrides
+
+    To customize Docker Compose without editing the main file:
+
+    ```bash
+    cp docker-compose.override.yml.example docker-compose.override.yml
+    ```
+
+    Edit `docker-compose.override.yml` to add custom configurations:
+
+    ```yaml
+    services:
+      api:
+        environment:
+          - CUSTOM_VAR=value
+        volumes:
+          - ./custom:/app/custom
+    ```
+
+    Docker Compose automatically merges override files.
+  </Tab>
+
+  <Tab title="Local Development">
+    ## Local Development Installation
+
+    For contributing to LibreChat or custom development work.
+
+    ### Prerequisites
+
+    <Steps>
+      <Step title="System Requirements">
+        Ensure you have the required software:
+
+        <Tabs>
+          <Tab title="Node.js">
+            **Required**: Node.js 20.19.0+ or 22.12.0+ or 23.0.0+
+
+            ```bash
+            # Check version
+            node --version
+
+            # Install Node.js (via nvm recommended)
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+            nvm install 20
+            nvm use 20
+            ```
+
+            Or download from [nodejs.org](https://nodejs.org/)
+          </Tab>
+
+          <Tab title="MongoDB">
+            **Required**: MongoDB 8.0+
+
+            <Tabs>
+              <Tab title="macOS">
+                ```bash
+                brew tap mongodb/brew
+                brew install mongodb-community@8.0
+                brew services start mongodb-community@8.0
+                ```
+              </Tab>
+
+              <Tab title="Linux">
+                ```bash
+                # Ubuntu/Debian
+                curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-8.0.gpg
+                echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/8.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
+                sudo apt update
+                sudo apt install -y mongodb-org
+                sudo systemctl start mongod
+                ```
+              </Tab>
+
+              <Tab title="Windows">
+                Download installer from [mongodb.com/try/download/community](https://www.mongodb.com/try/download/community)
+
+                Or use Docker:
+                ```bash
+                docker run -d -p 27017:27017 --name mongodb mongo:8.0
+                ```
+              </Tab>
+            </Tabs>
+
+            Verify MongoDB is running:
+            ```bash
+            mongosh --eval "db.version()"
+            ```
+          </Tab>
+
+          <Tab title="Meilisearch">
+            **Required**: Meilisearch v1.35.1+
+
+            <Tabs>
+              <Tab title="Docker (easiest)">
+                ```bash
+                docker run -d \
+                  --name meilisearch \
+                  -p 7700:7700 \
+                  -e MEILI_MASTER_KEY=your-master-key \
+                  -v $(pwd)/meili_data:/meili_data \
+                  getmeili/meilisearch:v1.35.1
+                ```
+              </Tab>
+
+              <Tab title="Binary">
+                ```bash
+                # macOS
+                brew install meilisearch
+                meilisearch --master-key="your-master-key"
+
+                # Linux
+                curl -L https://install.meilisearch.com | sh
+                ./meilisearch --master-key="your-master-key"
+                ```
+              </Tab>
+            </Tabs>
+          </Tab>
+        </Tabs>
+      </Step>
+
+      <Step title="Clone Repository">
+        ```bash
+        git clone https://github.com/danny-avila/LibreChat.git
+        cd LibreChat
+        ```
+      </Step>
+
+      <Step title="Install Dependencies">
+        LibreChat uses npm workspaces for monorepo management:
+
+        ```bash
+        # Full clean install
+        npm run reinstall
+
+        # Or smart reinstall (only if lockfile changed)
+        npm run smart-reinstall
+        ```
+
+        This installs dependencies for all workspaces:
+        - `/api` - Backend server
+        - `/client` - Frontend React app
+        - `/packages/api` - TypeScript backend code
+        - `/packages/data-provider` - Shared data layer
+        - `/packages/data-schemas` - Database schemas
+        - `/packages/client` - Shared frontend utilities
+
+        <Info>
+        **Package Manager**: LibreChat uses npm 11.10.0+. The `packageManager` field in `package.json` enforces this version.
+        </Info>
+      </Step>
+    </Steps>
+
+    ### Configuration
+
+    <Steps>
+      <Step title="Environment Setup">
+        Create your `.env` file:
+
+        ```bash
+        cp .env.example .env
+        ```
+
+        Configure for local development:
+
+        ```bash
+        # Server
+        HOST=localhost
+        PORT=3080
+        MONGO_URI=mongodb://127.0.0.1:27017/LibreChat
+
+        # Client
+        DOMAIN_CLIENT=http://localhost:3080
+        DOMAIN_SERVER=http://localhost:3080
+
+        # Meilisearch
+        MEILI_HOST=http://localhost:7700
+        MEILI_MASTER_KEY=your-master-key
+
+        # Debug
+        DEBUG_LOGGING=true
+        DEBUG_CONSOLE=true
+
+        # Security
+        JWT_SECRET=your-generated-secret
+        JWT_REFRESH_SECRET=your-generated-secret
+
+        # AI Providers
+        OPENAI_API_KEY=sk-your-key
+        ANTHROPIC_API_KEY=sk-ant-your-key
+        GOOGLE_KEY=your-key
+        ```
+      </Step>
+
+      <Step title="Build Packages">
+        Build all TypeScript packages:
+
+        ```bash
+        # Build all via Turborepo (parallel, cached)
+        npm run build
+
+        # Or build sequentially (legacy)
+        npm run frontend
+
+        # Or build specific packages
+        npm run build:data-provider
+        npm run build:api
+        npm run build:client-package
+        ```
+
+        <Note>
+        The `build` script uses Turborepo for intelligent caching and parallel builds.
+        </Note>
+      </Step>
+    </Steps>
+
+    ### Running Locally
+
+    <Steps>
+      <Step title="Start Backend">
+        In one terminal, start the Node.js backend:
+
+        ```bash
+        npm run backend:dev
+        ```
+
+        This starts the API server with file watching (nodemon). Changes to backend files trigger automatic restart.
+
+        Backend runs on: `http://localhost:3080`
+      </Step>
+
+      <Step title="Start Frontend">
+        In a second terminal, start the React dev server:
+
+        ```bash
+        npm run frontend:dev
+        ```
+
+        This starts Vite dev server with HMR (Hot Module Replacement).
+
+        Frontend runs on: `http://localhost:3090`
+
+        <Tip>
+        The frontend proxies API requests to the backend at `:3080`.
+        </Tip>
+      </Step>
+
+      <Step title="Access Application">
+        Open your browser to:
+
+        ```
+        http://localhost:3090
+        ```
+
+        Create your account and start developing!
+      </Step>
+    </Steps>
+
+    ### Development Scripts
+
+    <CodeGroup>
+    ```bash Start backend
+    npm run backend:dev  # With auto-reload
+    npm run backend      # Production mode
+    ```
+
+    ```bash Start frontend
+    npm run frontend:dev  # Vite dev server (port 3090)
+    npm run frontend      # Build production bundle
+    ```
+
+    ```bash Build packages
+    npm run build                    # All packages (Turborepo)
+    npm run build:data-provider      # Data provider only
+    npm run build:api                # Backend package
+    npm run build:client             # Frontend build
+    ```
+
+    ```bash Testing
+    npm run test:all         # All tests
+    npm run test:client      # Frontend tests
+    npm run test:api         # Backend tests
+    npm run e2e              # End-to-end tests
+    ```
+
+    ```bash Linting & Formatting
+    npm run lint             # Check code
+    npm run lint:fix         # Auto-fix issues
+    npm run format           # Prettier formatting
+    ```
+    </CodeGroup>
+
+    ### Project Structure
+
+    LibreChat is a monorepo with multiple workspaces:
+
+    ```
+    LibreChat/
+    ├── api/                    # Legacy JS backend server
+    ├── client/                 # React frontend
+    ├── packages/
+    │   ├── api/               # TypeScript backend (new code goes here)
+    │   ├── data-provider/     # Shared API client & types
+    │   ├── data-schemas/      # MongoDB schemas
+    │   └── client/            # Shared frontend utilities
+    ├── config/                # Configuration scripts
+    ├── e2e/                   # End-to-end tests
+    ├── docker-compose.yml     # Docker services
+    ├── package.json           # Root workspace config
+    └── .env                   # Environment variables
+    ```
+
+    <Info>
+    **Development Rule**: All new backend code must be TypeScript in `/packages/api`. Keep changes to `/api` minimal.
+    </Info>
+
+    ### Database Management
+
+    <CodeGroup>
+    ```bash User management
+    npm run create-user      # Create new user
+    npm run list-users       # List all users
+    npm run reset-password   # Reset user password
+    npm run ban-user         # Ban a user
+    npm run delete-user      # Delete user
+    ```
+
+    ```bash Token management
+    npm run add-balance      # Add tokens to user
+    npm run set-balance      # Set token balance
+    npm run list-balances    # View all balances
+    ```
+
+    ```bash Database tools
+    npm run flush-cache      # Clear Redis cache
+    npm run reset-meili-sync # Reset search index
+    ```
+    </CodeGroup>
+
+    ### Troubleshooting Local Development
+
+    <AccordionGroup>
+      <Accordion title="MongoDB connection refused" icon="database">
+        Ensure MongoDB is running:
+
+        ```bash
+        # Check status
+        brew services list  # macOS
+        sudo systemctl status mongod  # Linux
+
+        # Start if stopped
+        brew services start mongodb-community@8.0  # macOS
+        sudo systemctl start mongod  # Linux
+        ```
+
+        Verify connection:
+        ```bash
+        mongosh --eval "db.version()"
+        ```
+      </Accordion>
+
+      <Accordion title="Port already in use" icon="network-wired">
+        If ports 3080 or 3090 are in use:
+
+        ```bash
+        # Find process using port
+        lsof -i :3080  # macOS/Linux
+        netstat -ano | findstr :3080  # Windows
+
+        # Kill process
+        kill -9 <PID>
+
+        # Or change port in .env
+        PORT=8080
+        ```
+      </Accordion>
+
+      <Accordion title="Build failures" icon="triangle-exclamation">
+        If builds fail:
+
+        ```bash
+        # Clean install
+        npm run reinstall
+
+        # Clear build cache
+        rm -rf node_modules/.cache
+        rm -rf client/node_modules/.cache
+
+        # Rebuild
+        npm run build
+        ```
+      </Accordion>
+
+      <Accordion title="Frontend not hot-reloading" icon="arrows-rotate">
+        If HMR isn't working:
+
+        1. Check that backend is running on port 3080
+        2. Restart frontend dev server
+        3. Clear browser cache
+        4. Check browser console for errors
+      </Accordion>
+    </AccordionGroup>
+  </Tab>
+</Tabs>
+
+## Post-Installation
+
+### First-Time Setup
+
+<Steps>
+  <Step title="Create Admin Account">
+    The first registered user becomes the admin:
+
+    1. Visit `http://localhost:3080`
+    2. Click **Sign up**
+    3. Enter email and password
+    4. Register
+
+    <Warning>
+    Subsequent users need to be invited or you must enable public registration.
+    </Warning>
+  </Step>
+
+  <Step title="Configure User Access">
+    Control who can register:
+
+    ```bash
+    # In .env
+
+    # Allow anyone to register
+    ALLOW_REGISTRATION=true
+
+    # Or invite specific users
+    ALLOW_REGISTRATION=false
+    ```
+
+    Invite users via CLI:
+    ```bash
+    # Docker
+    docker compose exec api npm run invite-user
+
+    # Local
+    npm run invite-user
+    ```
+  </Step>
+
+  <Step title="Test AI Integration">
+    Verify your AI providers work:
+
+    1. Click the model selector dropdown
+    2. Select a provider (OpenAI, Anthropic, etc.)
+    3. Choose a model
+    4. Send a test message: "Hello!"
+
+    If you see errors, check:
+    - API keys are correct in `.env`
+    - API keys have sufficient credits
+    - Network connectivity to AI providers
+  </Step>
+</Steps>
+
+### Optional Features
+
+<AccordionGroup>
+  <Accordion title="Enable web search" icon="magnifying-glass">
+    Configure search providers in `.env`:
+
+    ```bash
+    SEARCH=true
+
+    # Search provider (required)
+    SERPER_API_KEY=your-serper-key
+
+    # Scraper (required)
+    FIRECRAWL_API_KEY=your-firecrawl-key
+
+    # Reranker (required - choose one)
+    JINA_API_KEY=your-jina-key
+    # or
+    COHERE_API_KEY=your-cohere-key
+    ```
+
+    Get keys from:
+    - Serper: [serper.dev](https://serper.dev)
+    - Firecrawl: [firecrawl.dev](https://firecrawl.dev)
+    - Jina: [jina.ai](https://jina.ai)
+  </Accordion>
+
+  <Accordion title="Enable code interpreter" icon="terminal">
+    ```bash
+    # In .env
+    LIBRECHAT_CODE_API_KEY=your-key-from-code.librechat.ai
+    ```
+
+    Sign up at [code.librechat.ai](https://code.librechat.ai) for API access.
+
+    Now agents can execute Python, Node.js, Go, Java, PHP, Rust, and Fortran code securely.
+  </Accordion>
+
+  <Accordion title="Configure file storage" icon="cloud-arrow-up">
+    By default, files are stored locally. Configure S3 or Firebase:
+
+    <Tabs>
+      <Tab title="AWS S3">
+        ```bash
+        # In .env
+        AWS_ACCESS_KEY_ID=your-key
+        AWS_SECRET_ACCESS_KEY=your-secret
+        AWS_REGION=us-east-1
+        AWS_BUCKET_NAME=librechat-files
+        ```
+
+        ```yaml
+        # In librechat.yaml
+        fileStrategy:
+          avatar: "s3"
+          image: "s3"
+          document: "s3"
+        ```
+      </Tab>
+
+      <Tab title="Firebase">
+        ```bash
+        # In .env
+        FIREBASE_API_KEY=your-key
+        FIREBASE_AUTH_DOMAIN=your-app.firebaseapp.com
+        FIREBASE_PROJECT_ID=your-project
+        FIREBASE_STORAGE_BUCKET=your-bucket
+        FIREBASE_MESSAGING_SENDER_ID=your-id
+        FIREBASE_APP_ID=your-app-id
+        ```
+
+        ```yaml
+        # In librechat.yaml
+        fileStrategy:
+          avatar: "firebase"
+          image: "firebase"
+          document: "firebase"
+        ```
+      </Tab>
+    </Tabs>
+  </Accordion>
+
+  <Accordion title="Set up OAuth/SSO" icon="key">
+    Configure OAuth providers:
+
+    <CodeGroup>
+    ```bash Google OAuth
+    GOOGLE_CLIENT_ID=your-client-id
+    GOOGLE_CLIENT_SECRET=your-secret
+    GOOGLE_CALLBACK_URL=/oauth/google/callback
+    ```
+
+    ```bash GitHub OAuth
+    GITHUB_CLIENT_ID=your-client-id
+    GITHUB_CLIENT_SECRET=your-secret
+    GITHUB_CALLBACK_URL=/oauth/github/callback
+    ```
+
+    ```bash OpenID Connect
+    OPENID_CLIENT_ID=your-client-id
+    OPENID_CLIENT_SECRET=your-secret
+    OPENID_ISSUER=https://your-idp.com
+    OPENID_CALLBACK_URL=/oauth/openid/callback
+    ```
+
+    ```bash LDAP
+    LDAP_URL=ldap://your-ldap-server:389
+    LDAP_BIND_DN=cn=admin,dc=example,dc=com
+    LDAP_BIND_CREDENTIALS=password
+    LDAP_USER_SEARCH_BASE=ou=users,dc=example,dc=com
+    ```
+    </CodeGroup>
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Your LibreChat installation is complete! Here's what to explore:
+
+<CardGroup cols={2}>
+  <Card title="Configuration Guide" icon="sliders" href="/configuration/overview">
+    Deep dive into librechat.yaml and advanced settings
+  </Card>
+  <Card title="AI Endpoints" icon="plug" href="/configuration/ai-endpoints">
+    Configure all AI providers and custom models
+  </Card>
+  <Card title="Create Agents" icon="robot" href="/features/agents">
+    Build custom AI assistants with tools and knowledge
+  </Card>
+  <Card title="Enable MCP" icon="puzzle-piece" href="/features/mcp">
+    Add Model Context Protocol servers
+  </Card>
+  <Card title="User Management" icon="users" href="/admin/user-management">
+    Manage users, roles, and permissions
+  </Card>
+  <Card title="Production Deployment" icon="rocket" href="/deployment/docker">
+    Deploy LibreChat to production
+  </Card>
+</CardGroup>
+
+<Note>
+**Need help?** 
+- Join [Discord](https://discord.librechat.ai) for community support
+- Check [GitHub Discussions](https://github.com/danny-avila/LibreChat/discussions)
+- Report issues on [GitHub](https://github.com/danny-avila/LibreChat/issues)
+</Note>

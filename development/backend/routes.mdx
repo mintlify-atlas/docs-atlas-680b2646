@@ -1,0 +1,461 @@
+---
+title: Route Structure
+description: Understanding LibreChat's Express route architecture and patterns
+---
+
+# Route Structure and Patterns
+
+LibreChat uses Express.js for routing with a modular, feature-based organization. Routes handle incoming HTTP requests and delegate business logic to controllers and services.
+
+## Route Organization
+
+Routes are organized by feature in `api/server/routes/`:
+
+```
+api/server/routes/
+├── index.js              # Central route registry
+├── auth.js               # Authentication routes
+├── user.js               # User management
+├── convos.js             # Conversations
+├── messages.js           # Messages
+├── prompts.js            # Prompt management
+├── assistants.js         # AI assistants
+├── agents.js             # AI agents
+├── files.js              # File operations
+├── models.js             # Model configuration
+├── endpoints.js          # Endpoint configuration
+└── ...
+```
+
+## Central Route Registry
+
+All routes are exported from `api/server/routes/index.js`:
+
+```javascript
+const accessPermissions = require('./accessPermissions');
+const assistants = require('./assistants');
+const categories = require('./categories');
+const endpoints = require('./endpoints');
+const messages = require('./messages');
+const prompts = require('./prompts');
+const convos = require('./convos');
+const agents = require('./agents');
+const auth = require('./auth');
+const user = require('./user');
+
+module.exports = {
+  auth,
+  user,
+  convos,
+  prompts,
+  messages,
+  endpoints,
+  assistants,
+  agents,
+  accessPermissions,
+  // ...
+};
+```
+
+## Route Patterns
+
+### Basic Route Structure
+
+Routes follow a consistent pattern:
+
+```javascript
+const express = require('express');
+const { requireJwtAuth } = require('~/server/middleware');
+const { getUserController } = require('~/server/controllers/UserController');
+
+const router = express.Router();
+
+// Apply middleware
+router.use(requireJwtAuth);
+
+// Define routes
+router.get('/', getUserController);
+
+module.exports = router;
+```
+
+### Authentication Routes
+
+**File:** `api/server/routes/auth.js`
+
+```javascript
+const express = require('express');
+const {
+  resetPasswordRequestController,
+  resetPasswordController,
+  registrationController,
+  refreshController,
+} = require('~/server/controllers/AuthController');
+const middleware = require('~/server/middleware');
+
+const router = express.Router();
+
+// Login with rate limiting and ban checking
+router.post(
+  '/login',
+  middleware.loginLimiter,
+  middleware.checkBan,
+  middleware.requireLocalAuth,
+  loginController,
+);
+
+// Registration with validation
+router.post(
+  '/register',
+  middleware.registerLimiter,
+  middleware.checkBan,
+  middleware.validateRegistration,
+  registrationController,
+);
+
+// Password reset
+router.post(
+  '/requestPasswordReset',
+  middleware.resetPasswordLimiter,
+  middleware.validatePasswordReset,
+  resetPasswordRequestController,
+);
+
+module.exports = router;
+```
+
+### User Routes
+
+**File:** `api/server/routes/user.js`
+
+```javascript
+const express = require('express');
+const {
+  updateUserPluginsController,
+  deleteUserController,
+  getUserController,
+} = require('~/server/controllers/UserController');
+const {
+  requireJwtAuth,
+  canDeleteAccount,
+} = require('~/server/middleware');
+
+const router = express.Router();
+
+router.get('/', requireJwtAuth, getUserController);
+router.post('/plugins', requireJwtAuth, updateUserPluginsController);
+router.delete('/delete', 
+  requireJwtAuth, 
+  canDeleteAccount, 
+  deleteUserController
+);
+
+module.exports = router;
+```
+
+### Conversation Routes
+
+**File:** `api/server/routes/convos.js`
+
+```javascript
+const express = require('express');
+const { getConvosByCursor, deleteConvos, getConvo } = require('~/models/Conversation');
+const requireJwtAuth = require('~/server/middleware/requireJwtAuth');
+
+const router = express.Router();
+router.use(requireJwtAuth);
+
+// Get conversations with cursor pagination
+router.get('/', async (req, res) => {
+  const limit = parseInt(req.query.limit, 10) || 25;
+  const cursor = req.query.cursor;
+  const isArchived = req.query.isArchived === 'true';
+  const search = req.query.search ? decodeURIComponent(req.query.search) : undefined;
+
+  try {
+    const result = await getConvosByCursor(req.user.id, {
+      cursor,
+      limit,
+      isArchived,
+      search,
+    });
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching conversations' });
+  }
+});
+
+// Get single conversation
+router.get('/:conversationId', async (req, res) => {
+  const convo = await getConvo(req.user.id, req.params.conversationId);
+  if (convo) {
+    res.status(200).json(convo);
+  } else {
+    res.status(404).end();
+  }
+});
+
+// Delete conversations
+router.delete('/', async (req, res) => {
+  const { conversationId } = req.body?.arg ?? {};
+  const filter = conversationId ? { conversationId } : {};
+
+  try {
+    const dbResponse = await deleteConvos(req.user.id, filter);
+    res.status(201).json(dbResponse);
+  } catch (error) {
+    res.status(500).send('Error deleting conversations');
+  }
+});
+
+module.exports = router;
+```
+
+## Advanced Route Patterns
+
+### ACL-Protected Routes
+
+Routes with Access Control Lists (ACL) for resource permissions:
+
+**File:** `api/server/routes/prompts.js`
+
+```javascript
+const express = require('express');
+const {
+  canAccessPromptGroupResource,
+  requireJwtAuth,
+} = require('~/server/middleware');
+const { PermissionBits } = require('librechat-data-provider');
+
+const router = express.Router();
+router.use(requireJwtAuth);
+
+// Get prompt group with VIEW permission check
+router.get(
+  '/groups/:groupId',
+  canAccessPromptGroupResource({
+    requiredPermission: PermissionBits.VIEW,
+  }),
+  async (req, res) => {
+    const group = await getPromptGroup({ _id: req.params.groupId });
+    res.status(200).send(group);
+  },
+);
+
+// Update prompt group with EDIT permission check
+router.patch(
+  '/groups/:groupId',
+  canAccessPromptGroupResource({
+    requiredPermission: PermissionBits.EDIT,
+  }),
+  patchPromptGroup,
+);
+
+// Delete prompt group with DELETE permission check
+router.delete(
+  '/groups/:groupId',
+  canAccessPromptGroupResource({
+    requiredPermission: PermissionBits.DELETE,
+  }),
+  deletePromptGroupController,
+);
+```
+
+### File Upload Routes
+
+```javascript
+const multer = require('multer');
+const { storage, importFileFilter } = require('~/server/routes/files/multer');
+
+const upload = multer({ storage, fileFilter: importFileFilter });
+
+router.post(
+  '/import',
+  importIpLimiter,
+  importUserLimiter,
+  upload.single('file'),
+  async (req, res) => {
+    await importConversations({
+      filepath: req.file.path,
+      requestUserId: req.user.id,
+    });
+    res.status(201).json({ message: 'Imported successfully' });
+  },
+);
+```
+
+### Nested Route Structure
+
+For sub-resources:
+
+```javascript
+const settings = require('./settings');
+
+const router = express.Router();
+
+// Mount sub-router
+router.use('/settings', settings);
+
+// Creates routes like: /api/user/settings/*
+```
+
+## Route Middleware Patterns
+
+### Common Middleware Stack
+
+```javascript
+router.post(
+  '/route',
+  middleware.rateLimiter,       // Rate limiting
+  middleware.checkBan,          // Ban checking
+  middleware.requireJwtAuth,    // Authentication
+  middleware.validateInput,     // Input validation
+  middleware.checkPermissions,  // Authorization
+  controllerFunction            // Handler
+);
+```
+
+### Custom Middleware
+
+```javascript
+const validateConvoAccess = async (req, res, next) => {
+  const { conversationId } = req.body?.arg ?? {};
+  const convo = await getConvo(req.user.id, conversationId);
+  
+  if (!convo) {
+    return res.status(404).json({ error: 'Conversation not found' });
+  }
+  
+  next();
+};
+
+router.post('/archive', validateConvoAccess, archiveController);
+```
+
+## Query Parameters
+
+### Pagination with Cursor
+
+```javascript
+router.get('/', async (req, res) => {
+  const limit = parseInt(req.query.limit, 10) || 25;
+  const cursor = req.query.cursor;
+  
+  const result = await getConvosByCursor(req.user.id, { cursor, limit });
+  res.json(result);
+});
+```
+
+### Filtering and Search
+
+```javascript
+router.get('/', async (req, res) => {
+  const { name, category, pageSize } = req.query;
+  const search = req.query.search ? decodeURIComponent(req.query.search) : undefined;
+  
+  const filter = { name, category };
+  const result = await getPromptGroups(req, filter);
+  res.json(result);
+});
+```
+
+## Error Handling
+
+### Standard Error Response
+
+```javascript
+router.get('/:id', async (req, res) => {
+  try {
+    const item = await getItem(req.params.id);
+    
+    if (!item) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    
+    res.status(200).json(item);
+  } catch (error) {
+    logger.error('Error getting item', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+## Best Practices
+
+### 1. Use Middleware for Cross-Cutting Concerns
+
+```javascript
+// Apply authentication to all routes
+router.use(requireJwtAuth);
+
+// Then define specific routes
+router.get('/', getController);
+router.post('/', createController);
+```
+
+### 2. Validate Input Early
+
+```javascript
+router.post('/update', validateConvoAccess, async (req, res) => {
+  const { conversationId, title } = req.body?.arg ?? {};
+  
+  if (!conversationId || !title) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  
+  // Process update...
+});
+```
+
+### 3. Keep Routes Thin
+
+Delegate business logic to controllers:
+
+```javascript
+// Good: Route delegates to controller
+router.post('/register', registrationController);
+
+// Avoid: Business logic in route
+router.post('/register', async (req, res) => {
+  // Don't put complex logic here
+});
+```
+
+### 4. Use Consistent Response Formats
+
+```javascript
+// Success
+res.status(200).json({ data, message: 'Success' });
+
+// Error
+res.status(400).json({ error: 'Error message' });
+
+// Not found
+res.status(404).json({ error: 'Resource not found' });
+```
+
+## Route Testing
+
+Test routes using Jest:
+
+```javascript
+const request = require('supertest');
+const app = require('~/app');
+
+describe('User Routes', () => {
+  it('should get user data', async () => {
+    const response = await request(app)
+      .get('/api/user')
+      .set('Authorization', `Bearer ${token}`);
+    
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('email');
+  });
+});
+```
+
+## Related Documentation
+
+- [Controllers](/development/backend/controllers) - Controller implementation
+- [Middleware](/development/backend/routes) - Authentication and authorization
+- [Models](/development/backend/models) - Database models

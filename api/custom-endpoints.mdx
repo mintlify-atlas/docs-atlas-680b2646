@@ -1,0 +1,373 @@
+---
+title: Custom Endpoints
+description: Configure and manage custom AI model endpoints
+---
+
+## Overview
+
+The Endpoints API allows you to configure and retrieve available AI endpoints and models. LibreChat supports multiple AI providers including OpenAI, Anthropic, Google, Azure, and custom endpoints.
+
+All endpoint configuration endpoints are prefixed with `/api/endpoints` or `/api/models`.
+
+## Get Available Endpoints
+
+Retrieve all configured AI endpoints:
+
+```http
+GET /api/endpoints
+Authorization: Bearer <token>
+```
+
+### Response
+
+Returns endpoint configuration including available models, capabilities, and settings.
+
+```json
+{
+  "endpoints": {
+    "openAI": {
+      "availableModels": [
+        "gpt-4",
+        "gpt-4-turbo",
+        "gpt-3.5-turbo"
+      ],
+      "userProvide": false,
+      "userProvideURL": false,
+      "modelDisplayLabel": "OpenAI",
+      "iconURL": "/assets/openai.svg"
+    },
+    "anthropic": {
+      "availableModels": [
+        "claude-3-opus",
+        "claude-3-sonnet",
+        "claude-3-haiku"
+      ],
+      "userProvide": false,
+      "modelDisplayLabel": "Anthropic"
+    },
+    "google": {
+      "availableModels": [
+        "gemini-pro",
+        "gemini-pro-vision"
+      ],
+      "userProvide": false,
+      "modelDisplayLabel": "Google"
+    },
+    "azureOpenAI": {
+      "availableModels": [
+        "gpt-4-azure",
+        "gpt-35-turbo-azure"
+      ],
+      "userProvide": false,
+      "modelDisplayLabel": "Azure OpenAI"
+    }
+  }
+}
+```
+
+## Get Models
+
+Retrieve detailed model information for all endpoints:
+
+```http
+GET /api/models
+Authorization: Bearer <token>
+```
+
+### Response
+
+<ResponseField name="data" type="object">
+  Model configurations organized by endpoint
+</ResponseField>
+
+```json
+{
+  "data": {
+    "openAI": [
+      {
+        "id": "gpt-4",
+        "name": "GPT-4",
+        "maxTokens": 8192,
+        "contextWindow": 8192,
+        "supportsVision": false,
+        "supportsTools": true
+      },
+      {
+        "id": "gpt-4-vision-preview",
+        "name": "GPT-4 Vision",
+        "maxTokens": 4096,
+        "contextWindow": 128000,
+        "supportsVision": true,
+        "supportsTools": true
+      }
+    ],
+    "anthropic": [
+      {
+        "id": "claude-3-opus",
+        "name": "Claude 3 Opus",
+        "maxTokens": 4096,
+        "contextWindow": 200000,
+        "supportsVision": true,
+        "supportsTools": true
+      }
+    ]
+  }
+}
+```
+
+## Endpoint Types
+
+LibreChat supports the following endpoint types:
+
+### OpenAI
+
+- **Endpoint**: `openAI`
+- **Models**: GPT-4, GPT-3.5, GPT-4 Vision, etc.
+- **Features**: Function calling, vision, streaming
+- **Configuration**: API key, organization ID
+
+### Anthropic (Claude)
+
+- **Endpoint**: `anthropic`
+- **Models**: Claude 3 Opus, Sonnet, Haiku
+- **Features**: Long context, vision, tool use
+- **Configuration**: API key
+
+### Google (Gemini)
+
+- **Endpoint**: `google`
+- **Models**: Gemini Pro, Gemini Pro Vision
+- **Features**: Multimodal, safety settings
+- **Configuration**: API key
+
+### Azure OpenAI
+
+- **Endpoint**: `azureOpenAI`
+- **Models**: Azure-hosted OpenAI models
+- **Features**: Same as OpenAI with Azure integration
+- **Configuration**: API key, instance name, deployment name
+
+### Custom Endpoints
+
+- **Endpoint**: `custom`
+- **Models**: Any OpenAI-compatible API
+- **Features**: Varies by provider
+- **Configuration**: API key, base URL
+
+### Assistants
+
+- **Endpoint**: `assistants`
+- **Models**: OpenAI Assistants API models
+- **Features**: Code interpreter, file search, function calling
+- **Configuration**: API key, assistant ID
+
+### Azure Assistants
+
+- **Endpoint**: `azureAssistants`
+- **Models**: Azure-hosted Assistants API
+- **Features**: Same as OpenAI Assistants
+- **Configuration**: API key, instance name
+
+## Endpoint Configuration
+
+Endpoints are configured via:
+
+1. **Environment Variables**: Set API keys and endpoint URLs
+2. **Configuration File**: `librechat.yaml` for advanced settings
+3. **Admin Interface**: For dynamic endpoint management
+
+### Environment Variables
+
+```bash
+# OpenAI
+OPENAI_API_KEY=sk-...
+OPENAI_MODELS=gpt-4,gpt-3.5-turbo
+
+# Anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODELS=claude-3-opus,claude-3-sonnet
+
+# Google
+GOOGLE_API_KEY=...
+
+# Azure OpenAI
+AZURE_API_KEY=...
+AZURE_OPENAI_API_INSTANCE_NAME=...
+AZURE_OPENAI_API_DEPLOYMENT_NAME=...
+```
+
+### Configuration File (librechat.yaml)
+
+```yaml
+endpoints:
+  openAI:
+    apiKey: "${OPENAI_API_KEY}"
+    models:
+      default:
+        - gpt-4
+        - gpt-3.5-turbo
+      fetch: true
+    titleModel: "gpt-3.5-turbo"
+  
+  anthropic:
+    apiKey: "${ANTHROPIC_API_KEY}"
+    models:
+      default:
+        - claude-3-opus
+        - claude-3-sonnet
+  
+  custom:
+    - name: "LocalAI"
+      apiKey: "local"
+      baseURL: "http://localhost:8080/v1"
+      models:
+        default:
+          - llama-2-7b
+```
+
+## Model Capabilities
+
+Each model supports different capabilities:
+
+### Vision Support
+
+Models that can process images:
+- `gpt-4-vision-preview` (OpenAI)
+- `claude-3-opus`, `claude-3-sonnet` (Anthropic)
+- `gemini-pro-vision` (Google)
+
+### Tool/Function Calling
+
+Models that support function calling:
+- All GPT-4 models (OpenAI)
+- Claude 3 models (Anthropic)
+- Gemini Pro (Google)
+
+### Streaming
+
+All endpoints support streaming responses via Server-Sent Events (SSE).
+
+### Context Windows
+
+- **GPT-4**: 8K-128K tokens depending on variant
+- **Claude 3**: Up to 200K tokens
+- **Gemini Pro**: Up to 32K tokens
+
+## User-Provided Endpoints
+
+Some deployments allow users to provide their own API keys:
+
+```json
+{
+  "openAI": {
+    "userProvide": true,
+    "userProvideURL": false
+  }
+}
+```
+
+When `userProvide` is `true`, users can enter their own API key in the UI.
+
+## Model Selection
+
+When starting a conversation, specify the endpoint and model:
+
+```json
+{
+  "endpoint": "openAI",
+  "model": "gpt-4",
+  "modelLabel": "GPT-4"
+}
+```
+
+## Model Fallbacks
+
+If a requested model is unavailable, LibreChat can fall back to alternative models based on configuration.
+
+## Rate Limits
+
+Each endpoint has its own rate limits:
+
+- **OpenAI**: Based on account tier
+- **Anthropic**: Based on account tier
+- **Google**: Per-project limits
+- **Azure**: Configurable per deployment
+
+## Cost Tracking
+
+LibreChat can track token usage and costs:
+
+```http
+GET /api/balance
+Authorization: Bearer <token>
+```
+
+Returns usage statistics and remaining balance (if configured).
+
+## Error Responses
+
+### Invalid API Key
+
+```json
+{
+  "error": "Invalid API key",
+  "endpoint": "openAI"
+}
+```
+
+### Model Not Available
+
+```json
+{
+  "error": "Model not available",
+  "model": "gpt-5",
+  "availableModels": ["gpt-4", "gpt-3.5-turbo"]
+}
+```
+
+### Rate Limit Exceeded
+
+```json
+{
+  "error": "Rate limit exceeded",
+  "endpoint": "openAI",
+  "retryAfter": 60
+}
+```
+
+## Best Practices
+
+1. **Use environment variables** for API keys (never hardcode)
+2. **Configure model lists** to only show available models
+3. **Set appropriate rate limits** to prevent abuse
+4. **Enable streaming** for better user experience
+5. **Monitor usage** to track costs and usage patterns
+6. **Use fallback models** for reliability
+7. **Test endpoints** before deploying to production
+
+## TypeScript Types
+
+```typescript
+import type { TEndpoint, TModel } from 'librechat-data-provider';
+
+interface TEndpointsConfig {
+  endpoints: Record<string, TEndpointConfig>;
+}
+
+interface TEndpointConfig {
+  availableModels: string[];
+  userProvide: boolean;
+  userProvideURL: boolean;
+  modelDisplayLabel: string;
+  iconURL?: string;
+}
+
+interface TModel {
+  id: string;
+  name: string;
+  maxTokens: number;
+  contextWindow: number;
+  supportsVision?: boolean;
+  supportsTools?: boolean;
+}
+```

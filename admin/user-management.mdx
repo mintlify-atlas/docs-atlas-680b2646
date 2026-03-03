@@ -1,0 +1,314 @@
+---
+title: User Management
+description: Manage LibreChat users with CLI commands for creating, inviting, listing, banning, and deleting user accounts
+---
+
+LibreChat provides powerful command-line tools for managing user accounts. All user management commands are run from the project root directory.
+
+## Available Commands
+
+<CardGroup cols={2}>
+  <Card title="Create User" icon="user-plus" href="#create-user">
+    Create new user accounts with custom settings
+  </Card>
+  <Card title="Invite User" icon="envelope" href="#invite-user">
+    Send invitation emails to new users
+  </Card>
+  <Card title="List Users" icon="users" href="#list-users">
+    View all registered users
+  </Card>
+  <Card title="Ban User" icon="user-slash" href="#ban-user">
+    Ban or unban user accounts
+  </Card>
+  <Card title="Delete User" icon="trash" href="#delete-user">
+    Permanently delete user accounts
+  </Card>
+  <Card title="Reset Password" icon="key" href="#reset-password">
+    Reset user passwords
+  </Card>
+</CardGroup>
+
+## Create User
+
+Create a new user account with email, name, and username.
+
+### Usage
+
+```bash
+npm run create-user <email> <name> <username> [password] [--email-verified=true]
+```
+
+### Interactive Mode
+
+If you don't provide arguments, you'll be prompted for each value:
+
+```bash
+npm run create-user
+```
+
+The script will ask for:
+- **Email**: User's email address (required)
+- **Name**: Display name (defaults to email prefix)
+- **Username**: Username (defaults to email prefix)  
+- **Password**: Leave blank to auto-generate
+- **Email Verified**: Whether the email is pre-verified (Y/n)
+
+### Examples
+
+<CodeGroup>
+```bash Basic
+npm run create-user user@example.com "John Doe" johndoe
+```
+
+```bash With Password
+npm run create-user user@example.com "John Doe" johndoe MySecurePass123
+```
+
+```bash Unverified Email
+npm run create-user user@example.com "John Doe" johndoe --email-verified=false
+```
+
+```bash With Provider
+npm run create-user user@example.com "John Doe" johndoe --provider=google
+```
+</CodeGroup>
+
+<Warning>
+Passing passwords as command-line arguments is not recommended for security reasons. Use interactive mode or leave blank to auto-generate.
+</Warning>
+
+### Email Verification Behavior
+
+<Accordion title="Email Verified = True (default)">
+  The user can log in immediately without needing to verify their email.
+</Accordion>
+
+<Accordion title="Email Verified = False">
+  - If **email service is configured**: User receives a verification email
+  - If **email service is NOT configured**: Set `ALLOW_UNVERIFIED_EMAIL_LOGIN=true` in your `.env` file, or the user must attempt login to receive a verification link
+</Accordion>
+
+## Invite User
+
+Send an invitation email to a new user. Requires email service to be configured.
+
+### Usage
+
+```bash
+npm run invite-user <email> [name]
+```
+
+### Example
+
+```bash
+npm run invite-user newuser@example.com "Jane Smith"
+```
+
+<Info>
+The invitation email includes a registration link with a secure token that expires after a set period.
+</Info>
+
+## List Users
+
+Display all registered users in the system.
+
+### Usage
+
+```bash
+npm run list-users
+```
+
+### Output
+
+The command displays:
+- Email address
+- Username
+- Name
+- Account status (active/banned)
+- Email verification status
+- Registration date
+
+## Ban User
+
+Ban or unban a user account. Banned users cannot log in.
+
+### Usage
+
+```bash
+npm run ban-user <email>
+```
+
+### Interactive Mode
+
+```bash
+npm run ban-user
+```
+
+You'll be prompted for:
+- **Email**: User's email address
+- **Ban**: Whether to ban (true) or unban (false)
+
+### Examples
+
+<CodeGroup>
+```bash Ban User
+npm run ban-user spam@example.com
+```
+
+```bash Unban User  
+npm run ban-user restored@example.com
+# Then select 'false' when prompted
+```
+</CodeGroup>
+
+<Note>
+Banned users retain all their data (conversations, files, etc.) but cannot access the system.
+</Note>
+
+## Delete User
+
+Permanently delete a user account and all associated data.
+
+### Usage
+
+```bash
+npm run delete-user <email>
+```
+
+### Interactive Mode
+
+```bash
+npm run delete-user
+```
+
+<Warning>
+**This action is irreversible!**
+
+Deleting a user removes:
+- User account
+- All conversations
+- All messages
+- All files
+- All presets
+- All prompts
+- All bookmarks
+- Transaction history
+
+Consider banning the user instead if you may need to restore access later.
+</Warning>
+
+### Confirmation
+
+The script will:
+1. Display the user's information
+2. Ask for confirmation before proceeding
+3. Show a summary of deleted data
+
+## Reset Password
+
+Reset a user's password to a new value or auto-generate one.
+
+### Usage
+
+```bash
+npm run reset-password <email> [new_password]
+```
+
+### Interactive Mode
+
+```bash
+npm run reset-password
+```
+
+You'll be prompted for:
+- **Email**: User's email address
+- **New Password**: Leave blank to auto-generate
+
+### Examples
+
+<CodeGroup>
+```bash With New Password
+npm run reset-password user@example.com NewSecurePass123
+```
+
+```bash Auto-generate
+npm run reset-password user@example.com
+# Leave password blank when prompted
+```
+</CodeGroup>
+
+<Tip>
+When auto-generating, the script will display the new password. Make sure to communicate it securely to the user.
+</Tip>
+
+## User Statistics
+
+View statistics about a specific user's usage.
+
+### Usage
+
+```bash
+npm run user-stats <email>
+```
+
+### Displayed Information
+
+- Total conversations
+- Total messages sent
+- Total tokens used
+- Files uploaded
+- Agents created
+- Prompts created
+- Account creation date
+- Last login
+
+## Best Practices
+
+<Steps>
+  <Step title="Use Interactive Mode for Sensitive Data">
+    Avoid passing passwords or sensitive information as command-line arguments. Use interactive mode instead for better security.
+  </Step>
+
+  <Step title="Verify Before Deleting">
+    Always verify user information before deletion. Consider banning instead of deleting to preserve data.
+  </Step>
+
+  <Step title="Document Admin Actions">
+    Keep a log of administrative actions, especially user deletions and bans, for audit purposes.
+  </Step>
+
+  <Step title="Test in Development First">
+    Test user management commands in a development environment before running them in production.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<Accordion title="Error: No user with that email was found">
+  - Verify the email address spelling
+  - Check if the user was previously deleted
+  - Use `npm run list-users` to see all registered users
+</Accordion>
+
+<Accordion title="Error: Invalid email address">
+  The email must contain an `@` symbol and be in a valid format.
+</Accordion>
+
+<Accordion title="Script hangs or doesn't respond">
+  - Ensure MongoDB is running and accessible
+  - Check your `MONGO_URI` in `.env`
+  - Verify network connectivity to the database
+</Accordion>
+
+<Accordion title="Cannot send invitation emails">
+  - Verify email service is configured in `.env`
+  - Check `EMAIL_SERVICE`, `EMAIL_USERNAME`, `EMAIL_PASSWORD`
+  - Test SMTP connection settings
+</Accordion>
+
+## Related Commands
+
+See also:
+- [Token Management](/admin/token-management) - Manage user token balances
+- [Roles & Permissions](/admin/roles-permissions) - Configure user roles and access control
+- [Monitoring](/admin/monitoring) - Monitor user activity and system health

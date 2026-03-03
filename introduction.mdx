@@ -1,0 +1,263 @@
+---
+title: "Welcome to LibreChat"
+description: "The all-in-one AI chat platform that unifies major AI providers in a single, privacy-focused interface"
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/hero-light.svg"
+  alt="LibreChat Hero"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/hero-dark.svg"
+  alt="LibreChat Hero"
+/>
+
+## Your Self-Hosted AI Command Center
+
+LibreChat is a free, open-source AI chat platform that brings together all major AI providers in one elegant interface. Built for developers, enterprises, and AI enthusiasts who value privacy, flexibility, and complete control over their AI infrastructure.
+
+<CardGroup cols={2}>
+  <Card
+    title="Quick Start"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get LibreChat running in under 5 minutes with Docker
+  </Card>
+  <Card
+    title="Installation Guide"
+    icon="download"
+    href="/installation"
+  >
+    Detailed setup instructions for Docker and local development
+  </Card>
+  <Card
+    title="Configuration"
+    icon="gear"
+    href="/configuration/overview"
+  >
+    Customize AI endpoints, authentication, and features
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/introduction"
+  >
+    Integrate LibreChat into your applications
+  </Card>
+</CardGroup>
+
+## Why LibreChat?
+
+<AccordionGroup>
+  <Accordion title="Complete Privacy & Control" icon="shield">
+    - **Self-hosted**: Your data never leaves your infrastructure
+    - **No telemetry**: Zero tracking or data collection by default
+    - **Open source**: Audit the entire codebase on GitHub
+    - **Enterprise-ready**: LDAP, OAuth2, SSO support
+  </Accordion>
+
+  <Accordion title="Unified AI Experience" icon="layer-group">
+    - **10+ AI Providers**: OpenAI, Anthropic, Google, Azure, AWS Bedrock, and more
+    - **Custom Endpoints**: Connect any OpenAI-compatible API
+    - **Local Models**: Run Ollama, LM Studio, and other local providers
+    - **Seamless Switching**: Change models mid-conversation
+  </Accordion>
+
+  <Accordion title="Advanced Capabilities" icon="wand-magic-sparkles">
+    - **AI Agents**: No-code custom assistants with tools and file search
+    - **Code Interpreter**: Execute Python, JavaScript, Go, and more in secure sandboxes
+    - **Web Search**: Real-time internet search with smart reranking
+    - **Code Artifacts**: Generate React components, HTML, and Mermaid diagrams
+    - **MCP Support**: Model Context Protocol for extensible tools
+  </Accordion>
+
+  <Accordion title="Production-Grade Features" icon="server">
+    - **Multimodal**: Upload and analyze images with vision models
+    - **File Support**: Chat with PDFs, documents, and files
+    - **Resumable Streams**: Never lose a response, sync across devices
+    - **Multi-user**: Role-based access control and permissions
+    - **Search**: Full-text search across conversations with Meilisearch
+  </Accordion>
+</AccordionGroup>
+
+## Key Features at a Glance
+
+<CardGroup cols={3}>
+  <Card title="AI Models" icon="brain" href="/features/ai-models">
+    Access GPT-4, Claude, Gemini, and 100+ models
+  </Card>
+  <Card title="Agents" icon="robot" href="/features/agents">
+    Build custom AI assistants with tools
+  </Card>
+  <Card title="Code Interpreter" icon="terminal" href="/features/code-interpreter">
+    Execute code securely in 8+ languages
+  </Card>
+  <Card title="Web Search" icon="magnifying-glass" href="/features/web-search">
+    Search the internet from any chat
+  </Card>
+  <Card title="Image Generation" icon="image" href="/features/image-generation">
+    DALL-E, Stable Diffusion, Flux support
+  </Card>
+  <Card title="Multimodal" icon="file-image" href="/features/multimodal">
+    Chat with images and documents
+  </Card>
+</CardGroup>
+
+## Quick Comparison
+
+<Note>
+LibreChat provides the same interface as ChatGPT Plus, but with additional features and complete control:
+
+- **Self-hosted** - No subscription fees, run on your hardware
+- **Multi-provider** - Switch between AI providers freely
+- **Advanced features** - Agents, MCP, code interpreter included
+- **Customizable** - Configure every aspect to your needs
+- **Open source** - Audit, modify, and contribute
+</Note>
+
+## Supported AI Providers
+
+<Tabs>
+  <Tab title="Major Providers">
+    - **OpenAI** - GPT-4, GPT-4o, o1, o3 series
+    - **Anthropic** - Claude 3.5 Sonnet, Opus, Haiku
+    - **Google** - Gemini 2.0, Gemini Pro
+    - **Azure OpenAI** - Enterprise GPT deployment
+    - **AWS Bedrock** - Claude, Llama, and more on AWS
+  </Tab>
+  <Tab title="Open Source & Local">
+    - **Ollama** - Run Llama, Mistral, Qwen locally
+    - **Groq** - Fast inference for open models
+    - **Together.ai** - Open model hosting
+    - **LM Studio** - Local model management
+    - **Any OpenAI-compatible API**
+  </Tab>
+  <Tab title="Specialized">
+    - **Mistral AI** - Mistral, Mixtral models
+    - **Cohere** - Command R+
+    - **Perplexity** - Search-optimized models
+    - **DeepSeek** - Reasoning models (R1)
+    - **OpenRouter** - Access 100+ models
+  </Tab>
+</Tabs>
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Developers" icon="code">
+    - Code generation and debugging
+    - API integration and testing
+    - Documentation writing
+    - Local model development
+  </Card>
+  <Card title="Enterprises" icon="building">
+    - Private AI infrastructure
+    - LDAP/SSO integration
+    - Compliance and data governance
+    - Team collaboration
+  </Card>
+  <Card title="Researchers" icon="flask">
+    - Multi-model comparison
+    - Custom fine-tuned models
+    - Conversation analysis
+    - Agent experimentation
+  </Card>
+  <Card title="Power Users" icon="star">
+    - Cost optimization
+    - Custom workflows
+    - Plugin development
+    - Advanced prompting
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+Choose your installation method:
+
+<Steps>
+  <Step title="Docker (Recommended)">
+    The fastest way to get started. Docker handles all dependencies.
+    
+    ```bash
+    git clone https://github.com/danny-avila/LibreChat.git
+    cd LibreChat
+    cp .env.example .env
+    docker compose up -d
+    ```
+    
+    Visit `http://localhost:3080` and create your account.
+    
+    <Card title="Full Docker Setup" icon="docker" href="/installation#docker-installation">
+      Complete Docker installation guide
+    </Card>
+  </Step>
+
+  <Step title="Local Development">
+    For contributing or custom development work.
+    
+    Requires Node.js 20+, MongoDB, and Meilisearch.
+    
+    <Card title="Local Setup Guide" icon="code-branch" href="/installation#local-installation">
+      Development environment setup
+    </Card>
+  </Step>
+
+  <Step title="Cloud Deployment">
+    Deploy to Railway, Zeabur, or Kubernetes.
+    
+    <Card title="Deployment Options" icon="cloud" href="/deployment/docker">
+      Production deployment guides
+    </Card>
+  </Step>
+</Steps>
+
+## Community & Support
+
+<CardGroup cols={2}>
+  <Card title="GitHub" icon="github" href="https://github.com/danny-avila/LibreChat">
+    Star the repo and contribute
+  </Card>
+  <Card title="Discord" icon="discord" href="https://discord.librechat.ai">
+    Join 50,000+ community members
+  </Card>
+  <Card title="YouTube" icon="youtube" href="https://www.youtube.com/@LibreChat">
+    Video tutorials and demos
+  </Card>
+  <Card title="Documentation" icon="book" href="https://docs.librechat.ai">
+    Comprehensive guides
+  </Card>
+</CardGroup>
+
+<Warning>
+**Before updating:** Always check the [changelog](https://www.librechat.ai/changelog) for breaking changes. LibreChat is actively developed with frequent updates.
+</Warning>
+
+## Open Source & Actively Developed
+
+LibreChat is built in public with a thriving open-source community:
+
+- **17,000+ GitHub stars** and growing
+- **300+ contributors** worldwide
+- **Weekly releases** with new features
+- **Multilingual**: 40+ languages supported
+- **MIT License**: Free for commercial use
+
+<Card title="View on GitHub" icon="code-branch" href="https://github.com/danny-avila/LibreChat">
+  Explore the source code and contribute
+</Card>
+
+## Next Steps
+
+Ready to get started?
+
+<CardGroup cols={2}>
+  <Card title="5-Minute Quickstart" icon="bolt" href="/quickstart">
+    Launch LibreChat with Docker in minutes
+  </Card>
+  <Card title="Detailed Installation" icon="book-open" href="/installation">
+    Complete setup guide with all options
+  </Card>
+</CardGroup>

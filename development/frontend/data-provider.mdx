@@ -1,0 +1,564 @@
+---
+title: Data Provider Package
+description: Using the shared data-provider package for API interactions
+---
+
+## Overview
+
+The `librechat-data-provider` package is a shared TypeScript library used by both frontend and backend for:
+
+- **API endpoints** - URL construction
+- **Data service** - HTTP request wrappers
+- **Type definitions** - Shared types and schemas
+- **Query/Mutation keys** - React Query key constants
+
+Location: `packages/data-provider/`
+
+## Package Structure
+
+```
+packages/data-provider/src/
+├── api-endpoints.ts      # API URL builders
+├── data-service.ts       # HTTP request functions
+├── keys.ts               # QueryKeys and MutationKeys
+├── types/                # TypeScript type definitions
+│   ├── queries.ts
+│   ├── mutations.ts
+│   ├── agents.ts
+│   ├── assistants.ts
+│   └── ...
+├── schemas.ts            # Zod schemas and types
+└── request.ts            # Axios wrapper
+```
+
+## API Endpoints
+
+From `packages/data-provider/src/api-endpoints.ts:1`:
+
+### Endpoint Builders
+
+```typescript
+let BASE_URL = '';
+if (typeof process === 'undefined' || process.browser === true) {
+  // Client-side: read from <base> element
+  const baseEl = document.querySelector('base');
+  BASE_URL = baseEl?.getAttribute('href') || '/';
+}
+
+if (BASE_URL && BASE_URL.endsWith('/')) {
+  BASE_URL = BASE_URL.slice(0, -1);
+}
+
+export const apiBaseUrl = () => BASE_URL;
+
+// Query parameter builder
+const buildQuery = (params: Record<string, unknown>): string => {
+  const query = Object.entries(params)
+    .filter(([, value]) => {
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      return value !== undefined && value !== null && value !== '';
+    })
+    .map(([key, value]) => {
+      if (Array.isArray(value)) {
+        return value.map((v) => `${key}=${encodeURIComponent(v)}`).join('&');
+      }
+      return `${key}=${encodeURIComponent(String(value))}`;
+    })
+    .join('&');
+  return query ? `?${query}` : '';
+};
+```
+
+### Example Endpoints
+
+```typescript
+// Simple endpoints
+export const user = () => `${BASE_URL}/api/user`;
+export const balance = () => `${BASE_URL}/api/balance`;
+export const health = () => `${BASE_URL}/health`;
+
+// Parameterized endpoints
+export const messages = (params: MessagesListParams) => {
+  const { conversationId, messageId, ...rest } = params;
+
+  if (conversationId && messageId) {
+    return `${BASE_URL}/api/messages/${conversationId}/${messageId}`;
+  }
+
+  if (conversationId) {
+    return `${BASE_URL}/api/messages/${conversationId}`;
+  }
+
+  return `${BASE_URL}/api/messages${buildQuery(rest)}`;
+};
+
+// With query parameters
+export const getSharedLinks = (
+  pageSize: number,
+  isPublic: boolean,
+  sortBy: 'title' | 'createdAt',
+  sortDirection: 'asc' | 'desc',
+  search?: string,
+  cursor?: string,
+) =>
+  `${BASE_URL}/api/share?pageSize=${pageSize}&isPublic=${isPublic}&sortBy=${sortBy}&sortDirection=${sortDirection}${
+    search ? `&search=${encodeURIComponent(search)}` : ''
+  }${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`;
+
+// RESTful resource endpoints
+export const shareMessages = (shareId: string) => `${BASE_URL}/api/share/${shareId}`;
+export const apiKeys = () => `${BASE_URL}/api/api-keys`;
+export const apiKeyById = (id: string) => `${BASE_URL}/api/api-keys/${id}`;
+```
+
+**Best Practices:**
+- Always use `encodeURIComponent` for dynamic URL parameters
+- Use `buildQuery` helper for query strings
+- Return absolute URLs from endpoint functions
+
+## Data Service
+
+From `packages/data-provider/src/data-service.ts:1`:
+
+### HTTP Request Functions
+
+```typescript
+import request from './request';  // Axios wrapper
+import * as endpoints from './api-endpoints';
+import type * as t from './types';
+
+// Simple GET request
+export function getPresets(): Promise<t.TPreset[]> {
+  return request.get(endpoints.presets());
+}
+
+// GET with dynamic parameter
+export function getSharedMessages(shareId: string): Promise<t.TSharedMessagesResponse> {
+  return request.get(endpoints.shareMessages(shareId));
+}
+
+// GET with query parameters
+export const listSharedLinks = async (
+  params: t.SharedLinksListParams,
+): Promise<t.SharedLinksResponse> => {
+  const { pageSize, isPublic, sortBy, sortDirection, search, cursor } = params;
+
+  return request.get(
+    endpoints.getSharedLinks(pageSize, isPublic, sortBy, sortDirection, search, cursor),
+  );
+};
+
+// POST with payload
+export function createSharedLink(
+  conversationId: string,
+  targetMessageId?: string,
+): Promise<t.TSharedLinkResponse> {
+  return request.post(endpoints.createSharedLink(conversationId), { targetMessageId });
+}
+
+// PATCH request
+export function updateSharedLink(shareId: string): Promise<t.TSharedLinkResponse> {
+  return request.patch(endpoints.updateSharedLink(shareId));
+}
+
+// DELETE request
+export function deleteSharedLink(shareId: string): Promise<t.TDeleteSharedLinkResponse> {
+  return request.delete(endpoints.shareMessages(shareId));
+}
+
+// PUT with validation
+export function updateUserKey(payload: t.TUpdateUserKeyRequest) {
+  const { value } = payload;
+  if (!value) {
+    throw new Error('value is required');
+  }
+  return request.put(endpoints.keys(), payload);
+}
+```
+
+### Request Wrapper
+
+The `request` object (from `request.ts`) is an Axios instance with interceptors:
+
+```typescript
+import axios from 'axios';
+
+const request = axios.create({
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor (add auth tokens, etc.)
+request.interceptors.request.use(
+  (config) => {
+    // Add authorization header if available
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor (handle errors)
+request.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    // Handle 401 unauthorized
+    if (error.response?.status === 401) {
+      // Trigger logout or refresh token
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default request;
+```
+
+## Type Definitions
+
+Types are organized in `packages/data-provider/src/types/`:
+
+### Query Types
+
+From `packages/data-provider/src/types/queries.ts`:
+
+```typescript
+export interface ConversationListParams {
+  isArchived?: boolean;
+  sortBy?: 'createdAt' | 'updatedAt' | 'title';
+  sortDirection?: 'asc' | 'desc';
+  tags?: string[];
+  search?: string;
+  cursor?: string;
+}
+
+export interface ConversationListResponse {
+  conversations: TConversation[];
+  pageNumber: number;
+  pageSize: number;
+  pages: number;
+  nextCursor?: string;
+}
+
+export interface MessagesListParams {
+  conversationId?: string;
+  messageId?: string;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+  pageSize?: number;
+  search?: string;
+  cursor?: string;
+}
+
+export interface MessagesListResponse {
+  messages: TMessage[];
+  nextCursor?: string;
+}
+```
+
+### Mutation Types
+
+From `packages/data-provider/src/types/mutations.ts`:
+
+```typescript
+export interface TUpdateConversationRequest {
+  conversationId: string;
+  title?: string;
+  tags?: string[];
+}
+
+export interface TUpdateConversationResponse extends TConversation {}
+
+export interface TDeleteConversationRequest {
+  conversationId: string;
+  source?: string;
+}
+
+export interface TDeleteConversationResponse {
+  acknowledged: boolean;
+  deletedCount: number;
+  messages: {
+    acknowledged: boolean;
+    deletedCount: number;
+  };
+}
+```
+
+### Shared Schemas
+
+From `packages/data-provider/src/schemas.ts`:
+
+```typescript
+import { z } from 'zod';
+
+export const TPresetSchema = z.object({
+  presetId: z.string().optional(),
+  title: z.string(),
+  endpoint: z.string(),
+  model: z.string().optional(),
+  temperature: z.number().optional(),
+  // ... more fields
+});
+
+export type TPreset = z.infer<typeof TPresetSchema>;
+```
+
+## Using Data Provider in Frontend
+
+### 1. Import from data-provider
+
+```typescript
+import { QueryKeys, dataService } from 'librechat-data-provider';
+import type t from 'librechat-data-provider';
+```
+
+### 2. Create Query Hook
+
+From `client/src/data-provider/Messages/queries.ts:1`:
+
+```typescript
+import { useQuery } from '@tanstack/react-query';
+import { QueryKeys, dataService } from 'librechat-data-provider';
+import type * as t from 'librechat-data-provider';
+import type { UseQueryOptions, QueryObserverResult } from '@tanstack/react-query';
+
+export const useGetMessagesByConvoId = <TData = t.TMessage[]>(
+  id: string,
+  config?: UseQueryOptions<t.TMessage[], unknown, TData>,
+): QueryObserverResult<TData> => {
+  const queryClient = useQueryClient();
+  
+  return useQuery<t.TMessage[], unknown, TData>(
+    [QueryKeys.messages, id],
+    async () => {
+      const result = await dataService.getMessagesByConvoId(id);
+      // Custom processing if needed
+      return result;
+    },
+    {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      ...config,
+    },
+  );
+};
+```
+
+### 3. Export from Feature Module
+
+```typescript
+// client/src/data-provider/Messages/index.ts
+export * from './queries';
+export * from './mutations';
+
+// client/src/data-provider/index.ts
+export * from './Messages';
+export * from './Agents';
+export * from './Auth';
+// ... more features
+```
+
+### 4. Use in Component
+
+```typescript
+import { useGetMessagesByConvoId } from '~/data-provider';
+
+function MessageList({ conversationId }: Props) {
+  const { data: messages, isLoading, error } = useGetMessagesByConvoId(conversationId);
+
+  if (isLoading) return <LoadingSpinner />;
+  if (error) return <ErrorDisplay error={error} />;
+
+  return (
+    <div>
+      {messages?.map((message) => (
+        <MessageCard key={message.messageId} message={message} />
+      ))}
+    </div>
+  );
+}
+```
+
+## Adding New Endpoints
+
+### 1. Add Endpoint to api-endpoints.ts
+
+```typescript
+// packages/data-provider/src/api-endpoints.ts
+export const agentRuns = (agentId: string) => 
+  `${BASE_URL}/api/agents/${encodeURIComponent(agentId)}/runs`;
+
+export const agentRunById = (agentId: string, runId: string) => 
+  `${BASE_URL}/api/agents/${encodeURIComponent(agentId)}/runs/${encodeURIComponent(runId)}`;
+```
+
+### 2. Add Type Definitions
+
+```typescript
+// packages/data-provider/src/types/agents.ts
+export interface AgentRun {
+  id: string;
+  agentId: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface AgentRunsResponse {
+  runs: AgentRun[];
+  nextCursor?: string;
+}
+```
+
+### 3. Add Data Service Function
+
+```typescript
+// packages/data-provider/src/data-service.ts
+import type { AgentRunsResponse, AgentRun } from './types/agents';
+
+export function listAgentRuns(agentId: string): Promise<AgentRunsResponse> {
+  return request.get(endpoints.agentRuns(agentId));
+}
+
+export function getAgentRun(agentId: string, runId: string): Promise<AgentRun> {
+  return request.get(endpoints.agentRunById(agentId, runId));
+}
+```
+
+### 4. Add Query Key
+
+```typescript
+// packages/data-provider/src/keys.ts
+export enum QueryKeys {
+  // ... existing keys
+  agentRuns = 'agentRuns',
+  agentRun = 'agentRun',
+}
+```
+
+### 5. Create Query Hook
+
+```typescript
+// client/src/data-provider/Agents/queries.ts
+import { QueryKeys, dataService } from 'librechat-data-provider';
+import type { AgentRunsResponse } from 'librechat-data-provider';
+
+export const useListAgentRunsQuery = (agentId: string) => {
+  return useQuery<AgentRunsResponse>(
+    [QueryKeys.agentRuns, agentId],
+    () => dataService.listAgentRuns(agentId),
+    {
+      enabled: !!agentId,
+      staleTime: 30000,  // 30 seconds
+    },
+  );
+};
+```
+
+### 6. Rebuild Package
+
+After making changes to `packages/data-provider`:
+
+```bash
+# From project root
+npm run build:data-provider
+```
+
+## Query Key Organization
+
+From `packages/data-provider/src/keys.ts:1`:
+
+```typescript
+export enum QueryKeys {
+  // User & Auth
+  user = 'user',
+  balance = 'balance',
+  
+  // Conversations
+  conversation = 'conversation',
+  allConversations = 'allConversations',
+  archivedConversations = 'archivedConversations',
+  conversationTags = 'conversationTags',
+  
+  // Messages
+  messages = 'messages',
+  sharedMessages = 'sharedMessages',
+  
+  // Agents
+  agents = 'agents',
+  agent = 'agent',
+  agentTools = 'agentTools',
+  agentCategories = 'agentCategories',
+  marketplaceAgents = 'marketplaceAgents',
+  
+  // Files
+  files = 'files',
+  fileConfig = 'fileConfig',
+  
+  // Config
+  endpoints = 'endpoints',
+  startupConfig = 'startupConfig',
+}
+
+// Dynamic query keys that require parameters
+export const DynamicQueryKeys = {
+  agentFiles: (agentId: string) => ['agentFiles', agentId] as const,
+} as const;
+```
+
+**Key Patterns:**
+- Singular for single items: `agent`, `conversation`
+- Plural for lists: `agents`, `messages`
+- Descriptive prefixes: `all`, `archived`, `marketplace`
+- Dynamic keys for parameterized queries
+
+## Best Practices
+
+### Type Safety
+
+```typescript
+// Always import types from data-provider
+import type { Agent, AgentListResponse } from 'librechat-data-provider';
+
+// Use proper generic typing
+const { data } = useQuery<AgentListResponse>(
+  [QueryKeys.agents],
+  () => dataService.listAgents(),
+);
+```
+
+### Error Handling
+
+```typescript
+const { data, error, isError } = useGetAgentByIdQuery(agentId);
+
+if (isError) {
+  // error is typed based on your error handling setup
+  console.error('Failed to load agent:', error);
+}
+```
+
+### Request Cancellation
+
+```typescript
+// React Query automatically cancels queries when component unmounts
+const { data } = useQuery(
+  [QueryKeys.agents],
+  ({ signal }) => {
+    // Pass AbortSignal to axios
+    return request.get(endpoints.agents(), { signal });
+  },
+);
+```
+
+## Next Steps
+
+- [State Management](./state-management) - React Query integration patterns
+- [Components](./components) - Using queries in components
+- [Backend Development](/development/backend/routes) - Creating matching API endpoints

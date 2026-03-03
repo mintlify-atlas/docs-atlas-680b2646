@@ -1,0 +1,360 @@
+---
+title: Component Architecture
+description: Component organization, patterns, and best practices in LibreChat
+---
+
+## Overview
+
+LibreChat's frontend uses React with TypeScript, organized into feature-based directories with strict architectural patterns for maintainability and scalability.
+
+## Directory Structure
+
+```
+client/src/
+├── components/           # React components organized by feature
+│   ├── Agents/          # Agent marketplace and management
+│   ├── Chat/            # Chat interface components
+│   ├── SidePanel/       # Side panel features (Memories, etc.)
+│   ├── Nav/             # Navigation components
+│   ├── Auth/            # Authentication flows
+│   └── ui/              # Shared UI primitives
+├── Providers/           # React Context providers
+├── hooks/               # Custom React hooks
+├── store/               # Jotai/Recoil state atoms
+└── utils/               # Utility functions
+```
+
+## Component Organization
+
+### Feature-Based Structure
+
+Components are grouped by feature domain rather than technical type:
+
+```typescript
+// Good: Feature-based organization
+components/
+  Agents/
+    AgentCard.tsx
+    AgentDetail.tsx
+    AgentGrid.tsx
+    CategoryTabs.tsx
+    tests/
+      AgentCard.spec.tsx
+```
+
+### Component Example
+
+Here's a real component from `client/src/components/Agents/AgentCard.tsx:1`:
+
+```typescript
+import React, { useMemo, useState } from 'react';
+import { Label, OGDialog, OGDialogTrigger } from '@librechat/client';
+import type t from 'librechat-data-provider';
+import { useLocalize, TranslationKeys, useAgentCategories } from '~/hooks';
+import { cn, renderAgentAvatar, getContactDisplayName } from '~/utils';
+import AgentDetailContent from './AgentDetailContent';
+
+interface AgentCardProps {
+  agent: t.Agent;
+  onSelect?: (agent: t.Agent) => void;
+  className?: string;
+}
+
+const AgentCard: React.FC<AgentCardProps> = ({ agent, onSelect, className = '' }) => {
+  const localize = useLocalize();
+  const { categories } = useAgentCategories();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const categoryLabel = useMemo(() => {
+    if (!agent.category) return '';
+    const category = categories.find((cat) => cat.value === agent.category);
+    if (category?.label?.startsWith('com_')) {
+      return localize(category.label as TranslationKeys);
+    }
+    return category?.label ?? agent.category;
+  }, [agent.category, categories, localize]);
+
+  return (
+    <OGDialog open={isOpen} onOpenChange={setIsOpen}>
+      <OGDialogTrigger asChild>
+        <div
+          className={cn(
+            'group relative flex h-32 gap-5 overflow-hidden rounded-xl',
+            'cursor-pointer select-none px-6 py-4',
+            'bg-surface-tertiary transition-colors duration-150 hover:bg-surface-hover',
+            className,
+          )}
+          aria-label={localize('com_agents_agent_card_label', {
+            name: agent.name,
+            description: agent.description ?? '',
+          })}
+          role="button"
+          tabIndex={0}
+        >
+          {/* Component content */}
+        </div>
+      </OGDialogTrigger>
+    </OGDialog>
+  );
+};
+```
+
+### Key Patterns
+
+#### 1. Type Safety
+
+```typescript
+// Import types from librechat-data-provider
+import type t from 'librechat-data-provider';
+
+interface MemoryCardProps {
+  memory: t.TUserMemory;
+  hasUpdateAccess: boolean;
+}
+```
+
+- **Never use `any`** - Always provide explicit types
+- Import shared types from `librechat-data-provider`
+- Define component prop interfaces
+- Use type imports with `import type`
+
+#### 2. Localization
+
+All user-facing text must use `useLocalize()` from `client/src/hooks/useLocalize.ts:1`:
+
+```typescript
+import { useLocalize } from '~/hooks';
+
+function MyComponent() {
+  const localize = useLocalize();
+  
+  return (
+    <button aria-label={localize('com_ui_save')}>
+      {localize('com_ui_save')}
+    </button>
+  );
+}
+```
+
+**Localization Keys:**
+- Use semantic prefixes: `com_ui_`, `com_agents_`, `com_assistants_`
+- Only update English keys in `client/src/locales/en/translation.json`
+- Other languages are automated externally
+
+See [Localization](./localization) for full details.
+
+#### 3. Accessibility
+
+Components must include proper ARIA attributes:
+
+```typescript
+<div
+  role="button"
+  aria-label={localize('com_agents_agent_card_label', {
+    name: agent.name,
+    description: agent.description ?? '',
+  })}
+  aria-describedby={agent.description ? `agent-${agent.id}-description` : undefined}
+  tabIndex={0}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleAction();
+    }
+  }}
+>
+```
+
+**Accessibility Requirements:**
+- Semantic HTML elements (`button`, `nav`, `main`, etc.)
+- ARIA labels for interactive elements
+- Keyboard navigation support
+- Screen reader announcements via `LiveAnnouncer`
+
+#### 4. Performance Optimization
+
+From `client/src/components/SidePanel/Memories/MemoryCard.tsx:1`:
+
+```typescript
+const formatDate = (dateString: string): string => {
+  return new Date(dateString).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+function MemoryCard({ memory }: MemoryCardProps) {
+  // Memoize expensive computations
+  const formattedDate = useMemo(
+    () => formatDate(memory.updated_at),
+    [memory.updated_at]
+  );
+
+  return (
+    <div className="rounded-lg px-3 py-2.5">
+      <span className="text-xs">{formattedDate}</span>
+    </div>
+  );
+}
+```
+
+**Performance Best Practices:**
+- Use `useMemo` for expensive computations
+- Use `useCallback` for event handlers passed to children
+- Proper dependency arrays to avoid unnecessary re-renders
+- Avoid nested component definitions
+
+## Context Providers
+
+LibreChat uses React Context for feature-specific state. Providers are in `client/src/Providers/`.
+
+### Using Context
+
+From `client/src/Providers/ChatContext.tsx:1`:
+
+```typescript
+import { createContext, useContext } from 'react';
+import useChatHelpers from '~/hooks/Chat/useChatHelpers';
+
+type TChatContext = ReturnType<typeof useChatHelpers>;
+
+export const ChatContext = createContext<TChatContext>({} as TChatContext);
+export const useChatContext = () => useContext(ChatContext);
+```
+
+**Available Contexts:**
+- `ChatContext` - Chat state and helpers
+- `AgentsContext` - Agent management
+- `AssistantsContext` - Assistant configuration
+- `FileMapContext` - File upload tracking
+- `MessageContext` - Individual message state
+- `SidePanelContext` - Side panel navigation
+
+See full list in `client/src/Providers/index.ts:1`.
+
+## Import Order
+
+From AGENTS.md, imports must follow this pattern:
+
+```typescript
+// 1. Package imports (shortest to longest, react first)
+import React, { useMemo, useState } from 'react';
+import { Label, OGDialog } from '@librechat/client';
+
+// 2. Type imports (longest to shortest)
+import type { UseQueryOptions } from '@tanstack/react-query';
+import type t from 'librechat-data-provider';
+
+// 3. Local imports (longest to shortest)
+import { useLocalize, useAgentCategories } from '~/hooks';
+import AgentDetailContent from './AgentDetailContent';
+import { cn } from '~/utils';
+```
+
+**Rules:**
+- Always use standalone `import type` - never inline `type` in value imports
+- Package imports sorted by line length (`react` always first)
+- Type imports sorted longest to shortest
+- Local imports sorted longest to shortest
+
+## Component Testing
+
+Tests are co-located with components in `__tests__/` directories:
+
+```
+components/
+  Agents/
+    AgentCard.tsx
+    tests/
+      AgentCard.spec.tsx
+      Accessibility.spec.tsx
+```
+
+### Test Structure
+
+```typescript
+import { render, screen } from '~/test/layout-test-utils';
+import AgentCard from '../AgentCard';
+
+describe('AgentCard', () => {
+  it('should render agent name and description', () => {
+    const agent = {
+      id: '1',
+      name: 'Test Agent',
+      description: 'Test description',
+    };
+
+    render(<AgentCard agent={agent} />);
+
+    expect(screen.getByText('Test Agent')).toBeInTheDocument();
+    expect(screen.getByText('Test description')).toBeInTheDocument();
+  });
+
+  it('should handle loading state', () => {
+    // Test loading state
+  });
+
+  it('should handle error state', () => {
+    // Test error state
+  });
+});
+```
+
+**Testing Requirements:**
+- Use `test/layout-test-utils` for rendering
+- Mock data-provider hooks
+- Cover loading, success, and error states
+- Test keyboard navigation and accessibility
+
+## Code Style
+
+From AGENTS.md:
+
+### Never-Nesting
+
+```typescript
+// Bad: Nested conditions
+if (agent) {
+  if (agent.category) {
+    return categories.find(c => c.value === agent.category);
+  }
+}
+
+// Good: Early returns
+if (!agent) return null;
+if (!agent.category) return null;
+return categories.find(c => c.value === agent.category);
+```
+
+### Functional Patterns
+
+```typescript
+// Prefer map/filter/reduce over imperative loops
+const activeAgents = agents.filter(agent => agent.isActive);
+const agentNames = agents.map(agent => agent.name);
+```
+
+### Performance Considerations
+
+```typescript
+// Bad: Multiple passes over same data
+const active = messages.filter(m => m.isActive);
+const names = messages.map(m => m.name);
+
+// Good: Single pass
+const { active, names } = messages.reduce(
+  (acc, m) => {
+    if (m.isActive) acc.active.push(m);
+    acc.names.push(m.name);
+    return acc;
+  },
+  { active: [], names: [] }
+);
+```
+
+## Next Steps
+
+- [State Management](./state-management) - React Query, Recoil, and Jotai usage
+- [Data Provider](./data-provider) - API integration patterns
+- [Localization](./localization) - i18n workflow and best practices

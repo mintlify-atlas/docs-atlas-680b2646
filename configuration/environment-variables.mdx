@@ -1,0 +1,847 @@
+---
+title: 'Environment Variables'
+description: 'Complete reference for all LibreChat environment variables'
+---
+
+# Environment Variables
+
+LibreChat uses environment variables for configuration. Set these in your `.env` file or system environment.
+
+<Note>
+  Copy `.env.example` to `.env` to get started:
+  ```bash
+  cp .env.example .env
+  ```
+</Note>
+
+## Server Configuration
+
+### Basic Server Settings
+
+<ParamField path="HOST" type="string" default="localhost">
+  Server host address
+  
+  ```bash
+  HOST=localhost
+  ```
+</ParamField>
+
+<ParamField path="PORT" type="number" default="3080">
+  Server port number
+  
+  ```bash
+  PORT=3080
+  ```
+</ParamField>
+
+<ParamField path="DOMAIN_CLIENT" type="string" required>
+  Client-facing domain URL
+  
+  ```bash
+  DOMAIN_CLIENT=http://localhost:3080
+  # Production:
+  DOMAIN_CLIENT=https://yourdomain.com
+  ```
+</ParamField>
+
+<ParamField path="DOMAIN_SERVER" type="string" required>
+  Server domain URL for backend services
+  
+  ```bash
+  DOMAIN_SERVER=http://localhost:3080
+  # Production:
+  DOMAIN_SERVER=https://yourdomain.com
+  ```
+</ParamField>
+
+<ParamField path="NO_INDEX" type="boolean" default="true">
+  Add noindex meta tag to prevent search engine indexing
+  
+  ```bash
+  NO_INDEX=true
+  ```
+</ParamField>
+
+<ParamField path="TRUST_PROXY" type="number" default="1">
+  Number of hops from the Express application. Set to 0 if no reverse proxy.
+  
+  ```bash
+  # Behind 1 reverse proxy (default)
+  TRUST_PROXY=1
+  
+  # Behind 2 reverse proxies
+  TRUST_PROXY=2
+  
+  # No reverse proxy
+  TRUST_PROXY=0
+  ```
+</ParamField>
+
+<ParamField path="MIN_PASSWORD_LENGTH" type="number" default="8">
+  Minimum password length for user authentication
+  
+  <Tip>When using LDAP authentication, set this to 1 to bypass local password validation</Tip>
+  
+  ```bash
+  MIN_PASSWORD_LENGTH=8
+  # For LDAP:
+  MIN_PASSWORD_LENGTH=1
+  ```
+</ParamField>
+
+<ParamField path="CONTINUE_ON_UNCAUGHT_EXCEPTION" type="boolean" default="false">
+  Continue running after encountering uncaught exceptions
+  
+  <Warning>Not recommended for production unless necessary</Warning>
+  
+  ```bash
+  CONTINUE_ON_UNCAUGHT_EXCEPTION=false
+  ```
+</ParamField>
+
+### Node.js Options
+
+<ParamField path="NODE_MAX_OLD_SPACE_SIZE" type="number" default="6144">
+  Build argument for Docker/CI workflows (NOT used by Node.js directly)
+  
+  To configure Node.js memory at runtime, use NODE_OPTIONS:
+  
+  ```bash
+  NODE_MAX_OLD_SPACE_SIZE=6144
+  
+  # For runtime memory configuration:
+  NODE_OPTIONS="--max-old-space-size=6144"
+  ```
+</ParamField>
+
+## Database Configuration
+
+### MongoDB
+
+<ParamField path="MONGO_URI" type="string" required>
+  MongoDB connection string
+  
+  ```bash
+  MONGO_URI=mongodb://127.0.0.1:27017/LibreChat
+  
+  # With authentication:
+  MONGO_URI=mongodb://username:password@127.0.0.1:27017/LibreChat
+  
+  # MongoDB Atlas:
+  MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/LibreChat
+  ```
+</ParamField>
+
+<ParamField path="MONGO_MAX_POOL_SIZE" type="number">
+  Maximum number of connections in the connection pool
+  
+  ```bash
+  MONGO_MAX_POOL_SIZE=10
+  ```
+</ParamField>
+
+<ParamField path="MONGO_MIN_POOL_SIZE" type="number">
+  Minimum number of connections in the connection pool
+  
+  ```bash
+  MONGO_MIN_POOL_SIZE=2
+  ```
+</ParamField>
+
+<ParamField path="MONGO_MAX_CONNECTING" type="number">
+  Maximum number of connections being established concurrently
+  
+  ```bash
+  MONGO_MAX_CONNECTING=5
+  ```
+</ParamField>
+
+<ParamField path="MONGO_MAX_IDLE_TIME_MS" type="number">
+  Maximum milliseconds a connection can remain idle before being closed
+  
+  ```bash
+  MONGO_MAX_IDLE_TIME_MS=60000
+  ```
+</ParamField>
+
+<ParamField path="MONGO_WAIT_QUEUE_TIMEOUT_MS" type="number">
+  Maximum time in milliseconds to wait for a connection
+  
+  ```bash
+  MONGO_WAIT_QUEUE_TIMEOUT_MS=5000
+  ```
+</ParamField>
+
+<ParamField path="MONGO_AUTO_INDEX" type="boolean" default="true">
+  Enable automatic index creation for all models
+  
+  ```bash
+  MONGO_AUTO_INDEX=true
+  ```
+</ParamField>
+
+<ParamField path="MONGO_AUTO_CREATE" type="boolean" default="true">
+  Enable automatic collection creation
+  
+  ```bash
+  MONGO_AUTO_CREATE=true
+  ```
+</ParamField>
+
+## Logging
+
+### JSON Logging
+
+<ParamField path="CONSOLE_JSON" type="boolean" default="false">
+  Use JSON format for console logs (useful for cloud deployments like GCP/AWS)
+  
+  ```bash
+  CONSOLE_JSON=false
+  # Production cloud deployment:
+  CONSOLE_JSON=true
+  ```
+</ParamField>
+
+### Debug Logging
+
+<ParamField path="DEBUG_LOGGING" type="boolean" default="true">
+  Enable debug logging
+  
+  ```bash
+  DEBUG_LOGGING=true
+  ```
+</ParamField>
+
+<ParamField path="DEBUG_CONSOLE" type="boolean" default="false">
+  Output debug logs to console
+  
+  ```bash
+  DEBUG_CONSOLE=false
+  ```
+</ParamField>
+
+<ParamField path="MEM_DIAG" type="boolean" default="false">
+  Enable memory diagnostics (logs heap/RSS snapshots every 60s)
+  
+  Automatically enabled when using `--inspect` flag
+  
+  ```bash
+  MEM_DIAG=true
+  ```
+</ParamField>
+
+## Permissions
+
+<ParamField path="UID" type="number" default="1000">
+  User ID for file permissions (Docker)
+  
+  ```bash
+  UID=1000
+  ```
+</ParamField>
+
+<ParamField path="GID" type="number" default="1000">
+  Group ID for file permissions (Docker)
+  
+  ```bash
+  GID=1000
+  ```
+</ParamField>
+
+## Configuration Path
+
+<ParamField path="CONFIG_PATH" type="string" default="./librechat.yaml">
+  Path to librechat.yaml configuration file (absolute, relative, or URL)
+  
+  ```bash
+  CONFIG_PATH="/alternative/path/to/librechat.yaml"
+  ```
+</ParamField>
+
+## Langfuse Tracing
+
+<ParamField path="LANGFUSE_PUBLIC_KEY" type="string">
+  Langfuse public API key for tracing
+  
+  Get your API keys from: https://cloud.langfuse.com
+  
+  ```bash
+  LANGFUSE_PUBLIC_KEY=pk-lf-xxx
+  ```
+</ParamField>
+
+<ParamField path="LANGFUSE_SECRET_KEY" type="string">
+  Langfuse secret API key
+  
+  ```bash
+  LANGFUSE_SECRET_KEY=sk-lf-xxx
+  ```
+</ParamField>
+
+<ParamField path="LANGFUSE_BASE_URL" type="string">
+  Langfuse API base URL (optional, for self-hosted)
+  
+  ```bash
+  LANGFUSE_BASE_URL=https://your-langfuse-instance.com
+  ```
+</ParamField>
+
+## Proxy
+
+<ParamField path="PROXY" type="string">
+  HTTP/HTTPS proxy for outbound requests
+  
+  ```bash
+  PROXY=http://proxy.example.com:8080
+  ```
+</ParamField>
+
+## Security
+
+### JWT Secrets
+
+<ParamField path="JWT_SECRET" type="string" required>
+  Secret key for JWT token signing
+  
+  <Warning>Generate a secure random string and keep it secret!</Warning>
+  
+  ```bash
+  # Generate with:
+  openssl rand -hex 32
+  
+  JWT_SECRET=16f8c0ef4a5d391b26034086c628469d3f9f497f08163ab9b40137092f2909ef
+  ```
+</ParamField>
+
+<ParamField path="JWT_REFRESH_SECRET" type="string" required>
+  Secret key for refresh token signing (must be different from JWT_SECRET)
+  
+  ```bash
+  # Generate with:
+  openssl rand -hex 32
+  
+  JWT_REFRESH_SECRET=eaa5191f2914e30b9387fd84e254e4ba6fc51b4654968a9b0803b456a54b8418
+  ```
+</ParamField>
+
+### Credential Encryption
+
+<ParamField path="CREDS_KEY" type="string" required>
+  Encryption key for stored credentials (32 bytes hex)
+  
+  ```bash
+  # Generate with:
+  openssl rand -hex 32
+  
+  CREDS_KEY=f34be427ebb29de8d88c107a71546019685ed8b241d8f2ed00c3df97ad2566f0
+  ```
+</ParamField>
+
+<ParamField path="CREDS_IV" type="string" required>
+  Initialization vector for credential encryption (16 bytes hex)
+  
+  ```bash
+  # Generate with:
+  openssl rand -hex 16
+  
+  CREDS_IV=e2341419ec3dd3d19b13a1a87fafcbfb
+  ```
+</ParamField>
+
+### Session Configuration
+
+<ParamField path="SESSION_EXPIRY" type="number" default="900000">
+  Session expiry time in milliseconds
+  
+  ```bash
+  # Default: 15 minutes
+  SESSION_EXPIRY=1000 * 60 * 15
+  
+  # 1 hour:
+  SESSION_EXPIRY=3600000
+  ```
+</ParamField>
+
+<ParamField path="REFRESH_TOKEN_EXPIRY" type="number" default="604800000">
+  Refresh token expiry time in milliseconds
+  
+  ```bash
+  # Default: 7 days
+  REFRESH_TOKEN_EXPIRY=(1000 * 60 * 60 * 24) * 7
+  
+  # 30 days:
+  REFRESH_TOKEN_EXPIRY=2592000000
+  ```
+</ParamField>
+
+## Moderation
+
+<ParamField path="OPENAI_MODERATION" type="boolean" default="false">
+  Enable OpenAI content moderation
+  
+  ```bash
+  OPENAI_MODERATION=false
+  ```
+</ParamField>
+
+<ParamField path="OPENAI_MODERATION_API_KEY" type="string">
+  OpenAI API key for moderation (if different from main key)
+  
+  ```bash
+  OPENAI_MODERATION_API_KEY=sk-xxx
+  ```
+</ParamField>
+
+<ParamField path="OPENAI_MODERATION_REVERSE_PROXY" type="string">
+  Reverse proxy URL for OpenAI moderation API
+  
+  ```bash
+  OPENAI_MODERATION_REVERSE_PROXY=https://your-proxy.com/v1
+  ```
+</ParamField>
+
+### Ban Configuration
+
+<ParamField path="BAN_VIOLATIONS" type="boolean" default="true">
+  Enable automatic banning for violations
+  
+  ```bash
+  BAN_VIOLATIONS=true
+  ```
+</ParamField>
+
+<ParamField path="BAN_DURATION" type="number" default="7200000">
+  Ban duration in milliseconds (default: 2 hours)
+  
+  ```bash
+  BAN_DURATION=1000 * 60 * 60 * 2
+  ```
+</ParamField>
+
+<ParamField path="BAN_INTERVAL" type="number" default="20">
+  Number of violations before ban
+  
+  ```bash
+  BAN_INTERVAL=20
+  ```
+</ParamField>
+
+### Violation Scores
+
+<ParamField path="LOGIN_VIOLATION_SCORE" type="number" default="1">
+  Violation score for failed login attempts
+  
+  ```bash
+  LOGIN_VIOLATION_SCORE=1
+  ```
+</ParamField>
+
+<ParamField path="REGISTRATION_VIOLATION_SCORE" type="number" default="1">
+  Violation score for registration attempts
+  
+  ```bash
+  REGISTRATION_VIOLATION_SCORE=1
+  ```
+</ParamField>
+
+<ParamField path="CONCURRENT_VIOLATION_SCORE" type="number" default="1">
+  Violation score for concurrent message violations
+  
+  ```bash
+  CONCURRENT_VIOLATION_SCORE=1
+  ```
+</ParamField>
+
+<ParamField path="MESSAGE_VIOLATION_SCORE" type="number" default="1">
+  Violation score for message rate limit violations
+  
+  ```bash
+  MESSAGE_VIOLATION_SCORE=1
+  ```
+</ParamField>
+
+<ParamField path="NON_BROWSER_VIOLATION_SCORE" type="number" default="20">
+  Violation score for non-browser requests
+  
+  ```bash
+  NON_BROWSER_VIOLATION_SCORE=20
+  ```
+</ParamField>
+
+<ParamField path="TTS_VIOLATION_SCORE" type="number" default="0">
+  Violation score for text-to-speech violations
+  
+  ```bash
+  TTS_VIOLATION_SCORE=0
+  ```
+</ParamField>
+
+<ParamField path="STT_VIOLATION_SCORE" type="number" default="0">
+  Violation score for speech-to-text violations
+  
+  ```bash
+  STT_VIOLATION_SCORE=0
+  ```
+</ParamField>
+
+<ParamField path="FORK_VIOLATION_SCORE" type="number" default="0">
+  Violation score for conversation fork violations
+  
+  ```bash
+  FORK_VIOLATION_SCORE=0
+  ```
+</ParamField>
+
+<ParamField path="IMPORT_VIOLATION_SCORE" type="number" default="0">
+  Violation score for import violations
+  
+  ```bash
+  IMPORT_VIOLATION_SCORE=0
+  ```
+</ParamField>
+
+<ParamField path="FILE_UPLOAD_VIOLATION_SCORE" type="number" default="0">
+  Violation score for file upload violations
+  
+  ```bash
+  FILE_UPLOAD_VIOLATION_SCORE=0
+  ```
+</ParamField>
+
+<ParamField path="ILLEGAL_MODEL_REQ_SCORE" type="number" default="5">
+  Violation score for illegal model requests
+  
+  ```bash
+  ILLEGAL_MODEL_REQ_SCORE=5
+  ```
+</ParamField>
+
+### Rate Limits
+
+<ParamField path="LOGIN_MAX" type="number" default="7">
+  Maximum login attempts per window
+  
+  ```bash
+  LOGIN_MAX=7
+  ```
+</ParamField>
+
+<ParamField path="LOGIN_WINDOW" type="number" default="5">
+  Login rate limit window in minutes
+  
+  ```bash
+  LOGIN_WINDOW=5
+  ```
+</ParamField>
+
+<ParamField path="REGISTER_MAX" type="number" default="5">
+  Maximum registration attempts per window
+  
+  ```bash
+  REGISTER_MAX=5
+  ```
+</ParamField>
+
+<ParamField path="REGISTER_WINDOW" type="number" default="60">
+  Registration rate limit window in minutes
+  
+  ```bash
+  REGISTER_WINDOW=60
+  ```
+</ParamField>
+
+<ParamField path="LIMIT_CONCURRENT_MESSAGES" type="boolean" default="true">
+  Enable concurrent message limiting
+  
+  ```bash
+  LIMIT_CONCURRENT_MESSAGES=true
+  ```
+</ParamField>
+
+<ParamField path="CONCURRENT_MESSAGE_MAX" type="number" default="2">
+  Maximum concurrent messages per user
+  
+  ```bash
+  CONCURRENT_MESSAGE_MAX=2
+  ```
+</ParamField>
+
+<ParamField path="LIMIT_MESSAGE_IP" type="boolean" default="true">
+  Enable message rate limiting by IP
+  
+  ```bash
+  LIMIT_MESSAGE_IP=true
+  ```
+</ParamField>
+
+<ParamField path="MESSAGE_IP_MAX" type="number" default="40">
+  Maximum messages per IP per window
+  
+  ```bash
+  MESSAGE_IP_MAX=40
+  ```
+</ParamField>
+
+<ParamField path="MESSAGE_IP_WINDOW" type="number" default="1">
+  Message IP rate limit window in minutes
+  
+  ```bash
+  MESSAGE_IP_WINDOW=1
+  ```
+</ParamField>
+
+<ParamField path="LIMIT_MESSAGE_USER" type="boolean" default="false">
+  Enable message rate limiting by user
+  
+  ```bash
+  LIMIT_MESSAGE_USER=false
+  ```
+</ParamField>
+
+<ParamField path="MESSAGE_USER_MAX" type="number" default="40">
+  Maximum messages per user per window
+  
+  ```bash
+  MESSAGE_USER_MAX=40
+  ```
+</ParamField>
+
+<ParamField path="MESSAGE_USER_WINDOW" type="number" default="1">
+  Message user rate limit window in minutes
+  
+  ```bash
+  MESSAGE_USER_WINDOW=1
+  ```
+</ParamField>
+
+## Balance System
+
+<ParamField path="CHECK_BALANCE" type="boolean" default="false">
+  Enable token balance checking
+  
+  ```bash
+  CHECK_BALANCE=false
+  ```
+</ParamField>
+
+<ParamField path="START_BALANCE" type="number" default="20000">
+  Initial token balance for new users
+  
+  ```bash
+  START_BALANCE=20000
+  ```
+</ParamField>
+
+## Registration and Login
+
+<ParamField path="ALLOW_EMAIL_LOGIN" type="boolean" default="true">
+  Allow email/password login
+  
+  ```bash
+  ALLOW_EMAIL_LOGIN=true
+  ```
+</ParamField>
+
+<ParamField path="ALLOW_REGISTRATION" type="boolean" default="true">
+  Allow new user registration
+  
+  ```bash
+  ALLOW_REGISTRATION=true
+  # Production (invite-only):
+  ALLOW_REGISTRATION=false
+  ```
+</ParamField>
+
+<ParamField path="ALLOW_SOCIAL_LOGIN" type="boolean" default="false">
+  Allow social login (OAuth) for existing users
+  
+  ```bash
+  ALLOW_SOCIAL_LOGIN=false
+  ```
+</ParamField>
+
+<ParamField path="ALLOW_SOCIAL_REGISTRATION" type="boolean" default="false">
+  Allow new user registration via social login
+  
+  ```bash
+  ALLOW_SOCIAL_REGISTRATION=false
+  ```
+</ParamField>
+
+<ParamField path="ALLOW_PASSWORD_RESET" type="boolean" default="false">
+  Enable password reset functionality
+  
+  <Note>Requires email service configuration</Note>
+  
+  ```bash
+  ALLOW_PASSWORD_RESET=false
+  ```
+</ParamField>
+
+<ParamField path="ALLOW_ACCOUNT_DELETION" type="boolean" default="true">
+  Allow users to delete their accounts
+  
+  ```bash
+  ALLOW_ACCOUNT_DELETION=true
+  ```
+</ParamField>
+
+<ParamField path="ALLOW_UNVERIFIED_EMAIL_LOGIN" type="boolean" default="true">
+  Allow login with unverified email addresses
+  
+  ```bash
+  ALLOW_UNVERIFIED_EMAIL_LOGIN=true
+  # Production:
+  ALLOW_UNVERIFIED_EMAIL_LOGIN=false
+  ```
+</ParamField>
+
+## Shared Links
+
+<ParamField path="ALLOW_SHARED_LINKS" type="boolean" default="true">
+  Enable conversation sharing via links
+  
+  ```bash
+  ALLOW_SHARED_LINKS=true
+  ```
+</ParamField>
+
+<ParamField path="ALLOW_SHARED_LINKS_PUBLIC" type="boolean" default="true">
+  Allow public (non-authenticated) access to shared links
+  
+  ```bash
+  ALLOW_SHARED_LINKS_PUBLIC=true
+  ```
+</ParamField>
+
+## Static File Cache Control
+
+<ParamField path="STATIC_CACHE_MAX_AGE" type="number" default="172800">
+  Cache max-age for static files in seconds (2 days default)
+  
+  <Note>Only applies when NODE_ENV=production</Note>
+  
+  ```bash
+  STATIC_CACHE_MAX_AGE=172800
+  ```
+</ParamField>
+
+<ParamField path="STATIC_CACHE_S_MAX_AGE" type="number" default="86400">
+  Cache s-maxage for static files in seconds (1 day default)
+  
+  ```bash
+  STATIC_CACHE_S_MAX_AGE=86400
+  ```
+</ParamField>
+
+<ParamField path="DISABLE_COMPRESSION" type="boolean" default="false">
+  Disable Express-based compression (if handled by another service)
+  
+  ```bash
+  DISABLE_COMPRESSION=true
+  ```
+</ParamField>
+
+<ParamField path="ENABLE_IMAGE_OUTPUT_GZIP_SCAN" type="boolean" default="false">
+  Enable serving pre-gzipped image files
+  
+  <Warning>Scans images folder on startup and keeps map in memory</Warning>
+  
+  ```bash
+  ENABLE_IMAGE_OUTPUT_GZIP_SCAN=true
+  ```
+</ParamField>
+
+## UI Configuration
+
+<ParamField path="APP_TITLE" type="string" default="LibreChat">
+  Application title shown in browser
+  
+  ```bash
+  APP_TITLE=LibreChat
+  ```
+</ParamField>
+
+<ParamField path="CUSTOM_FOOTER" type="string">
+  Custom footer text
+  
+  ```bash
+  CUSTOM_FOOTER="My custom footer"
+  ```
+</ParamField>
+
+<ParamField path="HELP_AND_FAQ_URL" type="string" default="https://librechat.ai">
+  URL for help and FAQ link
+  
+  ```bash
+  HELP_AND_FAQ_URL=https://librechat.ai
+  ```
+</ParamField>
+
+<ParamField path="SHOW_BIRTHDAY_ICON" type="boolean" default="false">
+  Show birthday icon on special dates
+  
+  ```bash
+  SHOW_BIRTHDAY_ICON=true
+  ```
+</ParamField>
+
+<ParamField path="ANALYTICS_GTM_ID" type="string">
+  Google Tag Manager ID for analytics
+  
+  ```bash
+  ANALYTICS_GTM_ID=GTM-XXXXXXX
+  ```
+</ParamField>
+
+<ParamField path="CONVERSATION_IMPORT_MAX_FILE_SIZE_BYTES" type="number">
+  Maximum file size for conversation imports in bytes
+  
+  ```bash
+  # 250 MiB:
+  CONVERSATION_IMPORT_MAX_FILE_SIZE_BYTES=262144000
+  ```
+</ParamField>
+
+## Cache Headers
+
+<ParamField path="INDEX_CACHE_CONTROL" type="string" default="no-cache, no-store, must-revalidate">
+  Cache-Control header for index.html
+  
+  ```bash
+  INDEX_CACHE_CONTROL=no-cache, no-store, must-revalidate
+  ```
+</ParamField>
+
+<ParamField path="INDEX_PRAGMA" type="string" default="no-cache">
+  Pragma header for index.html
+  
+  ```bash
+  INDEX_PRAGMA=no-cache
+  ```
+</ParamField>
+
+<ParamField path="INDEX_EXPIRES" type="string" default="0">
+  Expires header for index.html
+  
+  ```bash
+  INDEX_EXPIRES=0
+  ```
+</ParamField>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="AI Endpoints" icon="brain" href="/configuration/ai-endpoints">
+    Configure AI endpoint variables
+  </Card>
+  <Card title="Authentication" icon="shield" href="/configuration/authentication">
+    Set up OAuth, LDAP, and email auth
+  </Card>
+  <Card title="File Storage" icon="database" href="/configuration/file-storage">
+    Configure S3, Firebase, or Azure storage
+  </Card>
+  <Card title="YAML Configuration" icon="file-code" href="/configuration/librechat-yaml">
+    Advanced YAML configuration options
+  </Card>
+</CardGroup>

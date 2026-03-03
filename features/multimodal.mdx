@@ -1,0 +1,637 @@
+---
+title: Multimodal
+description: Image and file analysis with vision-capable AI models
+icon: "image"
+---
+
+LibreChat's multimodal capabilities enable AI models to understand and analyze images, documents, and other file types alongside text conversations.
+
+## Overview
+
+Multimodal AI can:
+
+<CardGroup cols={2}>
+  <Card title="Analyze Images" icon="image">
+    Understand photos, screenshots, diagrams, and charts
+  </Card>
+  <Card title="Process Documents" icon="file-pdf">
+    Read and analyze PDFs, text files, and documents
+  </Card>
+  <Card title="Extract Information" icon="filter">
+    Pull data from tables, forms, and structured content
+  </Card>
+  <Card title="Visual Understanding" icon="eye">
+    Describe scenes, identify objects, read text in images
+  </Card>
+</CardGroup>
+
+## Vision-Capable Models
+
+These models support image understanding:
+
+### OpenAI
+
+<Tabs>
+  <Tab title="GPT-4o">
+    **gpt-4o** and **gpt-4o-mini**
+    - Native vision support
+    - High-quality image analysis
+    - Document understanding
+    - Fast processing
+  </Tab>
+  
+  <Tab title="GPT-4 Turbo">
+    **gpt-4-turbo** and variants
+    - Vision capabilities
+    - Detailed image descriptions
+    - OCR and text extraction
+  </Tab>
+</Tabs>
+
+### Anthropic
+
+<Tabs>
+  <Tab title="Claude 4.5 Sonnet">
+    **claude-4.5-sonnet**
+    - Advanced vision understanding
+    - Long context with images
+    - Document analysis
+    - Chart and diagram interpretation
+  </Tab>
+  
+  <Tab title="Claude 3 Models">
+    **claude-3-7-sonnet**, **claude-3.5-sonnet**
+    - Vision support
+    - Document processing
+    - Image comprehension
+  </Tab>
+</Tabs>
+
+### Google
+
+<Tabs>
+  <Tab title="Gemini 2.0">
+    **gemini-2.0-flash-exp**
+    - Native multimodal processing
+    - Images, video, audio support
+    - Large context window (1M tokens)
+  </Tab>
+  
+  <Tab title="Gemini 1.5">
+    **gemini-1.5-pro**, **gemini-1.5-flash**
+    - Multimodal understanding
+    - Document analysis
+    - Visual reasoning
+  </Tab>
+</Tabs>
+
+### AWS Bedrock
+
+Claude models through Bedrock:
+- **anthropic.claude-3-7-sonnet**
+- **anthropic.claude-3-5-sonnet**
+- Vision support via Anthropic models
+
+## Uploading Files
+
+### Supported File Types
+
+<Tabs>
+  <Tab title="Images">
+    **Image Formats:**
+    - JPEG/JPG
+    - PNG
+    - GIF
+    - WebP
+    - BMP
+    - SVG (converted to raster)
+    
+    ```yaml librechat.yaml
+    fileConfig:
+      endpoints:
+        openAI:
+          supportedMimeTypes:
+            - "image/.*"
+    ```
+  </Tab>
+  
+  <Tab title="Documents">
+    **Document Formats:**
+    - PDF
+    - TXT
+    - Markdown
+    - CSV
+    - JSON
+    - Code files (.js, .py, .java, etc.)
+    
+    ```yaml librechat.yaml
+    fileConfig:
+      endpoints:
+        openAI:
+          supportedMimeTypes:
+            - "application/pdf"
+            - "text/.*"
+    ```
+  </Tab>
+  
+  <Tab title="Data Files">
+    **Data Formats:**
+    - CSV
+    - Excel (.xlsx, .xls)
+    - JSON
+    - XML
+    
+    Useful for data analysis with Code Interpreter.
+  </Tab>
+</Tabs>
+
+### File Upload Configuration
+
+```yaml librechat.yaml
+fileConfig:
+  endpoints:
+    openAI:
+      fileLimit: 10  # Max files per request
+      fileSizeLimit: 20  # MB per file
+      totalSizeLimit: 100  # MB total per request
+      supportedMimeTypes:
+        - "image/.*"
+        - "application/pdf"
+    
+    anthropic:
+      fileLimit: 5
+      fileSizeLimit: 10
+      totalSizeLimit: 50
+      supportedMimeTypes:
+        - "image/.*"
+        - "application/pdf"
+  
+  # Global server limit
+  serverFileSizeLimit: 100  # MB
+  
+  # Avatar images
+  avatarSizeLimit: 2  # MB
+```
+
+### Client-Side Image Resizing
+
+Prevent upload errors by resizing large images:
+
+```yaml librechat.yaml
+fileConfig:
+  clientImageResize:
+    enabled: true
+    maxWidth: 1900
+    maxHeight: 1900
+    quality: 0.92  # JPEG quality (0.0-1.0)
+```
+
+## Using Multimodal Features
+
+### Image Analysis
+
+Upload images and ask questions:
+
+```
+User: [Uploads screenshot of error message]
+What's causing this error and how can I fix it?
+
+Assistant: Looking at your screenshot, the error is a 
+"TypeError: Cannot read property 'map' of undefined". This 
+occurs on line 42 where you're trying to map over `data.items`.
+
+The issue is that `data.items` is undefined, likely because:
+1. The API response doesn't include an `items` property
+2. The data hasn't loaded yet when the component renders
+
+Fix:
+```javascript
+{data?.items?.map(item => ...)}
+// or
+{(data.items || []).map(item => ...)}
+```
+```
+
+### Document Analysis
+
+Analyze PDFs and documents:
+
+```
+User: [Uploads contract.pdf]
+Summarize the key terms of this contract.
+
+Assistant: Based on the contract, here are the key terms:
+
+1. **Parties**: Agreement between Company A and Company B
+2. **Duration**: 2-year term starting January 1, 2024
+3. **Payment**: $50,000 annual fee, paid quarterly
+4. **Termination**: 60-day notice required
+5. **Confidentiality**: 5-year non-disclosure period
+6. **Intellectual Property**: Company A retains all IP rights
+
+[Detailed analysis continues...]
+```
+
+### Chart and Graph Reading
+
+Extract data from visualizations:
+
+```
+User: [Uploads sales chart]
+What trends do you see in this sales data?
+
+Assistant: Analyzing the chart, I can see:
+
+**Trends:**
+- Overall upward trend from Q1 to Q4
+- Strongest growth in Q3 (+35%)
+- Slight dip in Q2 (-5%)
+- Revenue peaked in December at $450K
+
+**Key Observations:**
+- Summer months (June-August) show consistent growth
+- Holiday season (Nov-Dec) accounts for 30% of annual revenue
+- Average monthly growth rate: 8.5%
+```
+
+### OCR and Text Extraction
+
+Read text from images:
+
+```
+User: [Uploads photo of handwritten notes]
+Transcribe these notes.
+
+Assistant: Here's the transcription:
+
+Meeting Notes - January 15, 2024
+
+1. Project deadline moved to March 1st
+2. Budget increased by 15%
+3. New team members:
+   - Sarah (Designer)
+   - Mike (Backend Developer)
+4. Next milestone: Prototype review Feb 5th
+
+Action Items:
+- Update project timeline
+- Schedule design review
+- Prepare demo for stakeholders
+```
+
+## Agent Integration
+
+Use multimodal capabilities with agents:
+
+```typescript
+{
+  name: 'Visual Assistant',
+  provider: 'openAI',
+  model: 'gpt-4o',
+  instructions: `
+    You are a visual analysis assistant. When users upload images:
+    1. Provide detailed descriptions
+    2. Extract text and data
+    3. Answer questions about the image
+    4. Identify objects, people, and scenes
+  `,
+  tools: ['execute_code'],  // Can use code to process images
+  tool_resources: {
+    execute_code: {
+      file_ids: []  // Images are available to code interpreter
+    }
+  }
+}
+```
+
+### Image Processing with Code
+
+Combine vision models with code execution:
+
+```python
+from PIL import Image
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Load the uploaded image
+img = Image.open('photo.jpg')
+img_array = np.array(img)
+
+# Analyze dimensions
+height, width, channels = img_array.shape
+print(f"Image size: {width}x{height}, Channels: {channels}")
+
+# Calculate average color
+avg_color = img_array.mean(axis=(0, 1))
+print(f"Average RGB: {avg_color}")
+
+# Create histogram
+plt.figure(figsize=(10, 4))
+for i, color in enumerate(['red', 'green', 'blue']):
+    plt.subplot(1, 3, i+1)
+    plt.hist(img_array[:,:,i].ravel(), bins=256, color=color, alpha=0.7)
+    plt.title(f'{color.capitalize()} Channel')
+plt.tight_layout()
+plt.savefig('color_histogram.png')
+```
+
+## File Context and Management
+
+LibreChat tracks files with different contexts:
+
+### File Contexts
+
+<Tabs>
+  <Tab title="Message Attachment">
+    ```typescript
+    {
+      context: FileContext.message_attachment,
+      file_id: 'file-123',
+      messageId: 'msg-456',
+      conversationId: 'conv-789'
+    }
+    ```
+    Files attached to specific messages
+  </Tab>
+  
+  <Tab title="Agents">
+    ```typescript
+    {
+      context: FileContext.agents,
+      file_id: 'file-123',
+      agentId: 'agent-456'
+    }
+    ```
+    Files available to agent tool resources
+  </Tab>
+  
+  <Tab title="Execute Code">
+    ```typescript
+    {
+      context: FileContext.execute_code,
+      file_id: 'file-123',
+      messageId: 'msg-456'
+    }
+    ```
+    Files generated by code execution
+  </Tab>
+  
+  <Tab title="Image Generation">
+    ```typescript
+    {
+      context: FileContext.image_generation,
+      file_id: 'file-123',
+      messageId: 'msg-456'
+    }
+    ```
+    Generated images from DALL-E or similar
+  </Tab>
+</Tabs>
+
+### File Storage Strategies
+
+Configure where files are stored:
+
+```yaml librechat.yaml
+# Single strategy for all files
+fileStrategy: "s3"
+
+# Or granular control
+fileStrategy:
+  avatar: "s3"      # User/agent avatars
+  image: "firebase" # Chat images
+  document: "local" # Documents
+```
+
+**Available strategies:**
+- `local`: Local file system
+- `s3`: AWS S3 or compatible
+- `firebase`: Firebase Storage
+
+## Provider-Specific Features
+
+### OpenAI Vision
+
+OpenAI models with vision support:
+
+```typescript
+{
+  endpoint: 'openAI',
+  model: 'gpt-4o',
+  // Images are automatically processed
+  // No special configuration needed
+}
+```
+
+**Features:**
+- High-quality image understanding
+- Multiple images per message
+- Image + text combinations
+- Fast processing
+
+### Anthropic Claude
+
+Claude with document understanding:
+
+```typescript
+{
+  endpoint: 'anthropic',
+  model: 'claude-4.5-sonnet',
+  // Supports PDFs natively with Responses API
+}
+```
+
+**Features:**
+- PDF document analysis
+- Long documents (up to 200K tokens)
+- Detailed visual understanding
+- Citation-based responses
+
+### Google Gemini
+
+Gemini's native multimodal processing:
+
+```typescript
+{
+  endpoint: 'google',
+  model: 'gemini-2.0-flash-exp',
+  // Multimodal by default
+}
+```
+
+**Features:**
+- Unified multimodal model
+- 1M token context window
+- Video and audio support (coming soon)
+- Fast inference
+
+## Document Processing
+
+Direct PDF support for select providers:
+
+```typescript
+// Providers with document support
+const documentSupportedProviders = new Set([
+  'anthropic',
+  'openAI',
+  'bedrock',
+  'google',
+  'custom',  // Depends on endpoint
+]);
+```
+
+### PDF Analysis Example
+
+```
+User: [Uploads research_paper.pdf - 50 pages]
+Summarize the methodology section.
+
+Assistant: The methodology section (pages 8-15) describes:
+
+**Study Design:**
+- Randomized controlled trial
+- 500 participants across 3 groups
+- 12-month duration
+
+**Data Collection:**
+- Baseline assessments
+- Monthly follow-ups
+- Final evaluation at 12 months
+
+**Analysis Methods:**
+- Mixed-effects models for longitudinal data
+- Intent-to-treat analysis
+- Multiple imputation for missing data
+
+[Detailed breakdown continues...]
+```
+
+## Best Practices
+
+<Tip>
+  **Image Quality**: Higher resolution images provide better analysis but take longer to process
+</Tip>
+
+<Tip>
+  **Multiple Images**: Upload multiple angles or views for comprehensive analysis
+</Tip>
+
+<Tip>
+  **Clear Questions**: Be specific about what you want to know from the image/document
+</Tip>
+
+<Warning>
+  **File Sizes**: Large files may hit upload limits or timeout - compress when possible
+</Warning>
+
+<Info>
+  **Privacy**: Uploaded files are processed by AI providers - don't upload sensitive data without proper security
+</Info>
+
+## Example Use Cases
+
+<AccordionGroup>
+  <Accordion title="Medical Image Analysis">
+    ```typescript
+    {
+      name: 'Medical Image Assistant',
+      model: 'gpt-4o',
+      instructions: `
+        Analyze medical images and provide observations.
+        Note: For informational purposes only, not medical advice.
+        
+        When analyzing:
+        1. Describe visible structures
+        2. Note any abnormalities
+        3. Suggest areas for professional review
+        4. Always recommend consulting healthcare professionals
+      `
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Architecture Review">
+    ```typescript
+    {
+      name: 'Architecture Reviewer',
+      model: 'claude-4.5-sonnet',
+      instructions: `
+        Review architectural diagrams and provide feedback.
+        
+        For each diagram:
+        1. Identify all components and their relationships
+        2. Assess scalability and redundancy
+        3. Flag potential bottlenecks
+        4. Suggest improvements
+      `
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Receipt Processing">
+    ```typescript
+    {
+      name: 'Receipt Processor',
+      model: 'gpt-4o',
+      instructions: `
+        Extract data from receipt images.
+        
+        For each receipt, extract:
+        - Vendor name
+        - Date and time
+        - Individual items and prices
+        - Subtotal, tax, total
+        - Payment method
+        
+        Format as JSON for easy processing.
+      `,
+      tools: ['execute_code']  // Can save to CSV
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Images Not Processing">
+    **Check:**
+    - Model supports vision (gpt-4o, claude-4.5, etc.)
+    - File size within limits
+    - Correct MIME type (image/*)
+    - Image format is supported
+  </Accordion>
+  
+  <Accordion title="Poor Quality Analysis">
+    **Improve:**
+    - Upload higher resolution images
+    - Ensure good lighting and clarity
+    - Crop to relevant content
+    - Use specific prompts
+  </Accordion>
+  
+  <Accordion title="PDF Not Working">
+    **Solutions:**
+    - Use document-supported provider
+    - Check file size limits
+    - Verify PDF is not corrupted
+    - Try splitting large PDFs
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Code Interpreter" icon="code" href="/features/code-interpreter">
+    Process images programmatically
+  </Card>
+  <Card title="Image Generation" icon="palette" href="/features/image-generation">
+    Generate images with AI
+  </Card>
+  <Card title="Agents" icon="robot" href="/features/agents">
+    Use multimodal with agents
+  </Card>
+  <Card title="File Search" icon="magnifying-glass" href="/features/agents#file-search">
+    Search through documents
+  </Card>
+</CardGroup>

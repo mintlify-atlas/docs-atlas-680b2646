@@ -1,0 +1,452 @@
+---
+title: Speech Features
+description: Use speech-to-text and text-to-speech for voice interactions with LibreChat
+---
+
+# Speech Features
+
+LibreChat supports both speech-to-text (STT) and text-to-speech (TTS) features, enabling voice-based interactions with AI models. You can speak your prompts and have responses read aloud.
+
+## Overview
+
+Speech features in LibreChat include:
+
+- **Speech-to-Text (STT)** - Convert spoken words to text input
+- **Text-to-Speech (TTS)** - Convert AI responses to spoken audio
+- **Browser-based** - Built-in browser APIs for basic functionality
+- **External engines** - Connect to advanced speech services
+- **Conversation mode** - Automatic hands-free back-and-forth interaction
+- **Voice selection** - Choose from available voices
+- **Playback controls** - Adjust speed and manage audio playback
+
+## Enabling Speech Features
+
+### Accessing Speech Settings
+
+1. Open LibreChat settings (gear icon)
+2. Navigate to the **Speech** tab
+3. Configure STT and TTS options
+
+### Speech Settings Location
+
+Settings > Speech contains all speech-related configuration options.
+
+## Speech-to-Text (STT)
+
+Convert your spoken words into text for sending messages to the AI.
+
+### Enabling Speech-to-Text
+
+1. Go to Settings > Speech > STT
+2. Toggle **Speech to Text** switch to ON
+3. The microphone button appears in the message input area
+
+### STT Engine Selection
+
+Choose between available speech recognition engines:
+
+#### Browser STT (Default)
+
+Uses your browser's built-in Web Speech API:
+
+- **Pros:** No setup required, works offline (on some browsers), free
+- **Cons:** Limited language support, accuracy varies by browser
+- **Best for:** Quick testing, simple voice input, privacy-conscious users
+
+#### External STT
+
+Connects to external speech recognition services:
+
+- **Pros:** Higher accuracy, more languages, better noise handling
+- **Cons:** Requires configuration, may have costs, needs internet connection
+- **Best for:** Production use, multilingual needs, professional applications
+
+**To select engine:**
+1. Go to Settings > Speech > STT
+2. Find **Engine** dropdown
+3. Select **Browser** or **External**
+4. Save settings
+
+### Using Speech-to-Text
+
+1. Ensure STT is enabled in settings
+2. Click the **microphone icon** in the message input area
+3. Allow microphone access if prompted by your browser
+4. Start speaking
+5. Your words appear as text in the input field in real-time
+6. Click the microphone icon again to stop recording
+7. Review and edit the transcribed text if needed
+8. Send your message as usual
+
+### STT Visual Indicators
+
+- **Microphone icon** - Default state, ready to record
+- **Red "Mic Off" icon** - Currently recording
+- **Spinner** - Processing speech (external STT)
+
+### Language Selection
+
+For multilingual speech recognition:
+
+1. Go to Settings > Speech > STT
+2. Find **Language** dropdown
+3. Select your preferred language
+4. Available languages depend on your selected engine
+
+**Common languages:**
+- English (US, UK, Australian, etc.)
+- Spanish
+- French
+- German
+- Chinese
+- Japanese
+- And many more (varies by engine)
+
+### Advanced STT Settings
+
+#### Auto-Transcribe Audio
+
+Automatically transcribe when you finish speaking:
+
+1. Go to Settings > Speech > STT
+2. Toggle **Auto-Transcribe Audio** ON
+3. Now when you stop speaking, transcription happens automatically
+
+**How it works:**
+- Detects when you stop speaking (based on silence)
+- Automatically finalizes the transcription
+- You don't need to click the mic button to stop
+
+#### Auto-Send Text
+
+Automatically send transcribed messages:
+
+1. Go to Settings > Speech > STT
+2. Enable **Auto-Send Text**
+3. Choose when to auto-send:
+   - **After transcription complete** - Sends immediately when you stop speaking
+   - **On manual confirmation** - Waits for you to confirm
+
+**Use cases:**
+- Hands-free conversation mode
+- Quick voice queries
+- Accessibility for users who can't type
+
+#### Decibel Threshold
+
+Adjust microphone sensitivity:
+
+1. Go to Settings > Speech > STT
+2. Find **Decibel Threshold** slider
+3. Lower values = more sensitive (picks up quieter sounds)
+4. Higher values = less sensitive (requires louder speech)
+
+**Recommended settings:**
+- **Quiet environment:** -40 to -50 dB (mid-range)
+- **Noisy environment:** -30 to -35 dB (less sensitive)
+- **Soft-spoken:** -50 to -60 dB (more sensitive)
+
+Test different levels to find what works best for your setup.
+
+## Text-to-Speech (TTS)
+
+Have AI responses read aloud with natural-sounding voices.
+
+### Enabling Text-to-Speech
+
+1. Go to Settings > Speech > TTS
+2. Toggle **Text to Speech** switch to ON
+3. Volume icons appear next to AI messages
+
+### TTS Engine Selection
+
+#### Browser TTS (Default)
+
+Uses your browser's built-in speech synthesis:
+
+- **Pros:** No setup, works offline, free, decent quality
+- **Cons:** Limited voice selection, quality varies by browser/OS
+- **Best for:** Basic TTS needs, testing, offline use
+
+#### External TTS
+
+Connects to external TTS services (e.g., OpenAI TTS, ElevenLabs, Google Cloud TTS):
+
+- **Pros:** High-quality voices, natural intonation, emotion, more languages
+- **Cons:** Requires API keys, may have costs, needs internet
+- **Best for:** Professional use, high-quality voice output, specific voice needs
+
+**To select engine:**
+1. Go to Settings > Speech > TTS
+2. Find **Engine** dropdown
+3. Select **Browser** or **External**
+4. If external, configure API credentials
+5. Save settings
+
+### Using Text-to-Speech
+
+1. Ensure TTS is enabled in settings
+2. After the AI responds to your message
+3. Click the **volume icon** next to the response
+4. Audio playback begins
+5. Click the icon again to stop playback
+
+### TTS Visual Indicators
+
+- **Volume icon** - Ready to play, not currently playing
+- **Volume Mute icon** - Currently playing (click to stop)
+- **Spinner** - Loading/generating audio
+
+### Voice Selection
+
+#### Browser Voices
+
+1. Go to Settings > Speech > TTS
+2. Find **Voice** dropdown
+3. Select from available system voices
+4. Voices vary by operating system:
+   - **Windows:** Microsoft voices
+   - **macOS:** Siri voices, others
+   - **Linux:** eSpeak, Festival voices
+   - **Mobile:** System-dependent
+
+#### External Service Voices
+
+1. Configure external TTS service
+2. Go to Settings > Speech > TTS > Voice
+3. Select from the service's voice library
+4. Options often include:
+   - Multiple languages
+   - Different genders
+   - Various speaking styles (news, conversational, etc.)
+   - Regional accents
+
+### Playback Controls
+
+#### Playback Rate (Speed)
+
+Adjust how fast the AI speaks:
+
+1. Go to Settings > Speech > TTS
+2. Find **Playback Rate** slider
+3. Adjust speed:
+   - **0.5x** - Half speed (slower)
+   - **1.0x** - Normal speed
+   - **2.0x** - Double speed (faster)
+   - **Custom** - Fine-tune to preference
+
+**Use cases:**
+- **Slower (0.7x-0.9x):** Learning new languages, complex topics
+- **Normal (1.0x):** Standard listening
+- **Faster (1.2x-1.5x):** Efficiency, familiar content
+
+#### Global Audio Control
+
+Manage playback across all messages:
+
+- **Pause all** - Stop all currently playing audio
+- **Resume** - Continue paused playback
+- **Skip** - Move to next message in queue (if available)
+
+## Conversation Mode
+
+Conversation mode enables continuous, hands-free voice interaction with the AI.
+
+### Enabling Conversation Mode
+
+1. Go to Settings > Speech
+2. Toggle **Conversation Mode** switch to ON
+3. Both STT and TTS should be enabled
+
+### How Conversation Mode Works
+
+1. You speak (STT transcribes)
+2. Message auto-sends when you stop speaking
+3. AI responds
+4. Response is automatically read aloud (TTS)
+5. After playback, mic activates for your next input
+6. Cycle repeats for continuous conversation
+
+### Conversation Mode Requirements
+
+- **Speech-to-Text:** Enabled
+- **Text-to-Speech:** Enabled
+- **Auto-Transcribe:** Recommended (auto-detects when you finish speaking)
+- **Auto-Send:** Required (sends message automatically)
+
+### Starting a Conversation Mode Session
+
+1. Enable conversation mode in settings
+2. Start a new conversation or open existing one
+3. Click the microphone icon
+4. Begin speaking
+5. The conversation flows automatically from there
+
+### Ending Conversation Mode
+
+- Click the microphone icon to stop listening
+- Turn off conversation mode in settings
+- Close the conversation
+
+### Conversation Mode Best Practices
+
+- **Speak clearly** - Better transcription accuracy
+- **Pause between thoughts** - Helps auto-transcribe detect when you're done
+- **Quiet environment** - Reduces background noise interference
+- **Test settings first** - Adjust decibel threshold and playback rate before long sessions
+
+## Tips and Best Practices
+
+### Speech-to-Text
+
+- **Test your microphone** - Ensure it's working properly before starting
+- **Check browser permissions** - Allow microphone access when prompted
+- **Speak naturally** - No need to speak robotically
+- **Review transcriptions** - Edit any errors before sending
+- **Use punctuation commands** - Some engines support saying "period", "comma", etc.
+- **Background noise** - Minimize for better accuracy
+
+### Text-to-Speech
+
+- **Choose appropriate voice** - Match language and preference
+- **Adjust playback speed** - Find comfortable listening pace
+- **Use headphones** - Better audio quality and privacy
+- **Long responses** - Consider playback rate adjustment for lengthy content
+- **Pause and review** - Stop playback to read complex code or data
+
+### Performance Optimization
+
+- **Browser vs External** - External services often have better quality but require internet
+- **Disable when not needed** - Turn off TTS/STT to save resources
+- **Cache voices** - Some browsers cache voices for faster loading
+- **Test different engines** - Compare quality and performance
+
+### Accessibility
+
+- **Vision impairment** - TTS enables accessing AI responses without reading
+- **Motor impairment** - Voice input as alternative to typing
+- **Dyslexia** - Hearing responses can aid comprehension
+- **Multitasking** - Listen to responses while doing other tasks
+
+## Troubleshooting
+
+### Speech-to-Text Issues
+
+**Microphone not working:**
+- Check browser permissions for microphone access
+- Verify microphone is connected and not muted
+- Try a different browser
+- Check system audio settings
+
+**Poor transcription accuracy:**
+- Speak more clearly and slowly
+- Reduce background noise
+- Adjust decibel threshold
+- Try external STT engine
+- Select correct language in settings
+
+**No speech detected:**
+- Lower decibel threshold (increase sensitivity)
+- Check microphone volume levels
+- Ensure microphone isn't muted or blocked
+- Try speaking louder or closer to mic
+
+**Speech cuts off too early:**
+- Increase decibel threshold
+- Disable auto-transcribe and stop manually
+- Check browser STT settings
+
+### Text-to-Speech Issues
+
+**No audio playback:**
+- Check browser audio permissions
+- Verify system volume isn't muted
+- Try a different voice or engine
+- Check internet connection (for external TTS)
+- Look for browser console errors
+
+**Voice sounds robotic:**
+- Try a different voice in settings
+- Consider using external TTS service for higher quality
+- Check if your browser has premium voices installed
+
+**Playback too fast/slow:**
+- Adjust playback rate in settings
+- Reset to 1.0x if unsure
+- Test incremental changes (0.1x adjustments)
+
+**Audio stuttering or lag:**
+- Check internet connection (for external TTS)
+- Close other tabs using audio
+- Try browser TTS instead of external
+- Reduce browser resource usage
+
+### General Speech Issues
+
+**Settings not saving:**
+- Check browser local storage permissions
+- Try refreshing the page
+- Verify you're logged in
+- Clear browser cache if persistent
+
+**Feature not available:**
+- Speech features may be disabled by administrator
+- Browser may not support Web Speech API
+- External service may require configuration/API keys
+
+## Privacy and Security
+
+### Browser Speech APIs
+
+- Processing happens on your device (generally)
+- Some browsers may send audio to cloud services
+- Check your browser's privacy policy
+- No API keys or external accounts needed
+
+### External Speech Services
+
+- Audio sent to third-party service
+- Subject to service provider's privacy policy
+- May be recorded or used for training
+- Requires API credentials (stored securely)
+- Consider sensitivity of content being spoken/read
+
+### Best Practices
+
+- Review privacy policies of speech services you use
+- Avoid speaking sensitive information if using cloud STT
+- Use browser APIs for private/confidential conversations
+- Disable speech features when not needed
+- Check microphone permissions regularly
+
+## Keyboard Accessibility
+
+Speech features are keyboard accessible:
+
+- **Tab** - Navigate to microphone/speaker buttons
+- **Enter/Space** - Activate speech recording or playback
+- **Escape** - Stop recording or playback
+- Navigate settings with keyboard
+
+## Advanced Configuration
+
+### Custom External Services
+
+Administrators can configure custom STT/TTS endpoints:
+
+- API endpoint URLs
+- Authentication methods
+- Request/response formats
+- Voice/model selection
+
+Check with your LibreChat administrator for available options.
+
+### Integration with Endpoints
+
+Some LibreChat endpoints have native speech features:
+
+- OpenAI's Whisper (STT) and TTS
+- Azure Speech Services
+- Google Cloud Speech
+
+These may offer tighter integration and better quality than generic external services.

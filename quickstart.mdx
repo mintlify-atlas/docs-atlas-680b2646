@@ -1,80 +1,381 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Get LibreChat running in under 5 minutes with Docker"
 ---
 
-## Get started in three steps
+## Get Started in 3 Steps
 
-Get your documentation site running locally and make your first customization.
+This guide will have you chatting with AI in minutes using Docker.
 
-### Step 1: Set up your local environment
+<Note>
+**Prerequisites**: Docker and Docker Compose installed on your system.
+- [Install Docker Desktop](https://docs.docker.com/get-docker/) (includes Docker Compose)
+- Or install Docker Engine and Docker Compose separately
+</Note>
+
+<Steps>
+  <Step title="Clone and Configure">
+    Download LibreChat and create your environment file:
+
+    ```bash
+    git clone https://github.com/danny-avila/LibreChat.git
+    cd LibreChat
+    cp .env.example .env
+    ```
+
+    <Tip>
+    The `.env` file contains all configuration. You can run LibreChat immediately with defaults, or add your API keys now.
+    </Tip>
+  </Step>
+
+  <Step title="Add API Keys (Optional)">
+    Open `.env` in your text editor and add your API keys:
+
+    ```bash
+    # OpenAI
+    OPENAI_API_KEY=sk-your-key-here
+
+    # Anthropic (Claude)
+    ANTHROPIC_API_KEY=sk-ant-your-key-here
+
+    # Google (Gemini)
+    GOOGLE_KEY=your-key-here
+    ```
+
+    <AccordionGroup>
+      <Accordion title="Where to get API keys">
+        - **OpenAI**: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+        - **Anthropic**: [console.anthropic.com](https://console.anthropic.com)
+        - **Google AI Studio**: [aistudio.google.com](https://aistudio.google.com)
+        - **Azure OpenAI**: Requires Azure subscription and deployment setup
+
+        <Note>
+        You can also set `OPENAI_API_KEY=user_provided` to let users enter their own keys in the UI.
+        </Note>
+      </Accordion>
+
+      <Accordion title="Using local models (no API keys needed)">
+        Connect to local AI models instead of cloud providers:
+
+        ```yaml
+        # In librechat.yaml (create if it doesn't exist)
+        version: 1.3.4
+        endpoints:
+          custom:
+            - name: "Ollama"
+              apiKey: "not-needed"
+              baseURL: "http://host.docker.internal:11434/v1"
+              models:
+                default:
+                  - "llama3.1"
+                  - "mistral"
+        ```
+
+        Make sure Ollama is running: `ollama serve`
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+
+  <Step title="Launch LibreChat">
+    Start all services with Docker Compose:
+
+    ```bash
+    docker compose up -d
+    ```
+
+    This will:
+    - Pull the latest LibreChat image
+    - Start MongoDB for data storage
+    - Start Meilisearch for conversation search
+    - Start the RAG API for file processing
+    - Launch LibreChat on port 3080
+
+    <Info>
+    First launch takes 2-3 minutes to download images and initialize databases. Subsequent starts are much faster.
+    </Info>
+
+    Check the status:
+    ```bash
+    docker compose logs -f
+    ```
+
+    Wait until you see:
+    ```
+    LibreChat | Server listening on port 3080
+    ```
+  </Step>
+</Steps>
+
+## Access LibreChat
+
+Open your browser and navigate to:
+
+```
+http://localhost:3080
+```
+
+<Steps>
+  <Step title="Create Your Account">
+    On first visit, you'll see the registration page.
+
+    1. Enter your email and password
+    2. Click **Sign up**
+    3. You're ready to chat!
+
+    <Warning>
+    The first account created becomes the admin. Subsequent users need to be invited or registration must be enabled in `.env`.
+    </Warning>
+  </Step>
+
+  <Step title="Start Chatting">
+    Select an AI model from the dropdown and start your first conversation:
+
+    1. Click the model selector at the top
+    2. Choose an AI provider (OpenAI, Anthropic, Google, etc.)
+    3. Select a model (GPT-4, Claude 3.5 Sonnet, Gemini Pro)
+    4. Type your message and press Enter
+
+    <Tip>
+    Try asking: "What can you help me with?" to see what your chosen model can do.
+    </Tip>
+  </Step>
+
+  <Step title="Explore Features">
+    LibreChat includes powerful features out of the box:
+
+    <Tabs>
+      <Tab title="File Upload">
+        Click the **📎 paperclip** icon to:
+        - Upload images for vision models (GPT-4o, Claude 3.5 Sonnet)
+        - Attach documents for file search and RAG
+        - Share context across messages
+      </Tab>
+
+      <Tab title="Presets">
+        Click the **Presets** button to:
+        - Save conversation settings (model, temperature, prompts)
+        - Switch between different AI configurations
+        - Share presets with team members
+      </Tab>
+
+      <Tab title="Agents">
+        Create custom AI assistants:
+        1. Click **Agents** in the sidebar
+        2. Click **New Agent**
+        3. Configure tools, instructions, and knowledge
+        4. Use your agent in conversations
+      </Tab>
+
+      <Tab title="Search">
+        Press **Ctrl+K** (or **Cmd+K** on Mac) to:
+        - Search all your conversations
+        - Find specific messages
+        - Jump to any chat instantly
+      </Tab>
+    </Tabs>
+  </Step>
+</Steps>
+
+## Quick Configuration Tips
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+  <Accordion title="Enable additional AI providers" icon="plug">
+    Edit your `.env` file to add more providers:
+
+    ```bash
+    # AWS Bedrock (Claude, Llama on AWS)
+    BEDROCK_AWS_DEFAULT_REGION=us-east-1
+    BEDROCK_AWS_ACCESS_KEY_ID=your-key
+    BEDROCK_AWS_SECRET_ACCESS_KEY=your-secret
+
+    # Azure OpenAI
+    # See docs for Azure-specific configuration
+    # Use librechat.yaml for Azure setup
+    ```
+
+    Restart to apply:
+    ```bash
+    docker compose restart
+    ```
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+
+  <Accordion title="Allow user registration" icon="user-plus">
+    By default, only the first user can register. To allow more users:
+
+    ```bash
+    # In .env
+    ALLOW_REGISTRATION=true
+    ```
+
+    Or invite specific users:
+    ```bash
+    docker compose exec api npm run invite-user
+    ```
+  </Accordion>
+
+  <Accordion title="Change the port" icon="network-wired">
+    If port 3080 is already in use:
+
+    ```bash
+    # In .env
+    PORT=8080
+    ```
+
+    Then in `docker-compose.yml`, update the ports mapping:
+    ```yaml
+    ports:
+      - "8080:8080"  # Change both numbers
+    ```
+
+    Restart: `docker compose up -d`
+  </Accordion>
+
+  <Accordion title="Enable web search" icon="magnifying-glass">
+    Add web search capability to your chats:
+
+    ```bash
+    # In .env - Get keys from respective providers
+    SEARCH=true
+    SERPER_API_KEY=your-serper-key  # Search provider
+    FIRECRAWL_API_KEY=your-key      # Web scraper
+    JINA_API_KEY=your-key           # Result reranker
+    ```
+
+    Restart and you'll see a **🔍 Search** toggle in the interface.
+  </Accordion>
+
+  <Accordion title="Set up code interpreter" icon="terminal">
+    Enable secure code execution:
+
+    ```bash
+    # In .env
+    LIBRECHAT_CODE_API_KEY=your-key-from-code.librechat.ai
+    ```
+
+    Get your API key at [code.librechat.ai](https://code.librechat.ai)
+
+    Now agents can execute Python, JavaScript, and more!
   </Accordion>
 </AccordionGroup>
 
-### Step 2: Deploy your changes
+## Common Docker Commands
+
+<CodeGroup>
+```bash Stop LibreChat
+docker compose down
+```
+
+```bash View logs
+docker compose logs -f
+```
+
+```bash Restart after config changes
+docker compose restart
+```
+
+```bash Update to latest version
+docker compose pull
+docker compose up -d
+```
+
+```bash Reset database (warning: deletes all data)
+docker compose down -v
+docker compose up -d
+```
+</CodeGroup>
+
+## Troubleshooting
 
 <AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+  <Accordion title="Can't access http://localhost:3080" icon="circle-xmark">
+    1. Check if containers are running:
+    ```bash
+    docker compose ps
+    ```
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    2. View logs for errors:
+    ```bash
+    docker compose logs api
+    ```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
+    3. Ensure port 3080 isn't already in use:
+    ```bash
+    # Linux/Mac
+    lsof -i :3080
+    # Windows
+    netstat -ano | findstr :3080
+    ```
+  </Accordion>
+
+  <Accordion title="API key errors" icon="key">
+    If you see "Invalid API key" errors:
+
+    1. Verify your `.env` file has the correct format:
+    ```bash
+    OPENAI_API_KEY=sk-proj-abc123...  # No spaces, no quotes
+    ```
+
+    2. Restart after changing `.env`:
+    ```bash
+    docker compose restart
+    ```
+
+    3. Check if the key is valid:
+    - Test OpenAI keys at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+    - Test Anthropic keys at [console.anthropic.com](https://console.anthropic.com)
+  </Accordion>
+
+  <Accordion title="Database connection errors" icon="database">
+    If MongoDB fails to start:
+
+    ```bash
+    # Check MongoDB logs
+    docker compose logs mongodb
+
+    # Reset database (warning: deletes data)
+    docker compose down
+    sudo rm -rf data-node/
+    docker compose up -d
+    ```
+  </Accordion>
+
+  <Accordion title="Out of memory errors" icon="memory">
+    If you see memory errors during build:
+
+    1. Increase Docker memory limit (Docker Desktop → Settings → Resources)
+    2. Or reduce memory usage:
+    ```bash
+    # In .env
+    NODE_OPTIONS="--max-old-space-size=4096"
+    ```
   </Accordion>
 </AccordionGroup>
 
-### Step 3: Go live
+## Next Steps
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
+You're now running LibreChat! Here's what to explore next:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Detailed Installation" icon="book" href="/installation">
+    Learn about local development setup and advanced configuration
+  </Card>
+  <Card title="Configure AI Endpoints" icon="plug" href="/configuration/ai-endpoints">
+    Set up all supported AI providers and custom models
+  </Card>
+  <Card title="User Guide" icon="user" href="/user-guide/conversations">
+    Master LibreChat features and workflows
+  </Card>
+  <Card title="Create Agents" icon="robot" href="/features/agents">
+    Build custom AI assistants with tools and capabilities
+  </Card>
+  <Card title="Enable MCP" icon="puzzle-piece" href="/features/mcp">
+    Add Model Context Protocol servers for extended functionality
+  </Card>
+  <Card title="Production Deployment" icon="server" href="/deployment/docker">
+    Deploy LibreChat for production use
+  </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+**Need help?** Join our [Discord community](https://discord.librechat.ai) with 50,000+ users, or check the [GitHub discussions](https://github.com/danny-avila/LibreChat/discussions).
 </Note>

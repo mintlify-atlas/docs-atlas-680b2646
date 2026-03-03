@@ -1,0 +1,355 @@
+---
+title: AI Models
+description: Multi-provider AI model support in LibreChat
+icon: "brain-circuit"
+---
+
+LibreChat provides comprehensive support for AI models from multiple providers, giving you the flexibility to choose the right model for your specific use case.
+
+## Supported Providers
+
+LibreChat integrates with all major AI providers through a unified interface:
+
+<CardGroup cols={2}>
+  <Card title="OpenAI" icon="openai">
+    GPT-4o, GPT-4, GPT-3.5, and DALL-E models
+  </Card>
+  <Card title="Anthropic" icon="robot">
+    Claude 4.5 Sonnet, Claude 3.7 Sonnet, and other Claude models
+  </Card>
+  <Card title="Google" icon="google">
+    Gemini Pro, Gemini Flash, and PaLM models
+  </Card>
+  <Card title="Azure OpenAI" icon="microsoft">
+    Azure-hosted OpenAI models with custom deployments
+  </Card>
+  <Card title="AWS Bedrock" icon="aws">
+    Access to Anthropic, Meta, Cohere, AI21, Mistral, and more
+  </Card>
+  <Card title="Custom Endpoints" icon="plug">
+    Connect to any OpenAI-compatible API
+  </Card>
+</CardGroup>
+
+## Provider Configuration
+
+### OpenAI
+
+Configure OpenAI models in your `librechat.yaml`:
+
+```yaml librechat.yaml
+endpoints:
+  openAI:
+    # Models are fetched automatically from the API
+    # Optional: titleModel for conversation titles
+    titleModel: "gpt-4o-mini"
+```
+
+### Anthropic
+
+Set up Claude models with custom parameters:
+
+```yaml librechat.yaml
+endpoints:
+  anthropic:
+    streamRate: 20
+    titleModel: claude-3.5-haiku
+    # Vertex AI configuration for Claude on Google Cloud
+    vertex:
+      region: "us-east5"
+      models:
+        claude-opus-4.5:
+          deploymentName: claude-opus-4-5@20251101
+        claude-sonnet-4:
+          deploymentName: claude-sonnet-4-20250514
+```
+
+### Google (Gemini)
+
+Configure Google's Gemini models:
+
+```yaml librechat.yaml
+endpoints:
+  google:
+    models:
+      default:
+        - "gemini-2.0-flash-exp"
+        - "gemini-1.5-pro"
+        - "gemini-1.5-flash"
+```
+
+### AWS Bedrock
+
+Access multiple providers through AWS:
+
+```yaml librechat.yaml
+endpoints:
+  bedrock:
+    models:
+      - "anthropic.claude-3-7-sonnet-20250219-v1:0"
+      - "anthropic.claude-3-5-sonnet-20241022-v2:0"
+    
+    # Inference Profiles for cross-region routing
+    inferenceProfiles:
+      "us.anthropic.claude-sonnet-4-20250514-v1:0": "${BEDROCK_INFERENCE_PROFILE_CLAUDE_SONNET}"
+    
+    # Guardrail configuration
+    guardrailConfig:
+      guardrailIdentifier: "your-guardrail-id"
+      guardrailVersion: "1"
+      trace: "enabled"
+```
+
+### Custom Endpoints
+
+Connect to any OpenAI-compatible API:
+
+```yaml librechat.yaml
+endpoints:
+  custom:
+    # Groq Example
+    - name: 'groq'
+      apiKey: '${GROQ_API_KEY}'
+      baseURL: 'https://api.groq.com/openai/v1/'
+      models:
+        default:
+          - 'llama3-70b-8192'
+          - 'llama3-8b-8192'
+          - 'mixtral-8x7b-32768'
+      titleConvo: true
+      titleModel: 'mixtral-8x7b-32768'
+      modelDisplayLabel: 'groq'
+    
+    # Mistral AI Example
+    - name: 'Mistral'
+      apiKey: '${MISTRAL_API_KEY}'
+      baseURL: 'https://api.mistral.ai/v1'
+      models:
+        default: ['mistral-tiny', 'mistral-small', 'mistral-medium']
+        fetch: true
+      titleConvo: true
+      titleModel: 'mistral-tiny'
+      modelDisplayLabel: 'Mistral'
+      dropParams: ['stop', 'user', 'frequency_penalty', 'presence_penalty']
+    
+    # OpenRouter Example
+    - name: 'OpenRouter'
+      apiKey: '${OPENROUTER_KEY}'
+      baseURL: 'https://openrouter.ai/api/v1'
+      models:
+        default: ['meta-llama/llama-3-70b-instruct']
+        fetch: true
+      titleConvo: true
+      dropParams: ['stop']
+      modelDisplayLabel: 'OpenRouter'
+```
+
+## Model Features
+
+### Multimodal Support
+
+Many models support vision and file analysis:
+
+<AccordionGroup>
+  <Accordion title="Vision-Capable Models">
+    - **GPT-4o**: Images, documents, and vision
+    - **Claude 4.5 Sonnet**: Advanced multimodal understanding
+    - **Gemini 2.0 Flash**: Native multimodal processing
+    - **Claude 3.7 Sonnet**: Document and image analysis
+  </Accordion>
+  
+  <Accordion title="Document Processing">
+    Models that support direct PDF and document processing:
+    - OpenAI models (with Responses API)
+    - Anthropic Claude models
+    - Google Gemini models
+    - AWS Bedrock Anthropic models
+    - Custom endpoints (provider-dependent)
+  </Accordion>
+</AccordionGroup>
+
+### Model Parameters
+
+Customize model behavior with parameters:
+
+<ParamField path="temperature" type="number" default="1">
+  Controls randomness. Lower values (0.1-0.5) are more focused and deterministic. Higher values (0.8-1.5) are more creative.
+</ParamField>
+
+<ParamField path="top_p" type="number" default="1">
+  Nucleus sampling. Alternative to temperature for controlling randomness.
+</ParamField>
+
+<ParamField path="max_tokens" type="number">
+  Maximum number of tokens to generate in the response.
+</ParamField>
+
+<ParamField path="frequency_penalty" type="number" default="0">
+  Reduces repetition of token sequences. Range: -2.0 to 2.0.
+</ParamField>
+
+<ParamField path="presence_penalty" type="number" default="0">
+  Increases likelihood of talking about new topics. Range: -2.0 to 2.0.
+</ParamField>
+
+## Advanced Configuration
+
+### Model Specifications
+
+Create preset configurations with Model Specs:
+
+```yaml librechat.yaml
+modelSpecs:
+  list:
+    # Grouped under an endpoint
+    - name: "gpt-4o"
+      label: "GPT-4 Optimized"
+      description: "Most capable GPT-4 model with multimodal support"
+      group: "openAI"
+      preset:
+        endpoint: "openAI"
+        model: "gpt-4o"
+    
+    # Custom group with icon
+    - name: "coding-assistant"
+      label: "Coding Assistant"
+      description: "Specialized for coding tasks"
+      group: "my-assistants"
+      groupIcon: "https://example.com/icons/assistants.png"
+      preset:
+        endpoint: "openAI"
+        model: "gpt-4o"
+        instructions: "You are an expert coding assistant..."
+        temperature: 0.3
+    
+    # Standalone (no group)
+    - name: "general-assistant"
+      label: "General Assistant"
+      description: "General purpose assistant"
+      preset:
+        endpoint: "openAI"
+        model: "gpt-4o-mini"
+```
+
+### Parameter Handling
+
+Control which parameters are sent to each endpoint:
+
+```yaml librechat.yaml
+endpoints:
+  custom:
+    - name: 'MyEndpoint'
+      # Add custom parameters
+      addParams:
+        safe_prompt: true
+      
+      # Drop parameters not supported by the endpoint
+      dropParams: ['stop', 'user', 'frequency_penalty']
+      
+      # Add custom headers
+      headers:
+        x-custom-header: 'value'
+```
+
+### Model Fetching
+
+Automatically fetch available models from the API:
+
+```yaml librechat.yaml
+endpoints:
+  custom:
+    - name: 'MyEndpoint'
+      models:
+        default: ['model-1', 'model-2']
+        fetch: true  # Fetch models from /v1/models endpoint
+```
+
+## Model Selection UI
+
+LibreChat provides an intuitive model selection interface:
+
+<Steps>
+  <Step title="Select Endpoint">
+    Choose your AI provider from the endpoint dropdown
+  </Step>
+  
+  <Step title="Choose Model">
+    Select from available models for that endpoint
+  </Step>
+  
+  <Step title="Configure Parameters">
+    Adjust temperature, tokens, and other settings
+  </Step>
+  
+  <Step title="Start Chatting">
+    Begin your conversation with the selected model
+  </Step>
+</Steps>
+
+## Best Practices
+
+<Warning>
+  **API Key Security**: Always use environment variables for API keys. Never commit credentials to version control.
+</Warning>
+
+<Tip>
+  **Model Selection**: 
+  - Use GPT-4o for complex reasoning and multimodal tasks
+  - Use GPT-4o-mini for faster, cost-effective responses
+  - Use Claude for long context and detailed analysis
+  - Use Gemini Flash for speed and efficiency
+</Tip>
+
+<Info>
+  **Token Limits**: Different models have different context windows:
+  - GPT-4o: 128k tokens
+  - Claude 4.5 Sonnet: 200k tokens
+  - Gemini 2.0 Flash: 1M tokens
+</Info>
+
+## Environment Variables
+
+Required environment variables by provider:
+
+<CodeGroup>
+```bash OpenAI
+OPENAI_API_KEY=sk-...
+```
+
+```bash Anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+```bash Google
+GOOGLE_KEY=...
+```
+
+```bash Azure OpenAI
+AZURE_OPENAI_API_KEY=...
+AZURE_OPENAI_API_INSTANCE_NAME=...
+AZURE_OPENAI_API_VERSION=...
+```
+
+```bash AWS Bedrock
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_REGION=us-east-1
+```
+</CodeGroup>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Agents" icon="robot" href="/features/agents">
+    Use AI models with autonomous agents
+  </Card>
+  <Card title="Multimodal" icon="image" href="/features/multimodal">
+    Image and file analysis with vision models
+  </Card>
+  <Card title="Image Generation" icon="palette" href="/features/image-generation">
+    Generate images with DALL-E and other models
+  </Card>
+  <Card title="Code Interpreter" icon="code" href="/features/code-interpreter">
+    Execute code with AI assistance
+  </Card>
+</CardGroup>

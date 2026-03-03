@@ -1,0 +1,473 @@
+---
+title: Local Development Setup
+description: Set up LibreChat for local development
+---
+
+# Local Development Setup
+
+Run LibreChat locally for development, testing, or personal use without Docker.
+
+## Prerequisites
+
+- **Node.js**: v20.19.0+, v22.12.0+, or >= v23.0.0
+- **npm**: 11.10.0+ (comes with Node.js)
+- **MongoDB**: 4.4+ or cloud instance (MongoDB Atlas)
+- **Git**: For cloning the repository
+
+## System Requirements
+
+- **RAM**: 4GB minimum, 8GB recommended
+- **Disk Space**: 5GB for dependencies and data
+- **OS**: Linux, macOS, or Windows (WSL2 recommended)
+
+## Installation
+
+<Steps>
+  <Step title="Install Node.js">
+    Download and install Node.js from [nodejs.org](https://nodejs.org/):
+
+    ```bash
+    # Verify installation
+    node --version  # Should be v20.19.0+ or v22.12.0+ or >= v23.0.0
+    npm --version   # Should be 11.10.0+
+    ```
+
+    <Tip>
+      Use [nvm](https://github.com/nvm-sh/nvm) to manage multiple Node.js versions:
+      ```bash
+      nvm install 20.19.0
+      nvm use 20.19.0
+      ```
+    </Tip>
+  </Step>
+
+  <Step title="Install MongoDB">
+    **Option 1: Local MongoDB**
+    
+    Follow the [MongoDB installation guide](https://docs.mongodb.com/manual/installation/) for your OS.
+
+    ```bash
+    # Start MongoDB (Linux/macOS)
+    sudo systemctl start mongod
+    
+    # Verify it's running
+    mongosh --eval "db.adminCommand('ping')"
+    ```
+
+    **Option 2: MongoDB Atlas (Cloud)**
+    
+    1. Create free account at [mongodb.com/atlas](https://www.mongodb.com/atlas)
+    2. Create a cluster
+    3. Get connection string from "Connect" > "Connect your application"
+    4. Whitelist your IP address
+  </Step>
+
+  <Step title="Clone Repository">
+    ```bash
+    git clone https://github.com/danny-avila/LibreChat.git
+    cd LibreChat
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    LibreChat uses a monorepo structure with workspaces:
+
+    ```bash
+    # Smart reinstall (only if needed)
+    npm run smart-reinstall
+    
+    # Or full clean install
+    npm run reinstall
+    ```
+
+    This installs dependencies for all workspaces:
+    - `/api` - Backend server
+    - `/client` - Frontend React app
+    - `/packages/api` - TypeScript backend code
+    - `/packages/data-provider` - Shared data layer
+    - `/packages/data-schemas` - Database schemas
+    - `/packages/client` - Shared frontend utilities
+  </Step>
+
+  <Step title="Configure Environment">
+    Create environment file:
+    
+    ```bash
+    cp .env.example .env
+    ```
+
+    Edit `.env` with your configuration:
+    
+    ```bash
+    # Server
+    HOST=localhost
+    PORT=3080
+    
+    # MongoDB
+    MONGO_URI=mongodb://127.0.0.1:27017/LibreChat
+    # Or for MongoDB Atlas:
+    # MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/LibreChat
+    
+    # Domain
+    DOMAIN_CLIENT=http://localhost:3080
+    DOMAIN_SERVER=http://localhost:3080
+    
+    # Security - Generate with: openssl rand -hex 32
+    CREDS_KEY=your_generated_key_here
+    CREDS_IV=your_generated_iv_here  # openssl rand -hex 16
+    JWT_SECRET=your_jwt_secret_here
+    JWT_REFRESH_SECRET=your_refresh_secret_here
+    
+    # AI Provider Keys (set to user_provided or your actual keys)
+    OPENAI_API_KEY=user_provided
+    ANTHROPIC_API_KEY=user_provided
+    GOOGLE_KEY=user_provided
+    
+    # Search (optional)
+    SEARCH=false
+    # If enabling search, install and configure Meilisearch separately
+    # MEILI_HOST=http://127.0.0.1:7700
+    # MEILI_MASTER_KEY=your_meili_key
+    
+    # Debug
+    DEBUG_LOGGING=true
+    DEBUG_CONSOLE=false
+    ```
+  </Step>
+
+  <Step title="Build Packages">
+    Build all TypeScript packages:
+    
+    ```bash
+    # Using Turborepo (parallel, cached)
+    npm run build
+    
+    # Or sequential build
+    npm run frontend
+    ```
+
+    This builds:
+    1. `packages/data-provider`
+    2. `packages/data-schemas`
+    3. `packages/api`
+    4. `packages/client`
+    5. `client` (React app)
+  </Step>
+
+  <Step title="Start the Application">
+    Open two terminal windows:
+
+    **Terminal 1 - Backend:**
+    ```bash
+    npm run backend
+    # Or with auto-reload:
+    npm run backend:dev
+    ```
+
+    **Terminal 2 - Frontend (optional for development):**
+    ```bash
+    npm run frontend:dev
+    ```
+
+    <Note>
+      - Backend runs on `http://localhost:3080`
+      - Frontend dev server (if started) runs on `http://localhost:3090`
+      - In production, backend serves the built frontend from port 3080
+    </Note>
+  </Step>
+
+  <Step title="Access LibreChat">
+    Open your browser:
+    
+    - Production mode: `http://localhost:3080`
+    - Development mode: `http://localhost:3090` (with HMR)
+
+    Create your account and start using LibreChat!
+  </Step>
+</Steps>
+
+## Development Commands
+
+### Package Management
+
+```bash
+# Smart reinstall (only if lockfile changed)
+npm run smart-reinstall
+
+# Full clean reinstall
+npm run reinstall
+
+# Update dependencies
+npm run update:local
+```
+
+### Building
+
+```bash
+# Build all packages (Turborepo - parallel)
+npm run build
+
+# Build all packages (sequential)
+npm run frontend
+
+# Build specific package
+npm run build:data-provider
+npm run build:data-schemas
+npm run build:api
+npm run build:client
+npm run build:client-package
+```
+
+### Running Services
+
+```bash
+# Backend
+npm run backend           # Production mode
+npm run backend:dev       # Development with nodemon
+npm run backend:inspect   # With Node.js inspector
+
+# Frontend
+npm run frontend:dev      # Development server with HMR
+```
+
+### Testing
+
+```bash
+# Run all tests
+npm run test:all
+
+# Test specific workspace
+npm run test:client
+npm run test:api
+npm run test:packages:api
+npm run test:packages:data-provider
+npm run test:packages:data-schemas
+
+# End-to-end tests
+npm run e2e
+npm run e2e:headed       # With browser UI
+npm run e2e:debug        # Debug mode
+```
+
+### Code Quality
+
+```bash
+# Linting
+npm run lint             # Check for issues
+npm run lint:fix         # Auto-fix issues
+
+# Formatting
+npm run format           # Format with Prettier
+```
+
+### User Management
+
+```bash
+# Create user
+npm run create-user
+
+# Invite user
+npm run invite-user
+
+# List users
+npm run list-users
+
+# Reset password
+npm run reset-password
+
+# Ban user
+npm run ban-user
+
+# Delete user
+npm run delete-user
+```
+
+### Database Management
+
+```bash
+# Add balance to user
+npm run add-balance
+
+# Set user balance
+npm run set-balance
+
+# List user balances
+npm run list-balances
+
+# Reset Meilisearch sync
+npm run reset-meili-sync
+```
+
+## Project Structure
+
+LibreChat uses a monorepo structure:
+
+```
+LibreChat/
+├── api/                          # Legacy JS backend
+│   ├── server/                   # Express server
+│   └── package.json
+├── client/                       # React frontend
+│   ├── src/
+│   └── package.json
+├── packages/
+│   ├── api/                      # New TypeScript backend
+│   ├── client/                   # Shared frontend utilities
+│   ├── data-provider/            # Shared API/data layer
+│   └── data-schemas/             # Database models
+├── config/                       # Configuration scripts
+├── .env                          # Environment variables
+├── package.json                  # Root package.json
+└── turbo.json                    # Turborepo configuration
+```
+
+## Workspace Overview
+
+| Workspace | Language | Purpose |
+|-----------|----------|--------|
+| `/api` | JavaScript | Express server (legacy, minimize changes) |
+| `/packages/api` | TypeScript | **New backend code goes here** |
+| `/packages/data-schemas` | TypeScript | Database models/schemas |
+| `/packages/data-provider` | TypeScript | Shared API types, endpoints |
+| `/client` | TypeScript/React | Frontend SPA |
+| `/packages/client` | TypeScript | Shared frontend utilities |
+
+<Warning>
+  **All new backend code must be TypeScript** in `/packages/api`. Keep `/api` changes to the absolute minimum.
+</Warning>
+
+## Optional Services
+
+### Meilisearch (Search)
+
+```bash
+# Install Meilisearch
+curl -L https://install.meilisearch.com | sh
+
+# Run Meilisearch
+./meilisearch --master-key="your_master_key"
+```
+
+Update `.env`:
+```bash
+SEARCH=true
+MEILI_HOST=http://127.0.0.1:7700
+MEILI_MASTER_KEY=your_master_key
+```
+
+### RAG API (Optional)
+
+For enhanced document processing, run the RAG API separately. See [RAG API documentation](https://github.com/danny-avila/rag_api).
+
+## Troubleshooting
+
+### Port Already in Use
+
+```bash
+# Find process using port 3080
+lsof -i :3080
+
+# Kill the process
+kill -9 <PID>
+
+# Or change port in .env
+PORT=3081
+```
+
+### MongoDB Connection Failed
+
+```bash
+# Check MongoDB is running
+sudo systemctl status mongod
+
+# Start MongoDB
+sudo systemctl start mongod
+
+# Test connection
+mongosh mongodb://127.0.0.1:27017/LibreChat
+```
+
+### Build Failures
+
+```bash
+# Clear all node_modules and reinstall
+npm run reinstall
+
+# Clear build cache
+rm -rf node_modules/.cache
+rm -rf client/dist
+rm -rf packages/*/dist
+
+# Rebuild
+npm run build
+```
+
+### TypeScript Errors
+
+```bash
+# Rebuild data-provider (most common fix)
+npm run build:data-provider
+
+# Check for TypeScript errors
+npx tsc --noEmit
+```
+
+### Memory Issues
+
+Increase Node.js memory:
+
+```bash
+# In package.json or command line
+export NODE_OPTIONS="--max-old-space-size=8192"
+npm run frontend
+```
+
+## Development Tips
+
+### Hot Module Replacement
+
+Use frontend dev server for instant updates:
+
+```bash
+# Terminal 1
+npm run backend:dev
+
+# Terminal 2
+npm run frontend:dev
+```
+
+Access at `http://localhost:3090`
+
+### Debugging Backend
+
+```bash
+# Start with inspector
+npm run backend:inspect
+
+# In Chrome/Edge, go to:
+chrome://inspect
+```
+
+### Watch Mode for Packages
+
+```bash
+# Watch data-provider for changes
+cd packages/data-provider
+npm run watch
+```
+
+### Code Style
+
+- Use TypeScript for all new code
+- Never use `any` type
+- Limit use of `unknown`
+- Follow existing patterns
+- Use early returns (avoid nesting)
+- Minimize loops over shared data structures
+
+## Next Steps
+
+- [Configure AI Endpoints](/configuration/ai-endpoints)
+- [Set up librechat.yaml](/configuration/librechat-yaml)
+- [Enable Authentication](/configuration/authentication)
+- [Contributing Guide](/development/contributing)

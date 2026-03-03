@@ -1,0 +1,541 @@
+---
+title: Localization (i18n)
+description: Internationalization workflow and translation best practices
+---
+
+## Overview
+
+LibreChat uses i18next for internationalization with a strict workflow to maintain translation quality across 40+ languages.
+
+**Key Rules:**
+- All user-facing text must use `useLocalize()`
+- Only update English keys in `client/src/locales/en/translation.json`
+- Other languages are automated externally
+- Use semantic key prefixes
+
+## i18n Setup
+
+From `client/src/locales/i18n.ts:1`:
+
+```typescript
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+
+// Import translation files
+import translationEn from './en/translation.json';
+import translationEs from './es/translation.json';
+import translationFr from './fr/translation.json';
+// ... 40+ more languages
+
+export const defaultNS = 'translation';
+
+export const resources = {
+  en: { translation: translationEn },
+  es: { translation: translationEs },
+  fr: { translation: translationFr },
+  'zh-Hans': { translation: translationZh_Hans },
+  'zh-Hant': { translation: translationZh_Hant },
+  // ... more languages
+} as const;
+
+i18n
+  .use(LanguageDetector)        // Detect user language
+  .use(initReactI18next)         // React integration
+  .init({
+    fallbackLng: {
+      'zh-TW': ['zh-Hant', 'en'],
+      'zh-HK': ['zh-Hant', 'en'],
+      zh: ['zh-Hans', 'en'],
+      default: ['en'],
+    },
+    fallbackNS: 'translation',
+    ns: ['translation'],
+    debug: false,
+    defaultNS,
+    resources,
+    interpolation: { escapeValue: false },  // React handles XSS
+  });
+
+export default i18n;
+```
+
+## Using Localization
+
+### useLocalize Hook
+
+From `client/src/hooks/useLocalize.ts:1`:
+
+```typescript
+import { useEffect } from 'react';
+import { TOptions } from 'i18next';
+import { useRecoilValue } from 'recoil';
+import { useTranslation } from 'react-i18next';
+import { resources } from '~/locales/i18n';
+import store from '~/store';
+
+export type TranslationKeys = keyof typeof resources.en.translation;
+
+export default function useLocalize() {
+  const lang = useRecoilValue(store.lang);
+  const { t, i18n } = useTranslation();
+
+  useEffect(() => {
+    if (i18n.language !== lang) {
+      i18n.changeLanguage(lang);
+    }
+  }, [lang, i18n]);
+
+  return (phraseKey: TranslationKeys, options?: TOptions) => t(phraseKey, options);
+}
+```
+
+**Type Safety:**
+- `TranslationKeys` type ensures only valid keys are used
+- TypeScript will error on non-existent keys
+
+### Basic Usage
+
+```typescript
+import { useLocalize } from '~/hooks';
+
+function MyComponent() {
+  const localize = useLocalize();
+
+  return (
+    <div>
+      <h1>{localize('com_ui_welcome')}</h1>
+      <button>{localize('com_ui_save')}</button>
+      <p>{localize('com_ui_error_message')}</p>
+    </div>
+  );
+}
+```
+
+### String Interpolation
+
+From `client/src/components/Agents/AgentCard.tsx:109`:
+
+```typescript
+const localize = useLocalize();
+
+// Simple interpolation
+<span>
+  {localize('com_ui_by_author', { 0: displayName })}
+</span>
+
+// Multiple variables
+<div aria-label={localize('com_agents_agent_card_label', {
+  name: agent.name,
+  description: agent.description ?? '',
+})}>
+```
+
+**Translation file:**
+
+```json
+{
+  "com_ui_by_author": "by {{0}}",
+  "com_agents_agent_card_label": "{{name}} agent. {{description}}"
+}
+```
+
+### Pluralization
+
+```typescript
+// Component
+const tokenCount = 5;
+const key = tokenCount === 1 ? 'com_ui_token' : 'com_ui_tokens';
+
+<span>{tokenCount} {localize(key)}</span>
+```
+
+```json
+{
+  "com_ui_token": "token",
+  "com_ui_tokens": "tokens"
+}
+```
+
+Or using i18next plurals:
+
+```json
+{
+  "com_ui_token_count": "{{count}} token",
+  "com_ui_token_count_plural": "{{count}} tokens"
+}
+```
+
+```typescript
+localize('com_ui_token_count', { count: tokenCount })
+```
+
+## Translation Key Naming
+
+### Semantic Prefixes
+
+From AGENTS.md and `client/src/locales/en/translation.json:1`:
+
+```
+com_ui_*          - General UI elements
+com_agents_*      - Agent-related features
+com_assistants_*  - Assistant features
+com_auth_*        - Authentication
+com_nav_*         - Navigation
+com_endpoint_*    - Model endpoints
+com_files_*       - File management
+com_error_*       - Error messages
+com_a11y_*        - Accessibility announcements
+```
+
+### Examples from translation.json
+
+```json
+{
+  "com_ui_save": "Save",
+  "com_ui_cancel": "Cancel",
+  "com_ui_delete": "Delete",
+  "com_ui_loading": "Loading...",
+  
+  "com_agents_marketplace": "Agent Marketplace",
+  "com_agents_create_error": "There was an error creating your agent.",
+  "com_agents_search_placeholder": "Search agents...",
+  
+  "com_error_network_title": "Connection Problem",
+  "com_error_network_message": "Unable to connect to the server.",
+  "com_error_retry": "Try Again",
+  
+  "com_a11y_ai_composing": "The AI is still composing.",
+  "com_a11y_end": "The AI has finished their reply."
+}
+```
+
+### Naming Best Practices
+
+```typescript
+// Good: Semantic, descriptive keys
+com_agents_marketplace_subtitle
+com_agents_error_loading
+com_ui_by_author
+
+// Bad: Generic or unclear
+text1
+error
+message
+author_name
+```
+
+## Adding New Translations
+
+### 1. Add to English Translation File
+
+**File:** `client/src/locales/en/translation.json`
+
+```json
+{
+  // ... existing keys
+  "com_agents_new_feature_title": "New Feature",
+  "com_agents_new_feature_description": "This is a new feature for agents.",
+  "com_agents_action_label": "Perform action with {{name}}"
+}
+```
+
+### 2. Use in Component
+
+```typescript
+import { useLocalize } from '~/hooks';
+
+function NewFeature({ agent }: Props) {
+  const localize = useLocalize();
+
+  return (
+    <div>
+      <h2>{localize('com_agents_new_feature_title')}</h2>
+      <p>{localize('com_agents_new_feature_description')}</p>
+      <button aria-label={localize('com_agents_action_label', { name: agent.name })}>
+        {localize('com_ui_continue')}
+      </button>
+    </div>
+  );
+}
+```
+
+### 3. Translation Process
+
+**DO:**
+- Add new keys to `client/src/locales/en/translation.json`
+- Use descriptive, semantic key names
+- Include context in key names when needed
+- Test that keys display correctly
+
+**DON'T:**
+- Manually edit other language files (they're automated)
+- Use generic key names like `text1`, `label2`
+- Hard-code English text in components
+- Skip localization for any user-facing text
+
+## Accessibility with i18n
+
+From `client/src/components/Agents/AgentCard.tsx:57`:
+
+```typescript
+<div
+  aria-label={localize('com_agents_agent_card_label', {
+    name: agent.name,
+    description: agent.description ?? '',
+  })}
+  aria-describedby={agent.description ? `agent-${agent.id}-description` : undefined}
+>
+  <Label>{agent.name}</Label>
+  {agent.description && (
+    <p
+      id={`agent-${agent.id}-description`}
+      aria-label={localize('com_agents_description_card', {
+        description: agent.description,
+      })}
+    >
+      {agent.description}
+    </p>
+  )}
+</div>
+```
+
+**Accessibility Translation Keys:**
+
+```json
+{
+  "com_a11y_ai_composing": "The AI is still composing.",
+  "com_a11y_start": "The AI has started their reply.",
+  "com_a11y_end": "The AI has finished their reply.",
+  "com_agents_search_aria": "Search for agents",
+  "com_agents_load_more_label": "Load more agents from {{category}} category"
+}
+```
+
+## Language Selection
+
+Language is stored in Jotai/Recoil state and persisted to localStorage.
+
+From `client/src/store/language.ts:1`:
+
+```typescript
+import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
+
+export const languageAtom = atomWithStorage<string>('language', 'en', undefined, {
+  getOnInit: true,
+});
+```
+
+### Language Switcher Component
+
+```typescript
+import { useAtom } from 'jotai';
+import { languageAtom } from '~/store';
+
+function LanguageSwitcher() {
+  const [language, setLanguage] = useAtom(languageAtom);
+
+  const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Español' },
+    { code: 'fr', name: 'Français' },
+    { code: 'zh-Hans', name: '简体中文' },
+    // ... more languages
+  ];
+
+  return (
+    <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+      {languages.map((lang) => (
+        <option key={lang.code} value={lang.code}>
+          {lang.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+```
+
+## RTL Support
+
+From `client/src/locales/i18n.ts:98`:
+
+```typescript
+fallbackLng: {
+  'zh-TW': ['zh-Hant', 'en'],
+  'zh-HK': ['zh-Hant', 'en'],
+  zh: ['zh-Hans', 'en'],
+  default: ['en'],
+},
+```
+
+### RTL Languages
+
+RTL (Right-to-Left) languages supported:
+- Arabic (ar)
+- Hebrew (he)
+- Persian/Farsi (fa)
+- Uyghur (ug)
+
+### Handling RTL in Components
+
+```typescript
+import { useTranslation } from 'react-i18next';
+
+function MyComponent() {
+  const { i18n } = useTranslation();
+  const isRTL = i18n.dir() === 'rtl';
+
+  return (
+    <div dir={i18n.dir()} className={isRTL ? 'rtl-layout' : 'ltr-layout'}>
+      {/* Component content */}
+    </div>
+  );
+}
+```
+
+## Common Patterns
+
+### Conditional Text
+
+```typescript
+const statusKey = isActive 
+  ? 'com_ui_status_active' 
+  : 'com_ui_status_inactive';
+
+<span>{localize(statusKey)}</span>
+```
+
+### Lists with Localization
+
+```typescript
+const categories = [
+  { value: 'general', label: localize('com_agents_category_general') },
+  { value: 'finance', label: localize('com_agents_category_finance') },
+  { value: 'it', label: localize('com_agents_category_it') },
+];
+```
+
+### Dynamic Translation Keys
+
+```typescript
+// Translation keys follow a pattern
+const categoryKey = `com_agents_category_${category}` as TranslationKeys;
+const categoryLabel = localize(categoryKey);
+
+// With fallback
+const categoryLabel = category.startsWith('com_') 
+  ? localize(category as TranslationKeys)
+  : category;  // Use raw value if not a translation key
+```
+
+From `client/src/components/Agents/AgentCard.tsx:22`:
+
+```typescript
+const categoryLabel = useMemo(() => {
+  if (!agent.category) return '';
+
+  const category = categories.find((cat) => cat.value === agent.category);
+  if (category) {
+    if (category.label && category.label.startsWith('com_')) {
+      return localize(category.label as TranslationKeys);
+    }
+    return category.label;
+  }
+
+  return agent.category.charAt(0).toUpperCase() + agent.category.slice(1);
+}, [agent.category, categories, localize]);
+```
+
+## Testing Translations
+
+### 1. Check for Missing Keys
+
+```typescript
+// TypeScript will error if key doesn't exist
+localize('com_nonexistent_key');  // ❌ Type error
+localize('com_ui_save');           // ✅ Valid
+```
+
+### 2. Test with Different Languages
+
+```typescript
+import { render } from '@testing-library/react';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '~/locales/i18n';
+
+describe('MyComponent', () => {
+  it('should render in Spanish', async () => {
+    await i18n.changeLanguage('es');
+    
+    const { getByText } = render(
+      <I18nextProvider i18n={i18n}>
+        <MyComponent />
+      </I18nextProvider>
+    );
+    
+    expect(getByText('Guardar')).toBeInTheDocument();  // Spanish for "Save"
+  });
+});
+```
+
+## Workflow Summary
+
+From AGENTS.md:
+
+1. **Identify user-facing text** in your component
+2. **Create semantic keys** with appropriate prefix in `client/src/locales/en/translation.json`
+3. **Use `useLocalize()`** hook in component
+4. **Replace hard-coded text** with `localize('key')`
+5. **Test** that text displays correctly
+6. **Submit PR** - automated translation happens externally
+
+## Supported Languages
+
+From `client/src/locales/`:
+
+- Arabic (ar)
+- Bosnian (bs)
+- Catalan (ca)
+- Czech (cs)
+- Chinese Simplified (zh-Hans)
+- Chinese Traditional (zh-Hant)
+- Danish (da)
+- Dutch (nl)
+- English (en)
+- Estonian (et)
+- Finnish (fi)
+- French (fr)
+- German (de)
+- Hebrew (he)
+- Hungarian (hu)
+- Icelandic (is)
+- Indonesian (id)
+- Italian (it)
+- Japanese (ja)
+- Korean (ko)
+- Lithuanian (lt)
+- Latvian (lv)
+- Norwegian Bokmål (nb)
+- Norwegian Nynorsk (nn)
+- Persian (fa)
+- Polish (pl)
+- Portuguese Brazilian (pt-BR)
+- Portuguese (pt-PT)
+- Russian (ru)
+- Slovak (sk)
+- Slovenian (sl)
+- Spanish (es)
+- Swedish (sv)
+- Thai (th)
+- Tibetan (bo)
+- Turkish (tr)
+- Ukrainian (uk)
+- Uyghur (ug)
+- Vietnamese (vi)
+
+## Next Steps
+
+- [Components](./components) - Component architecture and patterns
+- [State Management](./state-management) - Managing language state
+- [Data Provider](./data-provider) - API integration for translated content

@@ -1,0 +1,487 @@
+---
+title: Agents
+description: Autonomous AI agents with tools, file search, and code execution
+icon: "robot"
+---
+
+LibreChat's Agents feature provides powerful autonomous AI assistants that can use tools, search files, execute code, and chain operations to accomplish complex tasks.
+
+## Overview
+
+Agents are AI-powered assistants that can:
+
+<CardGroup cols={2}>
+  <Card title="Use Tools" icon="wrench">
+    Execute code, search the web, call APIs, and use custom tools
+  </Card>
+  <Card title="Search Files" icon="magnifying-glass">
+    Find and analyze information across uploaded documents
+  </Card>
+  <Card title="Chain Operations" icon="link">
+    Hand off to specialized agents for multi-step workflows
+  </Card>
+  <Card title="Maintain Context" icon="brain">
+    Remember conversation history and file attachments
+  </Card>
+</CardGroup>
+
+## Creating Agents
+
+Agents can be created through the UI or configured in your `librechat.yaml`:
+
+### Through the UI
+
+<Steps>
+  <Step title="Click New Agent">
+    Click the "New Agent" button in the interface
+  </Step>
+  
+  <Step title="Configure Agent">
+    Set name, description, instructions, and model
+  </Step>
+  
+  <Step title="Add Capabilities">
+    Enable tools like code execution, file search, web search
+  </Step>
+  
+  <Step title="Save and Use">
+    Save your agent and start chatting
+  </Step>
+</Steps>
+
+### Through Configuration
+
+Configure agent capabilities in `librechat.yaml`:
+
+```yaml librechat.yaml
+endpoints:
+  agents:
+    # Recursion limits for agent operations
+    recursionLimit: 50
+    maxRecursionLimit: 100
+    
+    # Disable the builder interface
+    disableBuilder: false
+    
+    # Citation settings
+    maxCitations: 30
+    maxCitationsPerFile: 7
+    minRelevanceScore: 0.45
+    
+    # Available capabilities
+    capabilities:
+      - deferred_tools
+      - execute_code
+      - file_search
+      - actions
+      - tools
+```
+
+## Agent Capabilities
+
+### Execute Code
+
+Agents can write and execute Python code to analyze data, perform calculations, and generate visualizations:
+
+<CodeGroup>
+```python Data Analysis
+# Agent can analyze data from uploaded files
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv('sales_data.csv')
+print(df.describe())
+plt.plot(df['month'], df['revenue'])
+plt.savefig('revenue_trend.png')
+```
+
+```python Calculations
+# Complex mathematical computations
+import numpy as np
+
+def calculate_roi(initial, final):
+    return ((final - initial) / initial) * 100
+
+roi = calculate_roi(10000, 15000)
+print(f"ROI: {roi}%")
+```
+</CodeGroup>
+
+Configuration in agent tool resources:
+
+```typescript
+tool_resources: {
+  execute_code: {
+    file_ids: ['file-123', 'file-456']
+  }
+}
+```
+
+### File Search
+
+Agents can search through uploaded documents using vector embeddings:
+
+<Accordion title="How File Search Works">
+  1. **Upload Documents**: Attach PDFs, text files, code files
+  2. **Vector Indexing**: Files are automatically indexed with embeddings
+  3. **Semantic Search**: Agent searches using natural language queries
+  4. **Citation Generation**: Results include source citations with page numbers
+</Accordion>
+
+Configure file search resources:
+
+```typescript
+tool_resources: {
+  file_search: {
+    vector_stores: [
+      {
+        file_ids: ['file-789', 'file-012'],
+        name: 'Company Documentation'
+      }
+    ]
+  }
+}
+```
+
+**Citation Settings**:
+
+<ParamField path="maxCitations" type="number" default="30">
+  Maximum total citations to include in responses
+</ParamField>
+
+<ParamField path="maxCitationsPerFile" type="number" default="7">
+  Maximum citations from a single file
+</ParamField>
+
+<ParamField path="minRelevanceScore" type="number" default="0.45">
+  Minimum relevance threshold (0.0-1.0) for including sources
+</ParamField>
+
+### Web Search
+
+Agents can search the web and retrieve current information:
+
+```yaml librechat.yaml
+webSearch:
+  # Search provider
+  serperApiKey: '${SERPER_API_KEY}'
+  searxngInstanceUrl: '${SEARXNG_INSTANCE_URL}'
+  
+  # Content scraper
+  firecrawlApiKey: '${FIRECRAWL_API_KEY}'
+  firecrawlApiUrl: '${FIRECRAWL_API_URL}'
+  
+  # Reranking
+  jinaApiKey: '${JINA_API_KEY}'
+  cohereApiKey: '${COHERE_API_KEY}'
+```
+
+Enable web search in agent capabilities:
+
+```typescript
+tools: ['web_search']
+```
+
+### Actions (API Calls)
+
+Agents can call external APIs using OpenAPI specifications:
+
+```yaml librechat.yaml
+actions:
+  allowedDomains:
+    - 'swapi.dev'
+    - 'api.example.com'
+    - 'https://secure.api.com:8443'
+```
+
+<Warning>
+  **SSRF Protection**: If not configured, SSRF targets (localhost, private IPs) are blocked. To allow internal targets, explicitly add them to `allowedDomains`.
+</Warning>
+
+Add actions to your agent:
+
+```typescript
+actions: [
+  {
+    name: 'Get Weather',
+    description: 'Fetch current weather data',
+    url: 'https://api.weather.com/openapi.json'
+  }
+]
+```
+
+### Deferred Tools
+
+Tools can be loaded on-demand for better performance:
+
+```typescript
+tool_options: {
+  defer_loading: true  // Load tools only when needed
+}
+```
+
+<Info>
+  Deferred tools improve agent initialization time by loading tool definitions only when they're about to be used.
+</Info>
+
+## Agent Providers
+
+Agents work with multiple AI providers:
+
+<Tabs>
+  <Tab title="OpenAI">
+    ```yaml
+    provider: openAI
+    model: gpt-4o
+    model_parameters:
+      temperature: 0.7
+      max_tokens: 4000
+    ```
+  </Tab>
+  
+  <Tab title="Anthropic">
+    ```yaml
+    provider: anthropic
+    model: claude-4.5-sonnet
+    model_parameters:
+      temperature: 0.7
+      max_tokens: 8000
+    ```
+  </Tab>
+  
+  <Tab title="Google">
+    ```yaml
+    provider: google
+    model: gemini-2.0-flash-exp
+    model_parameters:
+      temperature: 0.7
+    ```
+  </Tab>
+  
+  <Tab title="Bedrock">
+    ```yaml
+    provider: bedrock
+    model: anthropic.claude-3-7-sonnet-20250219-v1:0
+    model_parameters:
+      temperature: 0.7
+    ```
+  </Tab>
+</Tabs>
+
+## Agent Chaining
+
+Agents can hand off to other specialized agents:
+
+```typescript
+// Main agent configuration
+{
+  name: 'Main Assistant',
+  instructions: 'General purpose assistant that delegates to specialists',
+  tools: ['chain'],
+  handoff_agents: ['code-specialist', 'research-specialist']
+}
+
+// Specialist agent
+{
+  id: 'code-specialist',
+  name: 'Code Specialist',
+  instructions: 'Expert in code analysis and debugging',
+  tools: ['execute_code', 'file_search']
+}
+```
+
+<Steps>
+  <Step title="User Request">
+    User asks a question to the main agent
+  </Step>
+  
+  <Step title="Agent Analysis">
+    Main agent determines which specialist is needed
+  </Step>
+  
+  <Step title="Handoff">
+    Main agent hands off to the specialist agent
+  </Step>
+  
+  <Step title="Specialist Response">
+    Specialist completes the task and returns results
+  </Step>
+</Steps>
+
+## Tool Resources
+
+Agents can access uploaded files through tool resources:
+
+### Execute Code Files
+
+```typescript
+tool_resources: {
+  execute_code: {
+    files: [
+      { file_id: 'file-123', filename: 'data.csv' },
+      { file_id: 'file-456', filename: 'analysis.py' }
+    ]
+  }
+}
+```
+
+### File Search Vectors
+
+```typescript
+tool_resources: {
+  file_search: {
+    vector_stores: [
+      {
+        file_ids: ['file-789', 'file-012'],
+        name: 'Documentation',
+        metadata: {
+          category: 'technical'
+        }
+      }
+    ]
+  }
+}
+```
+
+## Agent Permissions
+
+Control agent access through the interface configuration:
+
+```yaml librechat.yaml
+interface:
+  agents:
+    use: true      # Allow users to use agents
+    create: true   # Allow users to create agents
+    share: false   # Allow sharing with other users
+    public: false  # Allow public sharing
+```
+
+## Advanced Configuration
+
+### Recursion Control
+
+<ParamField path="recursionLimit" type="number" default="25">
+  Default recursion depth for agent operations
+</ParamField>
+
+<ParamField path="maxRecursionLimit" type="number" default="25">
+  Maximum allowed recursion depth
+</ParamField>
+
+### Context Management
+
+```typescript
+model_parameters: {
+  maxContextTokens: 100000,  // Maximum context window
+  resendFiles: true          // Resend files in conversation
+}
+```
+
+### Custom Instructions
+
+Provide detailed instructions to guide agent behavior:
+
+```yaml
+instructions: |
+  You are a senior software engineer specializing in Python and data analysis.
+  
+  When analyzing code:
+  - Always check for edge cases
+  - Provide detailed explanations
+  - Suggest optimizations
+  
+  When working with data:
+  - Validate data quality first
+  - Use appropriate visualizations
+  - Document your assumptions
+```
+
+## Example Agents
+
+<AccordionGroup>
+  <Accordion title="Data Analyst Agent">
+    ```yaml
+    name: Data Analyst
+    provider: openAI
+    model: gpt-4o
+    instructions: |
+      You are an expert data analyst. Analyze uploaded datasets,
+      create visualizations, and provide insights.
+    tools:
+      - execute_code
+      - file_search
+    tool_resources:
+      execute_code:
+        file_ids: []
+    ```
+  </Accordion>
+  
+  <Accordion title="Research Assistant Agent">
+    ```yaml
+    name: Research Assistant
+    provider: anthropic
+    model: claude-4.5-sonnet
+    instructions: |
+      You are a research assistant. Search documents and the web
+      to find accurate, well-cited information.
+    tools:
+      - file_search
+      - web_search
+    tool_resources:
+      file_search:
+        vector_stores:
+          - name: Research Papers
+    ```
+  </Accordion>
+  
+  <Accordion title="Code Review Agent">
+    ```yaml
+    name: Code Reviewer
+    provider: openAI
+    model: gpt-4o
+    instructions: |
+      You are a senior code reviewer. Analyze code for bugs,
+      security issues, and style improvements.
+    tools:
+      - execute_code
+      - file_search
+    model_parameters:
+      temperature: 0.3
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<Tip>
+  **Clear Instructions**: Provide specific, detailed instructions for best agent performance
+</Tip>
+
+<Tip>
+  **Tool Selection**: Only enable tools the agent actually needs to reduce token usage
+</Tip>
+
+<Warning>
+  **Recursion Limits**: Set appropriate limits to prevent infinite loops in agent chains
+</Warning>
+
+<Info>
+  **File Management**: Keep file sets focused and relevant to the agent's purpose
+</Info>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Code Interpreter" icon="code" href="/features/code-interpreter">
+    Execute Python code and analyze data
+  </Card>
+  <Card title="File Search" icon="magnifying-glass" href="/features/multimodal">
+    Search and analyze uploaded documents
+  </Card>
+  <Card title="Web Search" icon="globe" href="/features/web-search">
+    Search the web for current information
+  </Card>
+  <Card title="MCP" icon="plug" href="/features/mcp">
+    Model Context Protocol tool integration
+  </Card>
+</CardGroup>

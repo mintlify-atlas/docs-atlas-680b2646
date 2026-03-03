@@ -1,0 +1,387 @@
+---
+title: Bookmarks
+description: Save and organize important conversations with tags and descriptions
+---
+
+# Bookmarks
+
+Bookmarks in LibreChat let you tag and organize important conversations for easy retrieval. Use bookmarks to mark conversations you want to reference later, categorize by topic, or keep track of valuable insights.
+
+## Overview
+
+The bookmark system provides:
+
+- **Conversation tagging** - Label conversations with custom tags
+- **Descriptions** - Add notes about what makes a conversation important
+- **Quick access** - Find bookmarked conversations from the sidebar panel
+- **Organization** - Group related conversations with the same tag
+- **Search and filter** - Locate bookmarks by tag or description
+
+## Creating Bookmarks
+
+### Bookmarking a Conversation
+
+There are multiple ways to bookmark a conversation:
+
+#### From Active Conversation
+
+1. While viewing a conversation you want to bookmark
+2. Look for the bookmark action (usually in the conversation header or options menu)
+3. Click the bookmark button
+4. The bookmark dialog opens
+
+#### From Conversation List
+
+1. Hover over a conversation in the sidebar
+2. Click the conversation options menu (three dots)
+3. Select **Bookmark** or **Add Bookmark**
+4. The bookmark dialog opens
+
+### Bookmark Form Fields
+
+#### Tag (Required)
+
+The tag is the label for your bookmark:
+
+- **Character limit:** 128 characters
+- **Must be unique** - No duplicate tags allowed
+- **Case sensitive** - "Project" and "project" are different tags
+- **Examples:** "Research", "Code Examples", "Meeting Notes", "Important Decisions"
+
+#### Description (Optional)
+
+Add context about the bookmarked conversation:
+
+- **Character limit:** 1,048 characters
+- **Markdown supported** - Format your description for readability
+- **Best practices:**
+  - Summarize key points from the conversation
+  - Note why you bookmarked it
+  - Add keywords for easier searching
+  - Include dates or project names for context
+
+**Example description:**
+```
+Detailed analysis of database optimization strategies discussed on 2024-03-15.
+Key topics:
+- Index optimization
+- Query performance
+- Caching strategies
+
+Refer to this when working on the ProductDB refactor project.
+```
+
+#### Add to Conversation (Checkbox)
+
+When creating a bookmark from within an active conversation:
+
+- **Checked (default)** - The tag is immediately applied to the current conversation
+- **Unchecked** - Only creates the tag for future use, doesn't apply it to current conversation
+
+Use unchecked when you're creating a tag category for organizing multiple conversations later.
+
+### Saving the Bookmark
+
+1. Fill in at least the required tag field
+2. Optionally add a description
+3. Choose whether to add to current conversation
+4. Click **Save** or press Enter
+5. Success notification appears
+
+The bookmark is now saved and accessible from the bookmarks panel.
+
+## Viewing Bookmarks
+
+### Accessing the Bookmarks Panel
+
+1. Look for the bookmarks icon in the sidebar or navigation
+2. Click to open the bookmarks panel
+3. All your bookmarks display in a list or table view
+
+### Bookmarks Panel Views
+
+#### List View
+
+Displays bookmarks as cards showing:
+- Tag name
+- Description preview
+- Associated conversation links
+- Actions (edit, delete)
+
+#### Table View
+
+Displays bookmarks in a sortable table with columns:
+- Tag
+- Description
+- Created date
+- Number of conversations
+- Actions
+
+### Empty State
+
+When you have no bookmarks yet:
+- Helpful message explaining bookmarks
+- Quick action to create your first bookmark
+- Tips on how to use bookmarks effectively
+
+## Managing Bookmarks
+
+### Editing Bookmarks
+
+1. Open the bookmarks panel
+2. Find the bookmark you want to edit
+3. Click the **Edit** button or edit icon
+4. The bookmark edit dialog opens
+5. Modify the tag or description
+6. Click **Save** to update
+
+**Important:** 
+- You cannot change a tag to a name that already exists
+- If editing a tag that's applied to multiple conversations, all associated conversations update with the new tag name
+
+### Deleting Bookmarks
+
+1. Open the bookmarks panel
+2. Find the bookmark you want to remove
+3. Click the **Delete** button or trash icon
+4. Confirm the deletion in the dialog
+5. The bookmark is removed
+
+**Note:** 
+- Deleting a bookmark removes the tag from all conversations it was applied to
+- This action cannot be undone
+- The conversations themselves are not deleted, only the bookmark tag
+
+## Applying Bookmarks to Conversations
+
+### Adding a Tag to a Conversation
+
+#### From Bookmarks Panel
+
+1. Open the bookmarks panel
+2. Click on a bookmark tag
+3. Select **Apply to Conversation** or similar action
+4. Choose the conversation from a list or selector
+5. The tag is applied to that conversation
+
+#### From Bookmark Dialog
+
+1. Create or edit a bookmark with "Add to Conversation" checked
+2. The tag applies to the current conversation automatically
+
+### Removing a Tag from a Conversation
+
+1. Open the conversation
+2. Find the applied tags (usually displayed in conversation metadata)
+3. Click the remove/close icon on the tag
+4. The tag is removed from that conversation
+
+Alternatively:
+1. Edit the bookmark
+2. Manage conversation associations from the bookmark edit interface
+
+### Multiple Tags per Conversation
+
+Conversations can have multiple bookmark tags:
+
+- Apply different tags for different aspects (e.g., "Work", "Code Review", "Q1 2024")
+- Use tags as a categorization system
+- Combine tags for powerful filtering
+
+## Finding Bookmarked Conversations
+
+### Browsing by Tag
+
+1. Open the bookmarks panel
+2. Click on any bookmark tag
+3. View all conversations associated with that tag
+4. Click on a conversation to open it
+
+### Searching Bookmarks
+
+Use search and filter features in the bookmarks panel:
+
+- **Search by tag name** - Find specific tags quickly
+- **Search by description** - Locate bookmarks based on notes you added
+- **Filter by date** - Show recently created bookmarks
+- **Sort options** - Alphabetical, by date, by number of conversations
+
+### Bookmark Indicators
+
+Conversations with bookmarks may show:
+- Tag labels in the conversation list
+- Bookmark icon next to conversation title
+- Tag count indicator if multiple tags applied
+
+## Organizing with Bookmarks
+
+### Tagging Strategies
+
+#### By Project
+
+Tag conversations related to specific projects:
+- "Website Redesign"
+- "Mobile App v2"
+- "Q1 Marketing Campaign"
+
+#### By Topic
+
+Organize by subject matter:
+- "Python Development"
+- "Data Analysis"
+- "Content Strategy"
+- "Technical Documentation"
+
+#### By Purpose
+
+Categorize by how you'll use the conversation:
+- "Templates"
+- "Examples"
+- "Research"
+- "Brainstorming Sessions"
+- "Decisions"
+
+#### By Status
+
+Track workflow state:
+- "In Progress"
+- "Review Needed"
+- "Completed"
+- "Follow Up"
+
+#### By Priority
+
+Highlight importance:
+- "High Priority"
+- "Quick Reference"
+- "Important Insights"
+- "Key Decisions"
+
+### Hierarchical Organization
+
+While tags are flat, you can create hierarchy with naming conventions:
+
+- "Project/Website" and "Project/Mobile"
+- "Work/Client-A" and "Work/Client-B"
+- "Learning/Python" and "Learning/JavaScript"
+
+Use prefixes or separators (/, -, :) to create visual grouping.
+
+## Best Practices
+
+### Effective Tagging
+
+- **Be consistent** - Use the same tag names for similar conversations
+- **Keep tags short** - Easier to scan and apply
+- **Avoid over-tagging** - Too many tags reduces their usefulness
+- **Use descriptive names** - "Client Meeting" vs "Meeting"
+- **Establish conventions** - Decide on naming patterns and stick to them
+
+### Writing Descriptions
+
+- **Summarize key points** - What was discussed or decided
+- **Add context** - When, why, who was involved
+- **Include keywords** - Terms you might search for later
+- **Note related items** - Link to other relevant bookmarks or resources
+- **Keep it concise** - Detailed enough to be useful, brief enough to scan
+
+### Maintenance
+
+- **Review periodically** - Remove outdated bookmarks
+- **Update descriptions** - Add new context as projects evolve
+- **Merge duplicate tags** - Consolidate similar tags
+- **Archive old projects** - Delete or rename tags for completed work
+- **Refine your system** - Adjust tagging strategy as needed
+
+### Collaboration (If Supported)
+
+- **Use shared tags** - Coordinate naming with team members
+- **Document tag meanings** - Maintain a guide for team tags
+- **Respect tag ownership** - Don't edit others' personal bookmarks
+- **Communicate changes** - Notify team if you modify shared tags
+
+## Tips for Power Users
+
+### Quick Bookmarking Workflow
+
+1. Create a set of frequently-used tags in advance
+2. Use keyboard shortcuts (if available) to open bookmark dialog
+3. Type tag name quickly (autocomplete helps)
+4. Skip description for quick captures, add later if needed
+5. Review and enhance descriptions during weekly review
+
+### Combining with Other Features
+
+- **Export bookmarked conversations** - Backup important tagged conversations
+- **Share bookmarked conversations** - Send links to tagged conversations to teammates
+- **Search within bookmarks** - Use conversation search focused on bookmarked items only
+
+### Tag Naming Tips
+
+- **Use emojis** - "🔥 High Priority" or "✅ Completed" (if supported)
+- **Date prefixes** - "2024-Q1" or "March-2024"
+- **Number prefixes** - "001-Setup", "002-Development" for ordered sequence
+- **Color coding** - Some systems allow tag colors for visual organization
+
+## Troubleshooting
+
+### Cannot Create Bookmark
+
+**Tag already exists:**
+- Error message indicates the tag name is taken
+- Choose a different tag name
+- Or find the existing tag and apply it to your conversation
+
+**Validation errors:**
+- Ensure tag field is filled (required)
+- Check that tag is within 128 character limit
+- Check that description is within 1,048 character limit
+
+### Bookmark Not Appearing
+
+- Refresh the bookmarks panel
+- Check if bookmark was actually saved (look for success message)
+- Verify you're viewing the correct bookmark filter or category
+
+### Cannot Edit or Delete Bookmark
+
+- Verify you have permission to modify the bookmark
+- If it's a shared bookmark, you may need owner permissions
+- Try refreshing the page
+
+### Lost Bookmarks
+
+- Check if accidentally deleted
+- Look in archive or deleted items (if available)
+- Verify you're logged into the correct account
+- Bookmarks are tied to your user account
+
+## Keyboard Accessibility
+
+Bookmark management is fully keyboard accessible:
+
+- **Tab** - Navigate between bookmark items and form fields
+- **Enter** - Open bookmark, submit form, or activate focused element
+- **Escape** - Close bookmark dialog or panel
+- **Arrow keys** - Navigate through bookmark list
+- **Delete** - Remove selected bookmark (with confirmation)
+
+## Privacy and Sharing
+
+### Personal Bookmarks
+
+- Bookmarks are private to your account by default
+- Only you can see your bookmark tags and descriptions
+- Bookmarks persist across sessions and devices
+
+### Shared Bookmarks (If Available)
+
+- Some LibreChat instances may support shared bookmarks
+- Team tags can be created for collaborative organization
+- Check with your administrator about sharing capabilities
+
+### Data Export
+
+- Bookmarks may be included in data exports
+- Export functionality may be available in settings
+- Useful for backup or migration to another instance

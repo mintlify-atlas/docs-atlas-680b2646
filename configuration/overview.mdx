@@ -1,0 +1,350 @@
+---
+title: 'Configuration Overview'
+description: 'Learn how to configure LibreChat using environment variables and YAML configuration files'
+---
+
+# Configuration Overview
+
+LibreChat offers flexible configuration options through environment variables and YAML configuration files. This section guides you through setting up and customizing your LibreChat instance.
+
+## Configuration Methods
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="terminal" href="/configuration/environment-variables">
+    Configure server settings, database connections, and API keys through .env file
+  </Card>
+  <Card title="YAML Configuration" icon="file-code" href="/configuration/librechat-yaml">
+    Advanced configuration for endpoints, interface customization, and feature settings
+  </Card>
+</CardGroup>
+
+## Key Configuration Areas
+
+### Server Configuration
+
+<ParamField path="HOST" type="string" default="localhost">
+  Server host address
+</ParamField>
+
+<ParamField path="PORT" type="number" default="3080">
+  Server port number
+</ParamField>
+
+<ParamField path="MONGO_URI" type="string" required>
+  MongoDB connection string
+  
+  ```bash
+  MONGO_URI=mongodb://127.0.0.1:27017/LibreChat
+  ```
+</ParamField>
+
+### Domain Configuration
+
+<ParamField path="DOMAIN_CLIENT" type="string" required>
+  Client-facing domain URL
+  
+  ```bash
+  DOMAIN_CLIENT=http://localhost:3080
+  ```
+</ParamField>
+
+<ParamField path="DOMAIN_SERVER" type="string" required>
+  Server domain URL for backend services
+  
+  ```bash
+  DOMAIN_SERVER=http://localhost:3080
+  ```
+</ParamField>
+
+## Configuration File Locations
+
+<CodeGroup>
+```bash Environment Variables
+# Main configuration file
+.env
+
+# Example configuration (reference)
+.env.example
+```
+
+```bash YAML Configuration
+# Main YAML config
+librechat.yaml
+
+# Example configuration (reference)
+librechat.example.yaml
+
+# Custom path via environment variable
+CONFIG_PATH="/alternative/path/to/librechat.yaml"
+```
+</CodeGroup>
+
+## Quick Start
+
+<Steps>
+  <Step title="Copy Example Files">
+    Copy the example configuration files to create your configuration:
+    
+    ```bash
+    cp .env.example .env
+    cp librechat.example.yaml librechat.yaml
+    ```
+  </Step>
+  
+  <Step title="Configure Database">
+    Set your MongoDB connection string in `.env`:
+    
+    ```bash
+    MONGO_URI=mongodb://127.0.0.1:27017/LibreChat
+    ```
+  </Step>
+  
+  <Step title="Set Domain URLs">
+    Configure your domain URLs:
+    
+    ```bash
+    DOMAIN_CLIENT=http://localhost:3080
+    DOMAIN_SERVER=http://localhost:3080
+    ```
+  </Step>
+  
+  <Step title="Add API Keys">
+    Configure API keys for the AI providers you plan to use:
+    
+    ```bash
+    OPENAI_API_KEY=your_openai_api_key
+    ANTHROPIC_API_KEY=your_anthropic_api_key
+    GOOGLE_KEY=your_google_api_key
+    ```
+  </Step>
+  
+  <Step title="Customize Features">
+    Edit `librechat.yaml` to enable/disable features and configure endpoints
+  </Step>
+</Steps>
+
+## Configuration Hierarchy
+
+LibreChat loads configuration in the following priority order:
+
+1. **Environment Variables** - Highest priority, set in `.env` file or system environment
+2. **YAML Configuration** - Settings from `librechat.yaml`
+3. **Default Values** - Built-in defaults when no configuration is provided
+
+<Note>
+  Environment variables take precedence over YAML configuration. You can reference environment variables in YAML using `${VARIABLE_NAME}` syntax.
+</Note>
+
+## Configuration Categories
+
+<AccordionGroup>
+  <Accordion title="Server & Database" icon="server">
+    - Server host and port
+    - MongoDB connection settings
+    - Redis configuration (optional)
+    - Session and security settings
+  </Accordion>
+  
+  <Accordion title="AI Endpoints" icon="brain">
+    - OpenAI, Anthropic, Google
+    - Custom endpoints (Groq, Mistral, etc.)
+    - Azure OpenAI
+    - AWS Bedrock
+    - Model configuration
+  </Accordion>
+  
+  <Accordion title="Authentication" icon="lock">
+    - Email/password login
+    - OAuth2 providers (Google, GitHub, Discord, etc.)
+    - OpenID Connect
+    - SAML
+    - LDAP
+  </Accordion>
+  
+  <Accordion title="File Storage" icon="folder">
+    - Local storage
+    - AWS S3
+    - Firebase Storage
+    - Azure Blob Storage
+    - Granular storage strategies
+  </Accordion>
+  
+  <Accordion title="Features" icon="wand-magic-sparkles">
+    - Search (MeiliSearch)
+    - RAG (Retrieval-Augmented Generation)
+    - Web Search
+    - Speech-to-Text / Text-to-Speech
+    - Image Generation
+    - MCP Servers
+  </Accordion>
+  
+  <Accordion title="User System" icon="users">
+    - Registration settings
+    - User roles and permissions
+    - Rate limiting
+    - Token balance system
+    - Moderation
+  </Accordion>
+</AccordionGroup>
+
+## Environment-Specific Configuration
+
+<Tabs>
+  <Tab title="Development">
+    Development configuration for local testing:
+    
+    ```bash .env
+    NODE_ENV=development
+    HOST=localhost
+    PORT=3080
+    DOMAIN_CLIENT=http://localhost:3080
+    DOMAIN_SERVER=http://localhost:3080
+    
+    DEBUG_LOGGING=true
+    DEBUG_CONSOLE=true
+    
+    # Allow registration for testing
+    ALLOW_REGISTRATION=true
+    ALLOW_UNVERIFIED_EMAIL_LOGIN=true
+    ```
+  </Tab>
+  
+  <Tab title="Production">
+    Production configuration with security best practices:
+    
+    ```bash .env
+    NODE_ENV=production
+    HOST=0.0.0.0
+    PORT=3080
+    DOMAIN_CLIENT=https://yourdomain.com
+    DOMAIN_SERVER=https://yourdomain.com
+    
+    DEBUG_LOGGING=false
+    CONSOLE_JSON=true
+    
+    # Secure registration
+    ALLOW_REGISTRATION=false
+    ALLOW_PASSWORD_RESET=true
+    ALLOW_UNVERIFIED_EMAIL_LOGIN=false
+    
+    # Enable caching
+    USE_REDIS=true
+    REDIS_URI=redis://redis:6379
+    ```
+  </Tab>
+  
+  <Tab title="Docker">
+    Docker-specific configuration:
+    
+    ```bash .env
+    HOST=0.0.0.0
+    PORT=3080
+    MONGO_URI=mongodb://mongodb:27017/LibreChat
+    REDIS_URI=redis://redis:6379
+    
+    # Use Docker internal hostnames
+    MEILI_HOST=http://meilisearch:7700
+    ```
+  </Tab>
+</Tabs>
+
+## Security Considerations
+
+<Warning>
+  **Never commit your `.env` file to version control!** It contains sensitive information like API keys and secrets.
+</Warning>
+
+### Required Security Configuration
+
+<ParamField path="JWT_SECRET" type="string" required>
+  Secret key for JWT token signing. Generate a secure random string:
+  
+  ```bash
+  openssl rand -hex 32
+  ```
+</ParamField>
+
+<ParamField path="JWT_REFRESH_SECRET" type="string" required>
+  Secret key for refresh token signing. Use a different value than JWT_SECRET:
+  
+  ```bash
+  openssl rand -hex 32
+  ```
+</ParamField>
+
+<ParamField path="CREDS_KEY" type="string" required>
+  Encryption key for stored credentials (32 bytes hex):
+  
+  ```bash
+  openssl rand -hex 32
+  ```
+</ParamField>
+
+<ParamField path="CREDS_IV" type="string" required>
+  Initialization vector for credential encryption (16 bytes hex):
+  
+  ```bash
+  openssl rand -hex 16
+  ```
+</ParamField>
+
+## Validation
+
+After configuring LibreChat, you can validate your configuration:
+
+<CodeGroup>
+```bash Check Configuration
+# Start the server and check logs
+npm run backend
+
+# Look for configuration errors in the output
+```
+
+```bash Test Database Connection
+# The server will attempt to connect to MongoDB on startup
+# Check logs for successful connection:
+# "Connected to MongoDB"
+```
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="AI Endpoints" icon="brain" href="/configuration/ai-endpoints">
+    Configure OpenAI, Anthropic, Google, and custom AI providers
+  </Card>
+  <Card title="Authentication" icon="shield" href="/configuration/authentication">
+    Set up OAuth, LDAP, or email authentication
+  </Card>
+  <Card title="File Storage" icon="database" href="/configuration/file-storage">
+    Configure S3, Firebase, or local file storage
+  </Card>
+  <Card title="Environment Variables" icon="list" href="/configuration/environment-variables">
+    Complete reference of all environment variables
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Server won't start">
+    - Verify MongoDB is running and accessible
+    - Check `MONGO_URI` is correctly formatted
+    - Ensure no other process is using the configured port
+    - Review server logs for specific error messages
+  </Accordion>
+  
+  <Accordion title="API keys not working">
+    - Verify API keys are valid and have proper permissions
+    - Check for extra spaces or quotes in `.env` file
+    - Ensure you've restarted the server after updating `.env`
+    - Some providers require additional configuration in `librechat.yaml`
+  </Accordion>
+  
+  <Accordion title="Configuration not loading">
+    - Check file paths are correct
+    - Verify YAML syntax is valid (use a YAML validator)
+    - Ensure `CONFIG_PATH` points to the correct file if using custom path
+    - Check file permissions
+  </Accordion>
+</AccordionGroup>
